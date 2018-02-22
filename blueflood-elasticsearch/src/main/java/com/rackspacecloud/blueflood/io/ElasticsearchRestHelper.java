@@ -4,10 +4,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.service.ElasticIOConfig;
-import com.rackspacecloud.blueflood.types.Event;
-import com.rackspacecloud.blueflood.types.IMetric;
-import com.rackspacecloud.blueflood.types.Locator;
-import com.rackspacecloud.blueflood.types.Metric;
+import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.GlobPattern;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.Header;
@@ -25,10 +22,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
+import static java.util.stream.Collectors.joining;
 
 public class ElasticsearchRestHelper {
     private static final Logger logger = LoggerFactory.getLogger(ElasticsearchRestHelper.class);
@@ -141,10 +137,24 @@ public class ElasticsearchRestHelper {
         return fetchDocuments(indexName, documentType, queryDslString);
     }
 
+    public String fetchTokenDocuments(String[] indices, String tenantId, String query) throws IOException {
+        String queryDslString = getTokenQueryDslString(tenantId, query);
+        String multiIndexString = String.join(",", indices);
+
+        String url = String.format("%s/%s/_search?routing=%s&size=%d",
+                baseUrl, multiIndexString, tenantId, MAX_RESULT_LIMIT);
+
+        return fetchDocs(queryDslString, url);
+    }
+
     public String fetchDocuments(String indexName, String documentType, String queryDslString) throws IOException {
         //Example URL: localhost:9200/metric_metadata/metrics/_search&size=50";
         String url = String.format("%s/%s/%s/_search?size=%d", baseUrl, indexName, documentType, MAX_RESULT_LIMIT);
 
+        return fetchDocs(queryDslString, url);
+    }
+
+    private String fetchDocs(String queryDslString, String url) throws IOException {
         HttpPost httpPost = new HttpPost(url);
         httpPost.setHeaders(getHeaders());
 
@@ -202,8 +212,135 @@ public class ElasticsearchRestHelper {
         return dslString;
     }
 
+    /**
+     * Builds ES query to grab tokens corresponding to the given query glob.
+     * For a given query foo.bar.*, we would like to grab all the tokens with
+     * parent as foo.bar
+     *
+     * Sample ES query for a query glob = foo.bar.*:
+     *
+     *      "query": {
+     *          "bool" : {
+     *              "must" : [
+     *                  { "term": {  "tenantId": "<tenantId>" }},
+     *                  { "term": {  "parent": "foo.bar" }}
+     *              ]
+     *          }
+     *      }
+     *
+     * @param tenantId
+     * @param query
+     * @return
+     */
+    private String getTokenQueryDslString(String tenantId, String query) {
+        String[] queryTokens = query.split(Locator.METRIC_TOKEN_SEPARATOR_REGEX);
+        String lastToken = queryTokens[queryTokens.length - 1];
+
+        /**
+         * Builds parent part of the query for the given input query glob tokens.
+         * For a given query foo.bar.*, parent part is foo.bar
+         *
+         * For example:
+         *
+         *  For query = foo.bar.*
+         *          { "term": {  "parent": "foo.bar" }}
+         *
+         *  For query = foo.*.*
+         *          { "regexp": {  "parent": "foo.[^.]+" }}
+         *
+         *  For query = foo.b*.*
+         *          { "regexp": {  "parent": "foo.b[^.]*" }}
+         */
+
+        String parentString = getParentString(queryTokens);
+        String tenantIdTermQueryString = getTermQueryString(ESFieldLabel.tenantId.name(), tenantId);
+        List<String> mustNodes = new ArrayList<>();
+        mustNodes.add(tenantIdTermQueryString);
+        mustNodes.add(parentString);
+
+        // For example: if query=foo.bar.*, we can just get every token for the parent=foo.bar
+        // but if query=foo.bar.b*, we want to add the token part of the query for "b*"
+        if (!lastToken.equals("*")) {
+
+            String tokenQString;
+
+            GlobPattern pattern = new GlobPattern(lastToken);
+
+            if (pattern.hasWildcard()) {
+                String compiledString = pattern.compiled().toString();
+                tokenQString = getRegexpQueryString(ESFieldLabel.token.name(), compiledString);
+            } else {
+                tokenQString = getTermQueryString(ESFieldLabel.token.name(), lastToken);
+            }
+
+            mustNodes.add(tokenQString);
+        }
+
+        String mustQueryString = getMustQueryString(mustNodes);
+        String boolQueryString = getBoolQueryString(mustQueryString);
+        // replace one '\' char with two '\\'
+        boolQueryString = boolQueryString.replaceAll("\\\\", "\\\\\\\\");
+
+        return boolQueryString;
+    }
+
+    private String getParentString(String[] queryTokens) {
+        if (queryTokens.length == 1) return getTermQueryString(ESFieldLabel.parent.name(), "");
+
+        String parent = Arrays.stream(queryTokens)
+                .limit(queryTokens.length - 1)
+                .collect(joining(Locator.METRIC_TOKEN_SEPARATOR));
+
+        GlobPattern parentGlob = new GlobPattern(parent);
+
+        String parentQueryString;
+        if (parentGlob.hasWildcard()) {
+            parentQueryString = getRegexpQueryString(ESFieldLabel.parent.name(), getRegexToHandleTokens(parentGlob));
+        } else {
+            parentQueryString = getTermQueryString(ESFieldLabel.parent.name(), parent);
+        }
+
+        return parentQueryString;
+    }
+
+    /**
+     * For a given glob, gives regex for {@code Locator.METRIC_TOKEN_SEPARATOR} separated tokens
+     *
+     * For example:
+     *      globPattern of foo.*.* would produce a regex  foo\.[^.]+\.[^.]+
+     *      globPattern of foo.b*.* would produce a regex foo\.b[^.]*\.[^.]+
+     *
+     * @param globPattern
+     * @return
+     */
+    protected String getRegexToHandleTokens(GlobPattern globPattern) {
+        String[] queryRegexParts = globPattern.compiled().toString().split("\\\\.");
+
+        return Arrays.stream(queryRegexParts)
+                .map(this::convertRegexToCaptureUptoNextToken)
+                .collect(joining(Locator.METRIC_TOKEN_SEPARATOR_REGEX));
+    }
+
+    private String convertRegexToCaptureUptoNextToken(String queryRegex) {
+
+        if (queryRegex.equals(".*"))
+            return queryRegex.replaceAll("\\.\\*", "[^.]+");
+        else
+            return queryRegex.replaceAll("\\.\\*", "[^.]*");
+    }
+
     public int indexMetrics(List<IMetric> metrics) throws IOException {
         String bulkString = bulkStringify(metrics);
+        String url = String.format("%s/_bulk", baseUrl);
+
+        HttpPost httpPost = new HttpPost(url);
+        httpPost.setHeaders(getHeaders());
+
+        return index(httpPost, bulkString);
+    }
+
+    public int indexTokens(List<Token> tokens) throws IOException {
+        String bulkString = bulkStringifyTokens(tokens);
         String url = String.format("%s/_bulk", baseUrl);
 
         HttpPost httpPost = new HttpPost(url);
@@ -232,6 +369,26 @@ public class ElasticsearchRestHelper {
         sb.append(String.format("\"tags\": \"%s\",", event.get(Event.FieldLabels.tags.toString())));
         sb.append(String.format("\"tenantId\": \"%s\",", event.get(Event.FieldLabels.tenantId.toString())));
         sb.append(String.format("\"data\": \"%s\"}", event.get(Event.FieldLabels.data.toString())));
+
+        return sb.toString();
+    }
+
+    private String bulkStringifyTokens(List<Token> tokens){
+        StringBuilder sb = new StringBuilder();
+
+        for(Token token : tokens){
+            sb.append(String.format(
+                    "{ \"index\" : { \"_index\" : \"%s\", \"_type\" : \"%s\", \"_id\" : \"%s\", \"routing\" : \"%s\" } }%n",
+                    ElasticTokensIO.ELASTICSEARCH_TOKEN_INDEX_NAME_WRITE, ElasticTokensIO.ES_DOCUMENT_TYPE,
+                    token.getId(), token.getLocator().getTenantId()));
+
+            sb.append(String.format(
+                    "{ \"%s\" : \"%s\", \"%s\" : \"%s\", \"%s\" : \"%s\", \"%s\" : \"%s\" }%n",
+                    ESFieldLabel.token.toString(), token.getToken(),
+                    ESFieldLabel.parent.toString(), token.getParent(),
+                    ESFieldLabel.isLeaf.toString(), token.isLeaf(),
+                    ESFieldLabel.tenantId.toString(), token.getLocator().getTenantId()));
+        }
 
         return sb.toString();
     }

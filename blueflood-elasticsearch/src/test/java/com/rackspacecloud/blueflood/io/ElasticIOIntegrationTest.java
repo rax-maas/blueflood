@@ -21,6 +21,7 @@ import com.rackspacecloud.blueflood.service.ElasticIOConfig;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
+import com.rackspacecloud.blueflood.types.Token;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpEntity;
@@ -37,19 +38,22 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.net.URISyntaxException;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import static com.rackspacecloud.blueflood.io.AbstractElasticIO.ELASTICSEARCH_INDEX_NAME_READ;
+import static com.rackspacecloud.blueflood.io.ElasticTokensIO.ELASTICSEARCH_TOKEN_INDEX_NAME_READ;
 import static org.junit.Assert.assertEquals;
+import static java.util.stream.Collectors.toList;
 
 public class ElasticIOIntegrationTest extends BaseElasticTest {
 
     protected static ElasticIO elasticIO;
+    protected static ElasticTokensIO elasticTokensIO;
 
     @BeforeClass
     public static void setup() throws Exception {
@@ -60,11 +64,62 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
         elasticIO.insertDiscovery(createTestMetrics(TENANT_B));
         elasticIO.insertDiscovery(createTestMetricsFromInterface(TENANT_C));
 
-        int statusCode = elasticIO.elasticsearchRestHelper.refreshIndex(ELASTICSEARCH_INDEX_NAME_READ);
-        if(statusCode != 200) {
+        //inserting to metric_tokens
+        elasticTokensIO = new ElasticTokensIO();
+        elasticTokensIO.insertDiscovery(createTestTokens(TENANT_A));
+        elasticTokensIO.insertDiscovery(createTestTokens(TENANT_B));
+        elasticTokensIO.insertDiscovery(createTestTokens(TENANT_C));
+
+        addTestMetrics(TENANT_A, new HashSet<String>() {{
+            add("foo.bar.baz");
+        }});
+
+        addTestMetrics(TENANT_A, new HashSet<String>() {{
+            add("one.foo.three00.bar.baz");
+        }});
+
+        int statusCodeMetrics = elasticIO.elasticsearchRestHelper.refreshIndex(ELASTICSEARCH_INDEX_NAME_READ);
+        if(statusCodeMetrics != 200) {
             System.out.println(String.format("Refresh for %s failed with status code: %d",
-                    ELASTICSEARCH_INDEX_NAME_READ, statusCode));
+                    ELASTICSEARCH_INDEX_NAME_READ, statusCodeMetrics));
         }
+
+        refreshTokensIndex();
+    }
+
+    private static void addTestMetrics(String tenantId, Set<String> fullyQualifiedMetricNames) throws Exception {
+
+        List<IMetric> metrics = new ArrayList<>();
+        for (String metricName: fullyQualifiedMetricNames) {
+            metrics.add(new Metric(Locator.createLocatorFromPathComponents(tenantId, metricName),
+                    5647382910L, 0, new TimeValue(1, TimeUnit.DAYS), UNIT));
+        }
+
+        insertDiscovery(metrics);
+    }
+
+    private static void refreshTokensIndex() throws IOException {
+        int statusCodeTokens = elasticIO.elasticsearchRestHelper.refreshIndex(ELASTICSEARCH_TOKEN_INDEX_NAME_READ);
+        if(statusCodeTokens != 200) {
+            System.out.println(String.format("Refresh for %s failed with status code: %d",
+                    ELASTICSEARCH_TOKEN_INDEX_NAME_READ, statusCodeTokens));
+        }
+    }
+
+    private static List<Token> createTestTokens(String tenantId) {
+        return Token.getUniqueTokens(createComplexTestLocators(tenantId).stream())
+                .collect(toList());
+    }
+
+    protected void createTestMetrics(String tenantId, Set<String> fullyQualifiedMetricNames) throws Exception {
+
+        List<IMetric> metrics = new ArrayList<>();
+        for (String metricName: fullyQualifiedMetricNames) {
+            metrics.add(new Metric(Locator.createLocatorFromPathComponents(tenantId, metricName),
+                    5647382910L, 0, new TimeValue(1, TimeUnit.DAYS), UNIT));
+        }
+
+        insertDiscovery(metrics);
     }
 
     /*
@@ -73,9 +128,18 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
      */
     @AfterClass
     public static void tearDownClass() throws Exception {
+        List<String> typesToEmpty = new ArrayList<>();
+        typesToEmpty.add("/metric_metadata/metrics/_query");
+        typesToEmpty.add("/metric_tokens/tokens/_query");
+
+        for (String typeToEmpty : typesToEmpty)
+            deleteAllDocuments(typeToEmpty);
+    }
+
+    private static void deleteAllDocuments(String typeToEmpty) throws URISyntaxException, IOException {
         URIBuilder builder = new URIBuilder().setScheme("http")
                 .setHost("127.0.0.1").setPort(9200)
-                .setPath("/metric_metadata/metrics/_query");
+                .setPath(typeToEmpty);
 
         HttpEntityEnclosingRequestBase delete = new HttpEntityEnclosingRequestBase() {
             @Override
@@ -100,17 +164,12 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
         }
     }
 
-    @Override
-    protected void insertDiscovery(List<IMetric> metrics) throws IOException {
+    //@Override
+    protected static void insertDiscovery(List<IMetric> metrics) throws IOException {
         elasticIO.insertDiscovery(metrics);
-    }
 
-    @Test(expected=IllegalArgumentException.class)
-    public void testCreateSingleRequest_WithNullMetricName() throws IOException {
-        Locator locator = Locator.createLocatorFromPathComponents("tenantId", null);
-        Metric metric =
-                new Metric(locator, 123456789L, 0, new TimeValue(1, TimeUnit.DAYS), UNIT);
-        elasticIO.insertDiscovery(metric);
+        Stream<Locator> locators = metrics.stream().map(IMetric::getLocator);
+        elasticTokensIO.insertDiscovery(Token.getUniqueTokens(locators).collect(toList()));
     }
 
     @Test(expected=NullPointerException.class)
@@ -183,7 +242,7 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
     @Test
     public void testNoCrossTenantResults() throws Exception {
         List<SearchResult> results = elasticIO.search(TENANT_A, "*");
-        assertEquals(NUM_DOCS, results.size());
+        assertEquals(NUM_DOCS + 2, results.size());
         for (SearchResult result : results) {
             Assert.assertNotNull(result.getTenantId());
             Assert.assertNotSame(TENANT_B, result.getTenantId());
@@ -405,5 +464,160 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
         assertEquals(2, matchingTerms.size());
         assertEquals("foo.bar.baz.qux", matchingTerms.get(0));
         assertEquals("foo.bar.baz.qux.quux", matchingTerms.get(1));
+    }
+
+    @Test
+    public void testGetMetricNames() throws Exception {
+        String tenantId = TENANT_A;
+        String query = "*";
+
+
+        List<MetricName> results = elasticTokensIO.getMetricNames(tenantId, query);
+
+        assertEquals("Invalid total number of results", 2, results.size());
+
+        for(MetricName metricName : results) {
+            if(metricName.getName().equals("one") || metricName.getName().equals("foo")) {
+                assertEquals("isCompleteName for token", false, metricName.isCompleteName());
+            }
+            else{
+                Assert.fail(String.format("Unexpected metricName [%s]", metricName.getName()));
+            }
+        }
+    }
+
+    @Test
+    public void testGetMetricNamesMultipleMetrics() throws Exception {
+        String tenantId = TENANT_A;
+        String query = "*";
+
+        List<MetricName> results = elasticTokensIO.getMetricNames(tenantId, query);
+
+        Set<String> expectedResults = new HashSet<String>() {{
+            add("one|false");
+            add("foo|false");
+        }};
+
+        assertEquals("Invalid total number of results", 2, results.size());
+        verifyResults(results, expectedResults);
+    }
+
+    @Test
+    public void testGetMetricNamesSingleLevelPrefix() throws Exception {
+        String tenantId = TENANT_A;
+        String query = "one.*";
+
+        List<MetricName> results = elasticTokensIO.getMetricNames(tenantId, query);
+
+        assertEquals("Invalid total number of results", 2, results.size());
+
+        for(MetricName metricName : results) {
+            if(metricName.getName().equals("one.two") || metricName.getName().equals("one.foo")) {
+                assertEquals("Next level indicator wrong for token", false, metricName.isCompleteName());
+            }
+            else {
+                Assert.fail(String.format("Unexpected metricName [%s]", metricName.getName()));
+            }
+        }
+    }
+
+    @Test
+    public void testGetMetricNamesWithWildCardPrefixMultipleLevels() throws Exception {
+        String tenantId = TENANT_A;
+        String query = "*.*";
+
+        List<MetricName> results = elasticTokensIO.getMetricNames(tenantId, query);
+
+        Set<String> expectedResults = new HashSet<String>() {{
+            add("one.two|false");
+            add("one.foo|false");
+            add("foo.bar|false");
+        }};
+
+        assertEquals("Invalid total number of results", 3, results.size());
+        verifyResults(results, expectedResults);
+    }
+
+    @Test
+    public void testGetMetricNamesWithMultiLevelPrefix() throws Exception {
+        String tenantId = TENANT_A;
+        String query = "one.two.*";
+
+        List<MetricName> results = elasticTokensIO.getMetricNames(tenantId, query);
+
+        assertEquals("Invalid total number of results", NUM_PARENT_ELEMENTS, results.size());
+        for (MetricName metricName : results) {
+            Assert.assertFalse("isCompleteName value", metricName.isCompleteName());
+        }
+    }
+
+    @Test
+    public void testGetMetricNamesWithWildCardPrefixAtTheEnd() throws Exception {
+        String tenantId = TENANT_A;
+        String query = "one.two.three*.*";
+
+        List<MetricName> results = elasticTokensIO.getMetricNames(tenantId, query);
+
+        assertEquals("Invalid total number of results", NUM_PARENT_ELEMENTS * CHILD_ELEMENTS.size(), results.size());
+        for (MetricName metricName : results) {
+            Assert.assertFalse("isCompleteName value", metricName.isCompleteName());;
+        }
+    }
+
+    @Test
+    public void testGetMetricNamesWithWildCardAndBracketsPrefix() throws Exception {
+        String tenantId = TENANT_A;
+        String query = "one.{two,foo}.[ta]hree00.*";
+
+
+        createTestMetrics(tenantId, new HashSet<String>() {{
+            add("one.foo.three00.bar.baz");
+        }});
+
+        refreshTokensIndex();
+        List<MetricName> results = elasticTokensIO.getMetricNames(tenantId, query);
+
+        Set<String> expectedResults = new HashSet<String>() {{
+            add("one.two.three00.fourA|false");
+            add("one.two.three00.fourB|false");
+            add("one.two.three00.fourC|false");
+            add("one.foo.three00.bar|false");
+        }};
+
+        assertEquals("Invalid total number of results", CHILD_ELEMENTS.size() + 1, results.size());
+        verifyResults(results, expectedResults);
+    }
+
+    @Test
+    public void testGetMetricNamesWithMultiWildCardPrefix() throws Exception {
+        String tenantId = TENANT_A;
+        String query = "*.*.*";
+
+        List<MetricName> results = elasticTokensIO.getMetricNames(tenantId, query);
+
+        assertEquals("Invalid total number of results", NUM_PARENT_ELEMENTS + 2, results.size());
+        for (MetricName metricName : results) {
+            if(metricName.getName().equalsIgnoreCase("foo.bar.baz")){
+                Assert.assertTrue("isCompleteName value", metricName.isCompleteName());
+            }
+            else {
+                Assert.assertFalse("isCompleteName value", metricName.isCompleteName());
+            }
+        }
+    }
+
+    @Test
+    public void testGetMetricNamesWithoutWildCard() throws Exception {
+        String tenantId = TENANT_A;
+        String query = "one.foo.three00.bar.baz";
+
+        List<MetricName> results = elasticTokensIO.getMetricNames(tenantId, query);
+
+        Set<String> expectedResults = new HashSet<String>() {{
+            add("one.foo.three00.bar.baz|true");
+        }};
+
+        assertEquals("Invalid total number of results", expectedResults.size(), results.size());
+        verifyResults(results, expectedResults);
     }
 }
