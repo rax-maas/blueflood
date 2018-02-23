@@ -191,12 +191,12 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
                 new Metric(locator, 123456789L, 0, new TimeValue(1, TimeUnit.DAYS), UNIT);
 
         ElasticsearchRestHelper elasticsearchRestHelper = ElasticsearchRestHelper.getInstance();
-        elasticsearchRestHelper.setBaseUrlForTestOnly("http://www.google.com");
+        elasticsearchRestHelper.setBaseUrlForTestOnly("www.google.com");
         List<IMetric> metrics = new ArrayList<>();
         metrics.add(metric);
 
         int statusCode = elasticsearchRestHelper.indexMetrics(metrics);
-        elasticsearchRestHelper.setBaseUrlForTestOnly("http://127.0.0.1:9200");
+        elasticsearchRestHelper.setBaseUrlForTestOnly("127.0.0.1:9200");
 
         Assert.assertEquals(404, statusCode);
     }
