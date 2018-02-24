@@ -18,6 +18,7 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.JsonParseException;
 import com.rackspacecloud.blueflood.exceptions.InvalidDataException;
@@ -25,6 +26,7 @@ import com.rackspacecloud.blueflood.http.DefaultHandler;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.inputs.formats.AggregatedPayload;
 import com.rackspacecloud.blueflood.io.Constants;
+import com.rackspacecloud.blueflood.io.Instrumentation;
 import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
 import com.rackspacecloud.blueflood.tracker.Tracker;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
@@ -50,13 +52,19 @@ public class HttpAggregatedIngestionHandler implements HttpRequestHandler {
 
     private final HttpMetricsIngestionServer.Processor processor;
     private final TimeValue timeout;
+    private final boolean enablePerTenantMetrics;
     private final Clock clock = new DefaultClockImpl();
     
     public HttpAggregatedIngestionHandler(HttpMetricsIngestionServer.Processor processor, TimeValue timeout) {
+        this(processor, timeout, false);
+    }
+
+    public HttpAggregatedIngestionHandler(HttpMetricsIngestionServer.Processor processor, TimeValue timeout, boolean enablePerTenantMetrics) {
         this.processor = processor;
         this.timeout = timeout;
+        this.enablePerTenantMetrics = enablePerTenantMetrics;
     }
-    
+
     // our own stuff.
     @Override
     public void handle(ChannelHandlerContext ctx, FullHttpRequest request) {
@@ -68,7 +76,11 @@ public class HttpAggregatedIngestionHandler implements HttpRequestHandler {
         final Timer.Context timerContext = handlerTimer.time();
         String body = null;
 
+        String submitterTenantId = request.headers().get(HttpMetricsIngestionServer.TENANT_ID_HEADER);
+        int metricsCount = 0;
+        int delayedMetricsCount = 0;
         try {
+
             // this is all JSON.
             body = request.content().toString(Constants.DEFAULT_CHARSET);
 
@@ -83,6 +95,9 @@ public class HttpAggregatedIngestionHandler implements HttpRequestHandler {
                         payload.getDelayTime(ingestTime),
                         payload.getAllMetricNames());
                 payload.markDelayMetricsReceived(ingestTime);
+                delayedMetricsCount += payload.getAllMetricNames().size();
+            } else {
+                metricsCount += payload.getAllMetricNames().size();
             }
 
             List<ErrorResponse.ErrorData> validationErrors = payload.getValidationErrors();
@@ -98,6 +113,7 @@ public class HttpAggregatedIngestionHandler implements HttpRequestHandler {
                         return;
                     }
                 }
+                recordPerTenantMetrics(submitterTenantId, metricsCount, delayedMetricsCount);
                 DefaultHandler.sendResponse( ctx, request, null, HttpResponseStatus.OK );
             } else {
                 // has validation errors for the single metric, return BAD_REQUEST
@@ -123,5 +139,18 @@ public class HttpAggregatedIngestionHandler implements HttpRequestHandler {
             requestCount.dec();
         }
 
+    }
+
+    @VisibleForTesting
+    protected void recordPerTenantMetrics(String submitterTenantId, int metricsCount, int delayedMetricsCount) {
+        if ( enablePerTenantMetrics ) {
+            if ( metricsCount > 0 ) {
+                Instrumentation.getIngestedMetricsMeter(submitterTenantId).mark(metricsCount);
+            }
+            if ( delayedMetricsCount > 0 ) {
+                Instrumentation.getIngestedDelayedMetricsMeter(submitterTenantId).mark(delayedMetricsCount);
+            }
+
+        }
     }
 }

@@ -105,8 +105,16 @@ public class IOConfig {
         return maxConns / numHosts + (maxConns % numHosts == 0 ? 0 : 1);
     }
 
-    public int getInitialConn() {
-        return config.getIntegerProperty(CoreConfig.INITIAL_CASSANDRA_CONNECTIONS);
+    public int getDatastaxCoreConnectionsPerHost() {
+        return config.getIntegerProperty(CoreConfig.DATASTAX_CORE_CONNECTIONS_PER_HOST);
+    }
+
+    public int getDatastaxMaxConnectionsPerHost() {
+        return config.getIntegerProperty(CoreConfig.DATASTAX_MAX_CONNECTIONS_PER_HOST);
+    }
+
+    public int getDatastaxMaxRequestsPerConnection() {
+        return config.getIntegerProperty(CoreConfig.DATASTAX_MAX_REQUESTS_PER_CONNECTION);
     }
 
     /**
@@ -115,6 +123,13 @@ public class IOConfig {
     public int getRequestTimeout() {
         return config.getIntegerProperty(CoreConfig.CASSANDRA_REQUEST_TIMEOUT);
     }
+
+    public int getReadTimeoutMaxRetries() { return config.getIntegerProperty(CoreConfig.DATASTAX_READ_TIMEOUT_MAX_RETRIES); }
+
+    public int getWriteTimeoutMaxRetries() { return config.getIntegerProperty(CoreConfig.DATASTAX_WRITE_TIMEOUT_MAX_RETRIES); }
+
+    public int getUnavailableMaxRetries() { return config.getIntegerProperty(CoreConfig.DATASTAX_UNAVAILABLE_MAX_RETRIES); }
+
 
     // prevent people from instantiating directly
     private IOConfig() {

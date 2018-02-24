@@ -31,16 +31,22 @@ import java.util.concurrent.TimeUnit;
 public class ConfigTtlProviderTest {
     private ConfigTtlProvider ttlProvider;
     private static final String RAW_METRICS_TTL = TtlConfig.RAW_METRICS_TTL.toString();
-    private static final String STRING_METRICS_TTL = TtlConfig.STRING_METRICS_TTL.toString();
     private static final String TTL_CONFIG_CONST = TtlConfig.TTL_CONFIG_CONST.toString();
 
     @Before
     public void setUp() {
         System.setProperty(RAW_METRICS_TTL, "5");
-        System.setProperty(STRING_METRICS_TTL, "364");
         System.setProperty(TTL_CONFIG_CONST, "5");
 
-        this.ttlProvider = ConfigTtlProvider.getInstance();
+        // We can't use ConfigTtlProvider.getInstance() because
+        // that instance can be initialized by other previously
+        // run tests (thus we have not gotten to make the
+        // System.setProperty() calls above, and ttlMapper
+        // wont be initialized properly). Since this is a
+        // test class testing the ConfigTtlProvider, it is
+        // ok to call the constructor directly, to ensure
+        // we get a fresh instance for this test.
+        this.ttlProvider = new ConfigTtlProvider();
     }
 
     @Test
@@ -56,12 +62,6 @@ public class ConfigTtlProviderTest {
     }
 
     @Test
-    public void testConfigTtlForStrings() throws Exception {
-        Assert.assertEquals(Configuration.getInstance().getIntegerProperty(STRING_METRICS_TTL), 364);
-        Assert.assertTrue(new TimeValue(364, TimeUnit.DAYS).equals(ttlProvider.getTTLForStrings("acFoo").get()));
-    }
-
-    @Test
     public void testConfigTtlForIngestion() throws Exception {
         Assert.assertEquals(Configuration.getInstance().getIntegerProperty(TTL_CONFIG_CONST), 5);
         Assert.assertTrue(new TimeValue(5, TimeUnit.DAYS).equals(ttlProvider.getConfigTTLForIngestion()));
@@ -70,7 +70,6 @@ public class ConfigTtlProviderTest {
     @After
     public void tearDown() {
         System.clearProperty(RAW_METRICS_TTL);
-        System.clearProperty(STRING_METRICS_TTL);
         System.clearProperty(TTL_CONFIG_CONST);
     }
 }

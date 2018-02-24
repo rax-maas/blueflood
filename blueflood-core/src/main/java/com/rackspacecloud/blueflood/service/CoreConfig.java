@@ -30,15 +30,20 @@ public enum CoreConfig implements ConfigDefaults {
     // is evenly divisible by number of hosts. For its connection
     // pool, the driver class calculate the max number of
     // connections per host, by dividing this number with
-    // the number of hosts.
+    // the number of hosts. This is only being used by Astyanax
+    // driver.
     MAX_CASSANDRA_CONNECTIONS("75"),
 
-    // This is the number of initial connections
-    // to be created by the connection pool of the
-    // datastax driver
-    INITIAL_CASSANDRA_CONNECTIONS("15"),
-
     CASSANDRA_DRIVER("astyanax"),
+
+    // Datastax related connection pool settings
+    // http://docs.datastax.com/en/developer/java-driver/3.2/manual/pooling/
+    DATASTAX_CORE_CONNECTIONS_PER_HOST("5"),
+    DATASTAX_MAX_CONNECTIONS_PER_HOST("10"),
+    DATASTAX_MAX_REQUESTS_PER_CONNECTION("1024"),
+    DATASTAX_READ_TIMEOUT_MAX_RETRIES("3"),
+    DATASTAX_WRITE_TIMEOUT_MAX_RETRIES("3"),
+    DATASTAX_UNAVAILABLE_MAX_RETRIES("1"),
 
     ROLLUP_KEYSPACE("DATA"),
     CLUSTER_NAME("Test Cluster"),
@@ -46,6 +51,7 @@ public enum CoreConfig implements ConfigDefaults {
     INGESTION_MODULES(""),
     QUERY_MODULES(""),
     DISCOVERY_MODULES(""),
+    TOKEN_DISCOVERY_MODULES(""),
     EVENT_LISTENER_MODULES(""),
     EVENTS_MODULES(""),
 
@@ -55,6 +61,9 @@ public enum CoreConfig implements ConfigDefaults {
 
     DISCOVERY_WRITER_MIN_THREADS("5"),
     DISCOVERY_WRITER_MAX_THREADS("10"),
+
+    TOKEN_DISCOVERY_WRITER_MIN_THREADS("5"),
+    TOKEN_DISCOVERY_WRITER_MAX_THREADS("10"),
 
     // Maximum threads that would access the cache concurrently
     META_CACHE_MAX_CONCURRENCY("50"),
@@ -174,6 +183,14 @@ public enum CoreConfig implements ConfigDefaults {
     BEFORE_CURRENT_COLLECTIONTIME_MS("259200000"),
     // 10 minutes
     AFTER_CURRENT_COLLECTIONTIME_MS("600000"),
+
+    //Feature to improve token search. Enabling this will persist metric name tokens separately.
+    ENABLE_TOKEN_SEARCH_IMPROVEMENTS("false"),
+
+    //Count raw metrics ingested per tenant
+    ENABLE_PER_TENANT_METRICS("false"),
+
+    ENABLE_DTX_INGEST_BATCH("false"),
 
     // Cross-Origin Resource Sharing
     CORS_ENABLED("false"),

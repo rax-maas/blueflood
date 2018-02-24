@@ -24,6 +24,8 @@ import com.rackspacecloud.blueflood.cache.TenantTtlProvider;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.Instrumentation;
 import com.rackspacecloud.blueflood.io.LocatorIO;
+import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.rollup.SlotKey;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.utils.*;
 import org.slf4j.Logger;
@@ -82,9 +84,7 @@ public class DLocatorIO implements LocatorIO {
                 .value(VALUE, bindMarker());
         putValue = DatastaxIO.getSession()
                 .prepare(insert)
-                .setConsistencyLevel( ConsistencyLevel.ONE );  // TODO: remove later; required by the cassandra-maven-plugin 2.0.0-1
-                                                              // (see https://issues.apache.org/jira/browse/CASSANDRA-6238)
-
+                .setConsistencyLevel( ConsistencyLevel.LOCAL_ONE );
     }
 
     /**
@@ -96,17 +96,21 @@ public class DLocatorIO implements LocatorIO {
     public void insertLocator(Locator locator) throws IOException {
         Session session = DatastaxIO.getSession();
 
-        // get shard this locator would belong to
-        long shard = (long) Util.getShard(locator.toString());
-
         Timer.Context timer = Instrumentation.getWriteTimerContext(CassandraModel.CF_METRICS_LOCATOR_NAME);
         try {
             // bound values and execute
-            BoundStatement bs = putValue.bind(shard, locator.toString(), "");
+            BoundStatement bs = getBoundStatementForLocator(locator);
             session.execute(bs);
         } finally {
             timer.stop();
         }
+    }
+
+    // package protect so other classes in this package can call it
+    BoundStatement getBoundStatementForLocator(Locator locator) {
+        // get shard this locator would belong to
+        long shard = (long) Util.getShard(locator.toString());
+        return putValue.bind(shard, locator.toString(), "");
     }
 
     /**

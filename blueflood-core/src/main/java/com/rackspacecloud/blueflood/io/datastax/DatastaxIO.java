@@ -54,11 +54,16 @@ public class DatastaxIO {
     private static void connect() {
         Set<InetSocketAddress> dbHosts = ioconfig.getUniqueBinaryTransportHostsAsInetSocketAddresses();
 
+        int readTimeoutMaxRetries = ioconfig.getReadTimeoutMaxRetries();
+        int writeTimeoutMaxRetries = ioconfig.getWriteTimeoutMaxRetries();
+        int unavailableMaxRetries = ioconfig.getUnavailableMaxRetries();
+
         CodecRegistry codecRegistry = new CodecRegistry();
 
         cluster = Cluster.builder()
                 .withLoadBalancingPolicy(new TokenAwarePolicy(DCAwareRoundRobinPolicy.builder().withLocalDc(ioconfig.getDatacenterName()).build(), false))
-                .withPoolingOptions(getPoolingOptions(dbHosts.size()))
+                .withPoolingOptions(getPoolingOptions())
+                .withRetryPolicy(new RetryNTimes(readTimeoutMaxRetries, writeTimeoutMaxRetries, unavailableMaxRetries))
                 .withCodecRegistry(codecRegistry)
                 .withSocketOptions(getSocketOptions())
                 .addContactPointsWithPorts(dbHosts)
@@ -102,12 +107,13 @@ public class DatastaxIO {
         return socketOptions;
     }
 
-    private static PoolingOptions getPoolingOptions(int numHosts){
+    private static PoolingOptions getPoolingOptions(){
 
         final PoolingOptions poolingOptions = new PoolingOptions();
         poolingOptions
-                .setCoreConnectionsPerHost(HostDistance.LOCAL, ioconfig.getInitialConn())
-                .setMaxConnectionsPerHost(HostDistance.LOCAL, ioconfig.getMaxConnPerHost(numHosts));
+                .setCoreConnectionsPerHost(HostDistance.LOCAL, ioconfig.getDatastaxCoreConnectionsPerHost())
+                .setMaxConnectionsPerHost(HostDistance.LOCAL, ioconfig.getDatastaxMaxConnectionsPerHost())
+                .setMaxRequestsPerConnection(HostDistance.LOCAL, ioconfig.getDatastaxMaxRequestsPerConnection());
         return poolingOptions;
     }
 

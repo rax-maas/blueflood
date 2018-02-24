@@ -25,8 +25,6 @@ import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-
 /**
  * This class holds the necessary IO classes for a particular driver type.
  */
@@ -40,8 +38,6 @@ public class IOContainer {
     private static final Configuration configuration = Configuration.getInstance();
     private static final Logger LOG = LoggerFactory.getLogger(IOContainer.class);
     private static IOContainer FROM_CONFIG_INSTANCE = null;
-
-
 
     private ShardStateIO shardStateIO;
     private MetadataIO metadataIO;
@@ -67,7 +63,12 @@ public class IOContainer {
             boolean isRecordingDelayedMetrics = configuration.getBooleanProperty(CoreConfig.RECORD_DELAYED_METRICS);
             LOG.info(String.format("Recording delayed metrics: %s", isRecordingDelayedMetrics));
 
-            FROM_CONFIG_INSTANCE = new IOContainer(DriverType.getDriverType(driver), isRecordingDelayedMetrics);
+            boolean isDtxIngestBatchEnabled = configuration.getBooleanProperty(CoreConfig.ENABLE_DTX_INGEST_BATCH);
+            LOG.info(String.format("Datastax Ingest batch enabled: %s", isDtxIngestBatchEnabled));
+
+            FROM_CONFIG_INSTANCE = new IOContainer(DriverType.getDriverType(driver),
+                                            isRecordingDelayedMetrics,
+                                            isDtxIngestBatchEnabled);
         }
 
         return FROM_CONFIG_INSTANCE;
@@ -85,7 +86,9 @@ public class IOContainer {
      * @param driver
      * @param isRecordingDelayedMetrics
      */
-    private IOContainer(DriverType driver, boolean isRecordingDelayedMetrics) {
+    private IOContainer(DriverType driver,
+                        boolean isRecordingDelayedMetrics,
+                        boolean isDtxIngestBatchEnabled) {
 
         if ( driver == DriverType.DATASTAX ) {
 
@@ -93,10 +96,10 @@ public class IOContainer {
             shardStateIO = new DShardStateIO();
             locatorIO = new DLocatorIO();
             delayedLocatorIO = new DDelayedLocatorIO();
-            basicMetricsRW = new DBasicMetricsRW(locatorIO, delayedLocatorIO,
-                    isRecordingDelayedMetrics, new DefaultClockImpl());
-            preAggregatedMetricsRW = new DPreaggregatedMetricsRW(locatorIO, delayedLocatorIO,
-                    isRecordingDelayedMetrics, new DefaultClockImpl());
+            basicMetricsRW = new DBasicMetricsRW((DLocatorIO)locatorIO, (DDelayedLocatorIO) delayedLocatorIO,
+                    isRecordingDelayedMetrics, isDtxIngestBatchEnabled, new DefaultClockImpl());
+            preAggregatedMetricsRW = new DPreaggregatedMetricsRW((DLocatorIO)locatorIO, (DDelayedLocatorIO) delayedLocatorIO,
+                    isRecordingDelayedMetrics, isDtxIngestBatchEnabled, new DefaultClockImpl());
 
         } else {
 

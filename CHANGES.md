@@ -1,12 +1,19 @@
 # CHANGES
 
 ## IN PROGRESS
+* Added configuration option ENABLE_DTX_INGEST_BATCH to enable using unlogged BatchStatement for 
+  Ingest nodes with Datastax driver. Note: this option is only in effect if CASSANDRA_DRIVER 
+  is set to 'datastax'.
+* Upgraded datastax driver to 3.2.0
+* Upgraded netty to 4.0.44.FINAL
+* Added configuration option ENABLE_PER_TENANT_METRICS to enable recording per-tenant ingest metrics:
+  ** number of datapoints each tenant ingests
+  ** number of delayed datapoints each tenant ingests
 * Updated to using cassandra-maven-plugin v2.1.7-1
 * Removed String and Boolean support
 * Removed caching of metrics Type in metrics_metadata Column Family and MetadataCache
 * Closed idle connection with no inbound traffic after HTTP_CONNECTION_READ_IDLE_TIME_SECONDS  
 * Integrated docker build into maven
-* Upgraded datastax driver to 3.1.2
 * Added new configuration option DELAYED_METRICS_REROLL_GRANULARITY
 * Removed Enums metrics support
 

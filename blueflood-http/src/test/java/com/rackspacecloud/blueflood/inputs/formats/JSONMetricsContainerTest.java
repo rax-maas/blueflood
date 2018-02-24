@@ -110,8 +110,10 @@ public class JSONMetricsContainerTest {
         // has a side-effect required by areDelayedMetricsPresent()
         List<Metric> metrics = container.getValidMetrics();
 
-        assertTrue( container.getValidationErrors().isEmpty() );
-        assertTrue(container.areDelayedMetricsPresent());
+        assertTrue("no metrics validation errors", container.getValidationErrors().isEmpty() );
+        assertTrue("delayed metrics are present", container.areDelayedMetricsPresent());
+        assertEquals("delayed metric count", 1, container.getDelayedMetricsCount());
+        assertEquals("non delayed metric count", 0, container.getNonDelayedMetricsCount());
     }
 
     @Test

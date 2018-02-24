@@ -1,0 +1,42 @@
+version: '3.4'
+
+services:
+  blueflood:
+    image: rackerlabs/blueflood
+    environment:
+      CASSANDRA_HOST: cassandra
+      ELASTICSEARCH_HOST: elasticsearch
+    ports:
+      - 19000:19000
+      - 20000:20000
+      - 9180:9180
+
+  cassandra:
+    image: cassandra:2.1
+    ports:
+      - 9042:9042
+      - 9160:9160
+      - 7199:7199
+
+  cassandran:
+    image: cassandra:2.1
+    environment:
+      - CASSANDRA_SEEDS=cassandra
+
+  elasticsearch:
+    image: elasticsearch:1.7
+    command: elasticsearch -Des.cluster.name="blueflood"
+
+  bf_finder:
+    image: rackerlabs/graphite-api-blueflood-finder
+    environment:
+      BLUEFLOOD_QUERY_URL: http://blueflood:20000
+      TENANT_ID: 100
+      GRAFANA_URLS: http://grafana:3000,http://localhost:3000
+
+  grafana:
+    image: grafana/grafana:3.1.1
+    environment:
+      GF_INSTALL_PLUGINS: rackerlabs-blueflood-datasource
+    ports:
+      - 3000:3000

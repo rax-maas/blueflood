@@ -29,7 +29,6 @@ import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.netflix.astyanax.shallows.EmptyColumnList;
 import com.netflix.astyanax.util.RangeBuilder;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
-import com.rackspacecloud.blueflood.exceptions.CacheException;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.Instrumentation;
 import com.rackspacecloud.blueflood.io.serializers.Serializers;
@@ -197,6 +196,13 @@ public class AstyanaxReader extends AstyanaxIO {
         try {
             for (Column<Long> col : cols) {
                 points.add(new Points.Point<T>(col.getName(), (T)col.getValue(serializer)));
+            }
+
+            // we only want to count the number of points we
+            // get when we're querying the metrics_full
+            // we don't do for aggregated or other granularities
+            if ( cf == CassandraModel.CF_METRICS_FULL ) {
+                Instrumentation.getRawPointsIn5MinHistogram().update(points.getPoints().size());
             }
         } catch (RuntimeException ex) {
             log.error("Problem deserializing data for " + locator + " (" + range + ") from " + cf.getName(), ex);

@@ -34,6 +34,10 @@ public class HttpMultitenantMetricsIngestionHandler extends HttpMetricsIngestion
         super(processor, timeout);
     }
 
+    public HttpMultitenantMetricsIngestionHandler(HttpMetricsIngestionServer.Processor processor, TimeValue timeout, boolean enablePerTenantMetrics) {
+        super(processor, timeout, enablePerTenantMetrics);
+    }
+
     @Override
     protected JSONMetricsContainer createContainer(String body, String tenantId) throws JsonParseException, JsonMappingException, IOException {
         List<JSONMetric> jsonMetrics =

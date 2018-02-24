@@ -16,7 +16,6 @@
 
 package com.rackspacecloud.blueflood.io;
 
-import com.google.common.cache.Cache;
 import com.rackspacecloud.blueflood.cache.LocatorCache;
 import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.datastax.DCassandraUtilsIO;
@@ -28,7 +27,6 @@ import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.junit.After;
 import org.junit.Before;
-import org.mockito.internal.util.reflection.Whitebox;
 
 import java.lang.reflect.Method;
 import java.util.*;

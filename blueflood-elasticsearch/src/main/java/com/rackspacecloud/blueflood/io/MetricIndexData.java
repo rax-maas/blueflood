@@ -1,6 +1,9 @@
 package com.rackspacecloud.blueflood.io;
 
+
 import java.util.*;
+
+import static com.rackspacecloud.blueflood.types.Locator.METRIC_TOKEN_SEPARATOR_REGEX;
 
 /**
  * When we ingest these below metrics, ES generates the following indexes
@@ -70,7 +73,7 @@ public class MetricIndexData {
      */
     public void add(String metricIndex, long docCount) {
 
-        final String[] tokens = metricIndex.split(AbstractElasticIO.REGEX_TOKEN_DELIMTER);
+        final String[] tokens = metricIndex.split(METRIC_TOKEN_SEPARATOR_REGEX);
 
         /**
          *
@@ -152,7 +155,7 @@ public class MetricIndexData {
 
             MetricIndexDocCount metricIndexDocCount = entry.getValue();
             if (metricIndexDocCount != null) {
-                
+
                 //if total doc count is greater than its children docs, its a complete metric name
                 if (metricIndexDocCount.actualDocCount > 0 &&
                         metricIndexDocCount.actualDocCount > metricIndexDocCount.childrenTotalDocCount) {

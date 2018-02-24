@@ -10,6 +10,20 @@ import com.rackspacecloud.blueflood.utils.Metrics;
 
 import java.util.concurrent.TimeUnit;
 
+/**
+ * This class is used to cache locator's that were written recently to our persistence layers by the available writers.
+ * All the writers, check the cache to see if it is written recently(isCurrent) before writing them again.
+ *
+ * Different writers that we have:
+ *
+ *  {@link com.rackspacecloud.blueflood.inputs.processors.BatchWriter} This writes to cassandra
+ *  {@link com.rackspacecloud.blueflood.inputs.processors.DiscoveryWriter} This supports metric discovery (/metric/search)
+ *  {@link com.rackspacecloud.blueflood.inputs.processors.TokenDiscoveryWriter} This support metric tokens discovery (metric_name/search)
+ *
+ * Each writer maintains its own indicator in {@link LocatorCacheEntry} to indicate whether a locator is current. This
+ * is useful in cases, where persisting a locator with one writer is successful but not with other writers.
+ *
+ */
 public class LocatorCache {
 
     // this collection is used to reduce the number of locators that get written.
@@ -103,6 +117,17 @@ public class LocatorCache {
     }
 
     /**
+     * Checks if Locator is recently inserted in the token discovery layer
+     *
+     * @param loc
+     * @return
+     */
+    public synchronized boolean isLocatorCurrentInTokenDiscoveryLayer(Locator loc) {
+        LocatorCacheEntry entry = insertedLocators.getIfPresent(loc.toString());
+        return entry != null && entry.isTokenDiscoveryCurrent();
+    }
+
+    /**
      * Check if the delayed locator is recently inserted for a given slot
      *
      * @param slot
@@ -145,6 +170,14 @@ public class LocatorCache {
     }
 
     /**
+     * Marks the Locator as recently inserted in the token discovery layer
+     * @param loc
+     */
+    public synchronized void setLocatorCurrentInTokenDiscoveryLayer(Locator loc) {
+        getOrCreateInsertedLocatorEntry(loc).setTokenDiscoveryCurrent();
+    }
+
+    /**
      * Marks the delayed locator as recently inserted for a given slot
      * @param slot
      * @param locator
@@ -170,6 +203,7 @@ public class LocatorCache {
     private class LocatorCacheEntry {
         private boolean discoveryCurrent = false;
         private boolean batchCurrent = false;
+        private boolean tokenDiscoveryCurrent = false;
 
         void setDiscoveryCurrent() {
             this.discoveryCurrent = true;
@@ -179,12 +213,20 @@ public class LocatorCache {
             this.batchCurrent = true;
         }
 
+        void setTokenDiscoveryCurrent() {
+            this.tokenDiscoveryCurrent = true;
+        }
+
         boolean isDiscoveryCurrent() {
             return discoveryCurrent;
         }
 
         boolean isBatchCurrent() {
             return batchCurrent;
+        }
+
+        boolean isTokenDiscoveryCurrent() {
+            return tokenDiscoveryCurrent;
         }
     }
 

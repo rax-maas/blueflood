@@ -16,12 +16,12 @@
 package com.rackspacecloud.blueflood.io.datastax;
 
 import com.rackspacecloud.blueflood.io.CassandraModel;
-import com.rackspacecloud.blueflood.io.DelayedLocatorIO;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
-import com.rackspacecloud.blueflood.io.LocatorIO;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
+import com.rackspacecloud.blueflood.utils.Clock;
 import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
+import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -29,14 +29,17 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
+import static org.junit.Assert.*;
 
 /**
  *  A class to test the behavior of DBasicRWIntegrationTest
  */
 public class DBasicMetricsRWIntegrationTest extends IntegrationTestBase {
 
-    protected LocatorIO locatorIO = new DLocatorIO();
-    protected DelayedLocatorIO delayedLocatorIO = new DDelayedLocatorIO();
+    protected DLocatorIO locatorIO = new DLocatorIO();
+    protected DDelayedLocatorIO delayedLocatorIO = new DDelayedLocatorIO();
 
     @Test
     //Numeric value is always persisted.
@@ -70,6 +73,53 @@ public class DBasicMetricsRWIntegrationTest extends IntegrationTestBase {
                 CassandraModel.getBasicColumnFamilyName(Granularity.FULL));
         Set<Long> actualTimestamps = points.getPoints().keySet();
         Assert.assertEquals(expectedTimestamps, actualTimestamps);
+    }
+
+    @Test
+    public void metricCollectedADayAgo_shouldBeDelayed() throws Exception {
+        Clock clock = new DefaultClockImpl();
+        TimeValue aDay = new TimeValue(1, TimeUnit.DAYS);
+        DBasicMetricsRW metricsRW = new DBasicMetricsRW(locatorIO, delayedLocatorIO, false, clock);
+        IMetric metric = new Metric(Locator.createLocatorFromPathComponents("123456", "foo.bar"),
+                987L, clock.now().getMillis() - aDay.toMillis(),
+                aDay, null);
+        assertTrue("a day old metric is delayed", metricsRW.isDelayed(metric));
+    }
+
+    @Test
+    public void onTimeMetric_shouldNotBeDelayed() throws Exception {
+        Clock clock = new DefaultClockImpl();
+        TimeValue aDay = new TimeValue(1, TimeUnit.DAYS);
+        DBasicMetricsRW metricsRW = new DBasicMetricsRW(locatorIO, delayedLocatorIO, false, clock);
+        IMetric metric = new Metric(Locator.createLocatorFromPathComponents("123456", "foo.bar"),
+                987L, clock.now().getMillis(),
+                aDay, null);
+        assertFalse("on time metric is not delayed", metricsRW.isDelayed(metric));
+    }
+
+    @Test
+    public void delayedMetric_shouldGetBoundStatement() throws Exception {
+        Clock clock = new DefaultClockImpl();
+        TimeValue aDay = new TimeValue(1, TimeUnit.DAYS);
+
+        DBasicMetricsRW metricsRW = new DBasicMetricsRW(locatorIO, delayedLocatorIO, false, clock);
+        Locator locator = Locator.createLocatorFromPathComponents("123456", "foo.bar");
+        IMetric metric = new Metric(locator,
+                987L, clock.now().getMillis() - aDay.toMillis(),
+                aDay, null);
+        assertNotNull("delayed metric should get a boundStatement", metricsRW.getBoundStatementForMetricIfDelayed(metric));
+    }
+
+    @Test
+    public void onTimeMetric_shouldNotGetBoundStatement() throws Exception {
+        Clock clock = new DefaultClockImpl();
+        TimeValue aDay = new TimeValue(1, TimeUnit.DAYS);
+
+        DBasicMetricsRW metricsRW = new DBasicMetricsRW(locatorIO, delayedLocatorIO, false, clock);
+        IMetric metric = new Metric(Locator.createLocatorFromPathComponents("123456", "foo.bar"),
+                987L, clock.now().getMillis(),
+                aDay, null);
+        assertNull("on time metric should NOT get a boundStatement", metricsRW.getBoundStatementForMetricIfDelayed(metric));
     }
 
 }

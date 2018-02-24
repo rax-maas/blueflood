@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.cache;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableTable;
 import com.rackspacecloud.blueflood.rollup.Granularity;
@@ -32,7 +33,6 @@ public class ConfigTtlProvider implements TenantTtlProvider {
     private static final Logger log = LoggerFactory.getLogger(ConfigTtlProvider.class);
 
     private final ImmutableTable<Granularity, RollupType, TimeValue> ttlMapper;
-    private final TimeValue stringTTL;
     private static final ConfigTtlProvider INSTANCE = new ConfigTtlProvider();
     private static final boolean ARE_TTLS_FORCED = Configuration.getInstance().getBooleanProperty(TtlConfig.ARE_TTLS_FORCED);
     private static final TimeValue TTL_CONFIG_FOR_INGESTION = new TimeValue(Configuration.getInstance().getIntegerProperty(TtlConfig.TTL_CONFIG_CONST), TimeUnit.DAYS);
@@ -41,20 +41,9 @@ public class ConfigTtlProvider implements TenantTtlProvider {
         return INSTANCE;
     }
 
+    @VisibleForTesting
     ConfigTtlProvider() {
         final Configuration config = Configuration.getInstance();
-
-        // String rollups
-        TimeValue stringTTL = null;
-        try {
-            int value = config.getIntegerProperty(TtlConfig.STRING_METRICS_TTL);
-            if (value > 0) {
-                stringTTL = new TimeValue(config.getIntegerProperty(TtlConfig.STRING_METRICS_TTL), TimeUnit.DAYS);
-            }
-        } catch (NumberFormatException ex) {
-            log.debug("No valid String TTL in config.");
-        }
-        this.stringTTL = stringTTL;
 
         ImmutableTable.Builder<Granularity, RollupType, TimeValue> ttlMapBuilder =
                 new ImmutableTable.Builder<Granularity, RollupType, TimeValue>();
@@ -133,11 +122,6 @@ public class ConfigTtlProvider implements TenantTtlProvider {
         }
 
         return Optional.of(ttl);
-    }
-
-    @Override
-    public Optional<TimeValue> getTTLForStrings(String tenantId) {
-        return Optional.of(stringTTL);
     }
 
     public TimeValue getConfigTTLForIngestion() {

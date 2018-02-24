@@ -627,7 +627,7 @@ class ZKShardLockManager implements ConnectionStateListener, ShardLockManager, Z
          * Triggered during the connection loss. Release the lease, and clear the mutex.
          */
         void connectionLost() {
-            release(false);
+            release(true);
         }
 
         synchronized void setState(LockState newState) {
@@ -737,7 +737,7 @@ class ZKShardLockManager implements ConnectionStateListener, ShardLockManager, Z
                             return false;
                         } finally {
                             lockTaskCount.decrementAndGet();
-                            if (!disconnected) {
+                            if (disconnected) {
                                 setState(LockState.ERROR);
                             } else {
                                 setState(LockState.DISINTERESTED);

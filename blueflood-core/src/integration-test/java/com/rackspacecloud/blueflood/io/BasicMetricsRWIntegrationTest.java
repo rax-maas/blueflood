@@ -1,6 +1,5 @@
 package com.rackspacecloud.blueflood.io;
 
-import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.exceptions.CacheException;
 import com.rackspacecloud.blueflood.io.astyanax.ABasicMetricsRW;
 import com.rackspacecloud.blueflood.io.datastax.DBasicMetricsRW;
@@ -38,15 +37,13 @@ public class BasicMetricsRWIntegrationTest extends IntegrationTestBase {
     private static final String TENANT2 = "987654";
     private static final String TENANT3 = "123789";
 
-    protected LocatorIO locatorIO = new DLocatorIO();
-    protected DelayedLocatorIO delayedLocatorIO = new DDelayedLocatorIO();
+    protected DLocatorIO locatorIO = new DLocatorIO();
+    protected DDelayedLocatorIO delayedLocatorIO = new DDelayedLocatorIO();
 
-    protected MetricsRW datastaxMetricsRW = new DBasicMetricsRW(locatorIO, delayedLocatorIO, false, new DefaultClockImpl());
+    protected MetricsRW datastaxMetricsRW = new DBasicMetricsRW(locatorIO, delayedLocatorIO, false, false, new DefaultClockImpl());
     protected MetricsRW astyanaxMetricsRW = new ABasicMetricsRW(false, new DefaultClockImpl());
 
     protected Map<Locator, IMetric> numericMap = new HashMap<Locator, IMetric>();
-    protected Map<Locator, IMetric> stringMap = new HashMap<Locator, IMetric>();
-    protected Map<Locator, IMetric> boolMap = new HashMap<Locator, IMetric>();
 
     protected static final long MAX_AGE_ALLOWED = Configuration.getInstance().getLongProperty(CoreConfig.ROLLUP_DELAY_MILLIS);
 

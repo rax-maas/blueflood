@@ -72,7 +72,7 @@ public class BasicMetricsRWDatastaxWriteIntegrationTest extends BasicMetricsRWIn
     @Test
     public void testNumericMultiMetricsDatapointsRangeFullWithDelayedMetrics() throws IOException {
 
-        MetricsRW datastaxMetricsRW1 = new DBasicMetricsRW(locatorIO, delayedLocatorIO, true, new DefaultClockImpl());
+        MetricsRW datastaxMetricsRW1 = new DBasicMetricsRW(locatorIO, delayedLocatorIO, true, false, new DefaultClockImpl());
 
         //making one metric delayed
         final Locator delayedLocator = numericMap.keySet().iterator().next();
@@ -133,7 +133,7 @@ public class BasicMetricsRWDatastaxWriteIntegrationTest extends BasicMetricsRWIn
         final Locator locator1 = numericMap.keySet().iterator().next();
         when(clock.now()).thenReturn(new Instant(numericMap.get(locator1).getCollectionTime() + MAX_AGE_ALLOWED + 1000));
 
-        MetricsRW datastaxMetricsRW1 = new DBasicMetricsRW(locatorIO, delayedLocatorIO, true, clock);
+        MetricsRW datastaxMetricsRW1 = new DBasicMetricsRW(locatorIO, delayedLocatorIO, true, false, clock);
 
         // write with datastax
         datastaxMetricsRW1.insertMetrics( numericMap.values() );
@@ -278,7 +278,7 @@ public class BasicMetricsRWDatastaxWriteIntegrationTest extends BasicMetricsRWIn
 
         // insertMetrics
         // write with datastax
-        MetricsRW datastaxMetricsRW1 = new DBasicMetricsRW(locatorIO, delayedLocatorIO, true, clock);
+        MetricsRW datastaxMetricsRW1 = new DBasicMetricsRW(locatorIO, delayedLocatorIO, true, false, clock);
         datastaxMetricsRW1.insertMetrics( numericMap.values() );
 
         MetricData result = astyanaxMetricsRW.getDatapointsForRange(
