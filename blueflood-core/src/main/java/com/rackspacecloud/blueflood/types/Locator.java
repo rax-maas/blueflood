@@ -86,7 +86,7 @@ public class Locator implements Comparable<Locator> {
 
     public static Locator createLocatorFromPathComponents(String tenantId, String... parts) throws IllegalArgumentException {
         if(StringUtils.isEmpty(tenantId) || parts == null)
-            throw new IllegalArgumentException("'tenantId' is null or empty OR 'parts' is null.");
+            log.error("'tenantId' is null or empty OR 'parts' is null.");
 
         return new Locator(tenantId + METRIC_TOKEN_SEPARATOR + StringUtils.join(parts, METRIC_TOKEN_SEPARATOR));
     }

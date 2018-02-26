@@ -4,16 +4,12 @@ import com.google.common.annotations.VisibleForTesting;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.service.ElasticIOConfig;
-import com.rackspacecloud.blueflood.types.Event;
-import com.rackspacecloud.blueflood.types.IMetric;
-import com.rackspacecloud.blueflood.types.Locator;
-import com.rackspacecloud.blueflood.types.Metric;
+import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.GlobPattern;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
-import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.methods.*;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -25,62 +21,94 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
+import static java.util.stream.Collectors.joining;
 
 public class ElasticsearchRestHelper {
     private static final Logger logger = LoggerFactory.getLogger(ElasticsearchRestHelper.class);
     private final CloseableHttpClient closeableHttpClient;
-    private String baseUrl;
+    private static String[] baseUrlArray;
+    private static int baseUrlIndex;
+    private static int MAX_CALL_COUNT = 10;
     private static int MAX_RESULT_LIMIT =
             Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_DISCOVERY_RESULT_SIZE);
 
-    private static final ElasticsearchRestHelper INSTANCE = new ElasticsearchRestHelper();
-
     public static ElasticsearchRestHelper getInstance() {
-        return INSTANCE;
+        return new ElasticsearchRestHelper();
     }
 
     private ElasticsearchRestHelper(){
         logger.info("Creating a new instance of ElasticsearchRestHelper...");
         Configuration config = Configuration.getInstance();
-        this.baseUrl = String.format("http://%s",
-                config.getStringProperty(ElasticIOConfig.ELASTICSEARCH_HOST_FOR_REST_CLIENT));
+        String[] endpoints = config.getStringProperty(ElasticIOConfig.ELASTICSEARCH_HOST_FOR_REST_CLIENT).split(",");
+
+        initializeBaseUrlCollection(endpoints);
+
         this.closeableHttpClient = HttpClientBuilder.create().build();
     }
 
+    private static String getBaseUrl(){
+        if(baseUrlIndex >= baseUrlArray.length) baseUrlIndex = 0;
+        return String.format("http://%s", baseUrlArray[baseUrlIndex++]);
+    }
+
+    private void initializeBaseUrlCollection(String[] endpoints) {
+        baseUrlArray = new String[endpoints.length];
+
+        for(int i = 0; i < endpoints.length; i++){
+            baseUrlArray[i] = endpoints[i].trim();
+        }
+
+        baseUrlIndex = 0;
+    }
+
     public String fetchEvents(String tenantId, Map<String, List<String>> query) throws IOException {
-        String url = String.format("%s/%s/%s/_search?routing=%s&size=%d", baseUrl,
+        String tempUrl = String.format("%s/%s/%s/_search?routing=%s&size=%d", getBaseUrl(),
                 EventElasticSearchIO.EVENT_INDEX, EventElasticSearchIO.ES_TYPE, tenantId, MAX_RESULT_LIMIT);
 
-        HttpPost httpPost = new HttpPost(url);
-        httpPost.setHeaders(getHeaders());
-
         String queryDslString = getDslString(tenantId, query);
-        CloseableHttpResponse response = null;
+        HttpEntity httpEntity = new NStringEntity(queryDslString, ContentType.APPLICATION_JSON);
 
-        try {
-            HttpEntity httpEntity = new NStringEntity(queryDslString, ContentType.APPLICATION_JSON);
-            httpPost.setEntity(httpEntity);
+        Queue<String> callQ = new LinkedList<>();
+        callQ.add(tempUrl);
+        int callCount = 0;
+        while(!callQ.isEmpty() && callCount < MAX_CALL_COUNT) {
+            callCount++;
+            String url = callQ.remove();
+            logger.info("Using url [{}]", url);
 
-            response = closeableHttpClient.execute(httpPost);
-            String str = EntityUtils.toString(response.getEntity());
-            EntityUtils.consume(response.getEntity());
-            return str;
-        }
-        catch(Exception e){
-            if((e instanceof HttpResponseException) && (response != null)) {
-                logger.error("fetchEvents failed with status code: {} and exception message: {}",
-                        response.getStatusLine().getStatusCode(), e.getMessage());
+            HttpPost httpPost = new HttpPost(url);
+            httpPost.setHeaders(getHeaders());
+
+            CloseableHttpResponse response = null;
+
+            try {
+                httpPost.setEntity(httpEntity);
+                response = closeableHttpClient.execute(httpPost);
+                String str = EntityUtils.toString(response.getEntity());
+                EntityUtils.consume(response.getEntity());
+                return str;
+            } catch (Exception e) {
+                if(response == null){
+                    logger.error("fetchEvents failed with message: {}", e.getMessage());
+                    url = String.format("%s/%s/%s/_search?routing=%s&size=%d", getBaseUrl(),
+                            EventElasticSearchIO.EVENT_INDEX, EventElasticSearchIO.ES_TYPE,
+                            tenantId, MAX_RESULT_LIMIT);
+                    callQ.add(url);
+                }
+                else {
+                    logger.error("fetchEvents failed with status code: {} and exception message: {}",
+                            response.getStatusLine().getStatusCode(), e.getMessage());
+                }
+            } finally {
+                if(response != null) {
+                    response.close();
+                }
             }
+        }
 
-            throw new RuntimeException(String.format("fetchEvents failed with message: %s", e.getMessage()), e);
-        }
-        finally {
-            response.close();
-        }
+        return "";
     }
 
     private String getDslString(String tenantId, Map<String, List<String>> query) {
@@ -141,36 +169,66 @@ public class ElasticsearchRestHelper {
         return fetchDocuments(indexName, documentType, queryDslString);
     }
 
+    public String fetchTokenDocuments(String[] indices, String tenantId, String query) throws IOException {
+        String queryDslString = getTokenQueryDslString(tenantId, query);
+        String multiIndexString = String.join(",", indices);
+
+        String temp = String.format("%s/_search?routing=%s&size=%d", multiIndexString, tenantId, MAX_RESULT_LIMIT);
+        String urlFormat = "%s/" + temp;
+
+        return fetchDocs(queryDslString, urlFormat);
+    }
+
     public String fetchDocuments(String indexName, String documentType, String queryDslString) throws IOException {
         //Example URL: localhost:9200/metric_metadata/metrics/_search&size=50";
-        String url = String.format("%s/%s/%s/_search?size=%d", baseUrl, indexName, documentType, MAX_RESULT_LIMIT);
+        String temp = String.format("%s/%s/_search?size=%d", indexName, documentType, MAX_RESULT_LIMIT);
+        String urlFormat = "%s/" + temp;
 
-        HttpPost httpPost = new HttpPost(url);
-        httpPost.setHeaders(getHeaders());
+        return fetchDocs(queryDslString, urlFormat);
+    }
 
-        CloseableHttpResponse response = null;
+    private String fetchDocs(String queryDslString, String urlFormat) throws IOException {
+        String tempUrl = String.format(urlFormat, getBaseUrl());
 
-        try {
+        Queue<String> callQ = new LinkedList<>();
+        callQ.add(tempUrl);
+        int callCount = 0;
+        while(!callQ.isEmpty() && callCount < MAX_CALL_COUNT) {
+            callCount++;
+            String url = callQ.remove();
+
+            logger.info("Using url [{}]", url);
+            HttpPost httpPost = new HttpPost(url);
+            httpPost.setHeaders(getHeaders());
             HttpEntity httpEntity = new NStringEntity(queryDslString, ContentType.APPLICATION_JSON);
             httpPost.setEntity(httpEntity);
 
-            response = closeableHttpClient.execute(httpPost);
-            HttpEntity entity = response.getEntity();
-            String str = EntityUtils.toString(entity);
-            EntityUtils.consume(entity);
-            return str;
-        }
-        catch(Exception e){
-            if((e instanceof HttpResponseException) && (response != null)) {
-                logger.error("fetch failed with status code: {} and exception message: {}",
-                        response.getStatusLine().getStatusCode(), e.getMessage());
-            }
+            CloseableHttpResponse response = null;
 
-            throw new RuntimeException(String.format("fetch failed with message: %s", e.getMessage()), e);
+            try {
+                response = closeableHttpClient.execute(httpPost);
+                HttpEntity entity = response.getEntity();
+                String str = EntityUtils.toString(entity);
+                EntityUtils.consume(entity);
+                return str;
+            } catch (Exception e) {
+                if(response == null){
+                    logger.error("fetchDocs failed with message: {}", e.getMessage());
+                    url = String.format(urlFormat, getBaseUrl());
+                    callQ.add(url);
+                }
+                else {
+                    logger.error("fetch failed with status code: {} and exception message: {}",
+                            response.getStatusLine().getStatusCode(), e.getMessage());
+                }
+            } finally {
+                if(response != null) {
+                    response.close();
+                }
+            }
         }
-        finally {
-            response.close();
-        }
+
+        return "";
     }
 
     private String getQueryDslString(String tenantId, List<String> queries){
@@ -202,26 +260,144 @@ public class ElasticsearchRestHelper {
         return dslString;
     }
 
+    /**
+     * Builds ES query to grab tokens corresponding to the given query glob.
+     * For a given query foo.bar.*, we would like to grab all the tokens with
+     * parent as foo.bar
+     *
+     * Sample ES query for a query glob = foo.bar.*:
+     *
+     *      "query": {
+     *          "bool" : {
+     *              "must" : [
+     *                  { "term": {  "tenantId": "<tenantId>" }},
+     *                  { "term": {  "parent": "foo.bar" }}
+     *              ]
+     *          }
+     *      }
+     *
+     * @param tenantId
+     * @param query
+     * @return
+     */
+    private String getTokenQueryDslString(String tenantId, String query) {
+        String[] queryTokens = query.split(Locator.METRIC_TOKEN_SEPARATOR_REGEX);
+        String lastToken = queryTokens[queryTokens.length - 1];
+
+        /**
+         * Builds parent part of the query for the given input query glob tokens.
+         * For a given query foo.bar.*, parent part is foo.bar
+         *
+         * For example:
+         *
+         *  For query = foo.bar.*
+         *          { "term": {  "parent": "foo.bar" }}
+         *
+         *  For query = foo.*.*
+         *          { "regexp": {  "parent": "foo.[^.]+" }}
+         *
+         *  For query = foo.b*.*
+         *          { "regexp": {  "parent": "foo.b[^.]*" }}
+         */
+
+        String parentString = getParentString(queryTokens);
+        String tenantIdTermQueryString = getTermQueryString(ESFieldLabel.tenantId.name(), tenantId);
+        List<String> mustNodes = new ArrayList<>();
+        mustNodes.add(tenantIdTermQueryString);
+        mustNodes.add(parentString);
+
+        // For example: if query=foo.bar.*, we can just get every token for the parent=foo.bar
+        // but if query=foo.bar.b*, we want to add the token part of the query for "b*"
+        if (!lastToken.equals("*")) {
+
+            String tokenQString;
+
+            GlobPattern pattern = new GlobPattern(lastToken);
+
+            if (pattern.hasWildcard()) {
+                String compiledString = pattern.compiled().toString();
+                tokenQString = getRegexpQueryString(ESFieldLabel.token.name(), compiledString);
+            } else {
+                tokenQString = getTermQueryString(ESFieldLabel.token.name(), lastToken);
+            }
+
+            mustNodes.add(tokenQString);
+        }
+
+        String mustQueryString = getMustQueryString(mustNodes);
+        String boolQueryString = getBoolQueryString(mustQueryString);
+        // replace one '\' char with two '\\'
+        boolQueryString = boolQueryString.replaceAll("\\\\", "\\\\\\\\");
+
+        return boolQueryString;
+    }
+
+    private String getParentString(String[] queryTokens) {
+        if (queryTokens.length == 1) return getTermQueryString(ESFieldLabel.parent.name(), "");
+
+        String parent = Arrays.stream(queryTokens)
+                .limit(queryTokens.length - 1)
+                .collect(joining(Locator.METRIC_TOKEN_SEPARATOR));
+
+        GlobPattern parentGlob = new GlobPattern(parent);
+
+        String parentQueryString;
+        if (parentGlob.hasWildcard()) {
+            parentQueryString = getRegexpQueryString(ESFieldLabel.parent.name(), getRegexToHandleTokens(parentGlob));
+        } else {
+            parentQueryString = getTermQueryString(ESFieldLabel.parent.name(), parent);
+        }
+
+        return parentQueryString;
+    }
+
+    /**
+     * For a given glob, gives regex for {@code Locator.METRIC_TOKEN_SEPARATOR} separated tokens
+     *
+     * For example:
+     *      globPattern of foo.*.* would produce a regex  foo\.[^.]+\.[^.]+
+     *      globPattern of foo.b*.* would produce a regex foo\.b[^.]*\.[^.]+
+     *
+     * @param globPattern
+     * @return
+     */
+    protected String getRegexToHandleTokens(GlobPattern globPattern) {
+        String[] queryRegexParts = globPattern.compiled().toString().split("\\\\.");
+
+        return Arrays.stream(queryRegexParts)
+                .map(this::convertRegexToCaptureUptoNextToken)
+                .collect(joining(Locator.METRIC_TOKEN_SEPARATOR_REGEX));
+    }
+
+    private String convertRegexToCaptureUptoNextToken(String queryRegex) {
+
+        if (queryRegex.equals(".*"))
+            return queryRegex.replaceAll("\\.\\*", "[^.]+");
+        else
+            return queryRegex.replaceAll("\\.\\*", "[^.]*");
+    }
+
     public int indexMetrics(List<IMetric> metrics) throws IOException {
         String bulkString = bulkStringify(metrics);
-        String url = String.format("%s/_bulk", baseUrl);
+        String urlFormat = "%s/_bulk";
+        return index(urlFormat, bulkString);
+    }
 
-        HttpPost httpPost = new HttpPost(url);
-        httpPost.setHeaders(getHeaders());
-
-        return index(httpPost, bulkString);
+    public int indexTokens(List<Token> tokens) throws IOException {
+        String bulkString = bulkStringifyTokens(tokens);
+        String urlFormat = "%s/_bulk";
+        return index(urlFormat, bulkString);
     }
 
     public int indexEvent(Map<String, Object> event) throws IOException {
         String eventString = stringifyEvent(event);
-        String url = String.format("%s/%s/%s?routing=%s",
-                baseUrl, EventElasticSearchIO.EVENT_INDEX, EventElasticSearchIO.ES_TYPE,
+        String temp = String.format("%s/%s?routing=%s",
+                EventElasticSearchIO.EVENT_INDEX, EventElasticSearchIO.ES_TYPE,
                 event.get(Event.FieldLabels.tenantId.toString()));
 
-        HttpPost httpPost = new HttpPost(url);
-        httpPost.setHeaders(getHeaders());
+        String urlFormat = "%s/" + temp;
 
-        return index(httpPost, eventString);
+        return index(urlFormat, eventString);
     }
 
     private String stringifyEvent(Map<String, Object> event){
@@ -232,6 +408,26 @@ public class ElasticsearchRestHelper {
         sb.append(String.format("\"tags\": \"%s\",", event.get(Event.FieldLabels.tags.toString())));
         sb.append(String.format("\"tenantId\": \"%s\",", event.get(Event.FieldLabels.tenantId.toString())));
         sb.append(String.format("\"data\": \"%s\"}", event.get(Event.FieldLabels.data.toString())));
+
+        return sb.toString();
+    }
+
+    private String bulkStringifyTokens(List<Token> tokens){
+        StringBuilder sb = new StringBuilder();
+
+        for(Token token : tokens){
+            sb.append(String.format(
+                    "{ \"index\" : { \"_index\" : \"%s\", \"_type\" : \"%s\", \"_id\" : \"%s\", \"routing\" : \"%s\" } }%n",
+                    ElasticTokensIO.ELASTICSEARCH_TOKEN_INDEX_NAME_WRITE, ElasticTokensIO.ES_DOCUMENT_TYPE,
+                    token.getId(), token.getLocator().getTenantId()));
+
+            sb.append(String.format(
+                    "{ \"%s\" : \"%s\", \"%s\" : \"%s\", \"%s\" : \"%s\", \"%s\" : \"%s\" }%n",
+                    ESFieldLabel.token.toString(), token.getToken(),
+                    ESFieldLabel.parent.toString(), token.getParent(),
+                    ESFieldLabel.isLeaf.toString(), token.isLeaf(),
+                    ESFieldLabel.tenantId.toString(), token.getLocator().getTenantId()));
+        }
 
         return sb.toString();
     }
@@ -272,33 +468,48 @@ public class ElasticsearchRestHelper {
         return metric.getUnit();
     }
 
-    protected int index(HttpPost httpPost, String bulkString) throws IOException {
-        CloseableHttpResponse response = null;
-        int statusCode;
+    protected int index(String urlFormat, String bulkString) throws IOException {
+        String tempUrl = String.format(urlFormat, getBaseUrl());
+        HttpEntity entity = new NStringEntity(bulkString, ContentType.APPLICATION_JSON);
+        int statusCode = 0;
 
-        try{
-            HttpEntity entity = new NStringEntity(bulkString, ContentType.APPLICATION_JSON);
+        Queue<String> callQ = new LinkedList<>();
+        callQ.add(tempUrl);
+        int callCount = 0;
+        while(!callQ.isEmpty() && callCount < MAX_CALL_COUNT) {
+            callCount++;
+            String url = callQ.remove();
+            logger.info("Using url [{}]", url);
+            HttpPost httpPost = new HttpPost(url);
+            httpPost.setHeaders(getHeaders());
             httpPost.setEntity(entity);
-            response = closeableHttpClient.execute(httpPost);
 
-            statusCode = response.getStatusLine().getStatusCode();
+            CloseableHttpResponse response = null;
 
-            if(statusCode != HttpStatus.SC_OK && statusCode != HttpStatus.SC_CREATED){
-                logger.error("index method failed with status code: {} and error: {}",
-                        response.getStatusLine().getStatusCode(),
-                        EntityUtils.toString(response.getEntity()));
+            try {
+                response = closeableHttpClient.execute(httpPost);
+                statusCode = response.getStatusLine().getStatusCode();
+
+                if (statusCode != HttpStatus.SC_OK && statusCode != HttpStatus.SC_CREATED) {
+                    logger.error("index method failed with status code: {} and error: {}",
+                            response.getStatusLine().getStatusCode(),
+                            EntityUtils.toString(response.getEntity()));
+                }
+            } catch (Exception e) {
+                if(response == null){
+                    logger.error("index method failed with message: {}", e.getMessage());
+                    url = String.format(urlFormat, getBaseUrl());
+                    callQ.add(url);
+                }
+                else {
+                    logger.error("index method failed with status code: {} and exception message: {}",
+                            response.getStatusLine().getStatusCode(), e.getMessage());
+                }
+            } finally {
+                if(response != null) {
+                    response.close();
+                }
             }
-        }
-        catch (Exception e){
-            if((e instanceof HttpResponseException) && (response != null)) {
-                logger.error("index method failed with status code: {} and exception message: {}",
-                        response.getStatusLine().getStatusCode(), e.getMessage());
-            }
-
-            throw new RuntimeException(String.format("index method failed with message: %s", e.getMessage()), e);
-        }
-        finally {
-            response.close();
         }
 
         return statusCode;
@@ -350,12 +561,12 @@ public class ElasticsearchRestHelper {
 
     @VisibleForTesting
     public void setBaseUrlForTestOnly(String url) {
-        baseUrl = url;
+        baseUrlArray[0] = url;
     }
 
     @VisibleForTesting
     public int refreshIndex(String indexName) throws IOException {
-        String url = String.format("%s/%s/_refresh", baseUrl, indexName);
+        String url = String.format("http://%s/%s/_refresh", baseUrlArray[0], indexName);
         HttpGet httpGet = new HttpGet(url);
         CloseableHttpResponse response = null;
         try {

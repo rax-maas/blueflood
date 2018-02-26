@@ -6,7 +6,6 @@ import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import junit.framework.Assert;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -65,24 +64,6 @@ public abstract class BaseElasticTest {
         }
         return locators;
     }
-
-    protected void createTestMetrics(String tenantId, Set<String> fullyQualifiedMetricNames) throws Exception {
-
-        List<IMetric> metrics = new ArrayList<>();
-        for (String metricName: fullyQualifiedMetricNames) {
-            metrics.add(new Metric(Locator.createLocatorFromPathComponents(tenantId, metricName),
-                    5647382910L, 0, new TimeValue(1, TimeUnit.DAYS), UNIT));
-        }
-
-        createTestMetrics(metrics);
-    }
-
-    protected void createTestMetrics(List<IMetric> metrics) throws IOException {
-        insertDiscovery(metrics);
-    }
-
-
-    protected abstract void insertDiscovery(List<IMetric> metrics) throws IOException;
 
     protected static List<IMetric> createTestMetrics(String tenantId) {
         Metric metric;
