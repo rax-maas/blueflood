@@ -489,11 +489,11 @@ public class ElasticsearchRestHelper {
             try {
                 response = closeableHttpClient.execute(httpPost);
                 statusCode = response.getStatusLine().getStatusCode();
+                String str = EntityUtils.toString(response.getEntity());
+                EntityUtils.consume(response.getEntity());
 
                 if (statusCode != HttpStatus.SC_OK && statusCode != HttpStatus.SC_CREATED) {
-                    logger.error("index method failed with status code: {} and error: {}",
-                            response.getStatusLine().getStatusCode(),
-                            EntityUtils.toString(response.getEntity()));
+                    logger.error("index method failed with status code: {} and error: {}", statusCode, str);
                 }
             } catch (Exception e) {
                 if(response == null){
@@ -503,7 +503,7 @@ public class ElasticsearchRestHelper {
                 }
                 else {
                     logger.error("index method failed with status code: {} and exception message: {}",
-                            response.getStatusLine().getStatusCode(), e.getMessage());
+                            statusCode, e.getMessage());
                 }
             } finally {
                 if(response != null) {
