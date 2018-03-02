@@ -467,13 +467,14 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
     }
 
     @Test
-    public void testGetMetricNames() throws Exception {
+    public void testTokenGetMetricNames() throws Exception {
         String tenantId = TENANT_A;
         String query = "*";
-
-
         List<MetricName> results = elasticTokensIO.getMetricNames(tenantId, query);
+        compareMetricNames(results);
+    }
 
+    private void compareMetricNames(List<MetricName> results) {
         assertEquals("Invalid total number of results", 2, results.size());
 
         for(MetricName metricName : results) {
@@ -487,12 +488,32 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
     }
 
     @Test
+    public void testGetMetricNames() throws Exception {
+        String tenantId = TENANT_A;
+        String query = "*";
+        List<MetricName> results = elasticIO.getMetricNames(tenantId, query);
+        compareMetricNames(results);
+    }
+
+    @Test
+    public void testGetTokenMetricNamesMultipleMetrics() throws Exception {
+        String tenantId = TENANT_A;
+        String query = "*";
+        List<MetricName> results = elasticTokensIO.getMetricNames(tenantId, query);
+
+        compareMetricNamesMultipleMetrics(results);
+    }
+
+    @Test
     public void testGetMetricNamesMultipleMetrics() throws Exception {
         String tenantId = TENANT_A;
         String query = "*";
+        List<MetricName> results = elasticIO.getMetricNames(tenantId, query);
 
-        List<MetricName> results = elasticTokensIO.getMetricNames(tenantId, query);
+        compareMetricNamesMultipleMetrics(results);
+    }
 
+    private void compareMetricNamesMultipleMetrics(List<MetricName> results) {
         Set<String> expectedResults = new HashSet<String>() {{
             add("one|false");
             add("foo|false");
@@ -503,12 +524,24 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
     }
 
     @Test
+    public void testGetTokenMetricNamesSingleLevelPrefix() throws Exception {
+        String tenantId = TENANT_A;
+        String query = "one.*";
+        List<MetricName> results = elasticTokensIO.getMetricNames(tenantId, query);
+
+        compareMetricNamesSingleLevelPrefix(results);
+    }
+
+    @Test
     public void testGetMetricNamesSingleLevelPrefix() throws Exception {
         String tenantId = TENANT_A;
         String query = "one.*";
+        List<MetricName> results = elasticIO.getMetricNames(tenantId, query);
 
-        List<MetricName> results = elasticTokensIO.getMetricNames(tenantId, query);
+        compareMetricNamesSingleLevelPrefix(results);
+    }
 
+    private void compareMetricNamesSingleLevelPrefix(List<MetricName> results) {
         assertEquals("Invalid total number of results", 2, results.size());
 
         for(MetricName metricName : results) {
@@ -522,12 +555,24 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
     }
 
     @Test
+    public void testGetTokenMetricNamesWithWildCardPrefixMultipleLevels() throws Exception {
+        String tenantId = TENANT_A;
+        String query = "*.*";
+        List<MetricName> results = elasticTokensIO.getMetricNames(tenantId, query);
+
+        compareMetricNamesWithWildCardPrefixMultipleLevels(results);
+    }
+
+    @Test
     public void testGetMetricNamesWithWildCardPrefixMultipleLevels() throws Exception {
         String tenantId = TENANT_A;
         String query = "*.*";
+        List<MetricName> results = elasticIO.getMetricNames(tenantId, query);
 
-        List<MetricName> results = elasticTokensIO.getMetricNames(tenantId, query);
+        compareMetricNamesWithWildCardPrefixMultipleLevels(results);
+    }
 
+    private void compareMetricNamesWithWildCardPrefixMultipleLevels(List<MetricName> results) {
         Set<String> expectedResults = new HashSet<String>() {{
             add("one.two|false");
             add("one.foo|false");
@@ -539,12 +584,26 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
     }
 
     @Test
-    public void testGetMetricNamesWithMultiLevelPrefix() throws Exception {
+    public void testGetTokenMetricNamesWithMultiLevelPrefix() throws Exception {
         String tenantId = TENANT_A;
         String query = "one.two.*";
 
         List<MetricName> results = elasticTokensIO.getMetricNames(tenantId, query);
 
+        compareMetricNamesWithMultiLevelPrefix(results);
+    }
+
+    @Test
+    public void testGetMetricNamesWithMultiLevelPrefix() throws Exception {
+        String tenantId = TENANT_A;
+        String query = "one.two.*";
+
+        List<MetricName> results = elasticIO.getMetricNames(tenantId, query);
+
+        compareMetricNamesWithMultiLevelPrefix(results);
+    }
+
+    private void compareMetricNamesWithMultiLevelPrefix(List<MetricName> results) {
         assertEquals("Invalid total number of results", NUM_PARENT_ELEMENTS, results.size());
         for (MetricName metricName : results) {
             Assert.assertFalse("isCompleteName value", metricName.isCompleteName());
@@ -552,12 +611,26 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
     }
 
     @Test
-    public void testGetMetricNamesWithWildCardPrefixAtTheEnd() throws Exception {
+    public void testGetTokenMetricNamesWithWildCardPrefixAtTheEnd() throws Exception {
         String tenantId = TENANT_A;
         String query = "one.two.three*.*";
 
         List<MetricName> results = elasticTokensIO.getMetricNames(tenantId, query);
 
+        compareMetricNamesWithWildCardPrefixAtTheEnd(results);
+    }
+
+    @Test
+    public void testGetMetricNamesWithWildCardPrefixAtTheEnd() throws Exception {
+        String tenantId = TENANT_A;
+        String query = "one.two.three*.*";
+
+        List<MetricName> results = elasticIO.getMetricNames(tenantId, query);
+
+        compareMetricNamesWithWildCardPrefixAtTheEnd(results);
+    }
+
+    private void compareMetricNamesWithWildCardPrefixAtTheEnd(List<MetricName> results) {
         assertEquals("Invalid total number of results", NUM_PARENT_ELEMENTS * CHILD_ELEMENTS.size(), results.size());
         for (MetricName metricName : results) {
             Assert.assertFalse("isCompleteName value", metricName.isCompleteName());;
@@ -565,18 +638,34 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
     }
 
     @Test
-    public void testGetMetricNamesWithWildCardAndBracketsPrefix() throws Exception {
+    public void testGetTokenMetricNamesWithWildCardAndBracketsPrefix() throws Exception {
         String tenantId = TENANT_A;
         String query = "one.{two,foo}.[ta]hree00.*";
+        prepMetricNamesWithWildCardAndBracketsPrefix(tenantId);
+        List<MetricName> results = elasticTokensIO.getMetricNames(tenantId, query);
 
+        compareMetricNamesWithWildCardAndBracketsPrefix(results);
+    }
 
+    private void prepMetricNamesWithWildCardAndBracketsPrefix(String tenantId) throws Exception {
         createTestMetrics(tenantId, new HashSet<String>() {{
             add("one.foo.three00.bar.baz");
         }});
 
         refreshTokensIndex();
-        List<MetricName> results = elasticTokensIO.getMetricNames(tenantId, query);
+    }
 
+    @Test
+    public void testGetMetricNamesWithWildCardAndBracketsPrefix() throws Exception {
+        String tenantId = TENANT_A;
+        String query = "one.{two,foo}.[ta]hree00.*";
+        prepMetricNamesWithWildCardAndBracketsPrefix(tenantId);
+        List<MetricName> results = elasticIO.getMetricNames(tenantId, query);
+
+        compareMetricNamesWithWildCardAndBracketsPrefix(results);
+    }
+
+    private void compareMetricNamesWithWildCardAndBracketsPrefix(List<MetricName> results) {
         Set<String> expectedResults = new HashSet<String>() {{
             add("one.two.three00.fourA|false");
             add("one.two.three00.fourB|false");
@@ -589,12 +678,26 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
     }
 
     @Test
-    public void testGetMetricNamesWithMultiWildCardPrefix() throws Exception {
+    public void testGetTokenMetricNamesWithMultiWildCardPrefix() throws Exception {
         String tenantId = TENANT_A;
         String query = "*.*.*";
 
         List<MetricName> results = elasticTokensIO.getMetricNames(tenantId, query);
 
+        compareMetricNamesWithMultiWildCardPrefix(results);
+    }
+
+    @Test
+    public void testGetMetricNamesWithMultiWildCardPrefix() throws Exception {
+        String tenantId = TENANT_A;
+        String query = "*.*.*";
+
+        List<MetricName> results = elasticIO.getMetricNames(tenantId, query);
+
+        compareMetricNamesWithMultiWildCardPrefix(results);
+    }
+
+    private void compareMetricNamesWithMultiWildCardPrefix(List<MetricName> results) {
         assertEquals("Invalid total number of results", NUM_PARENT_ELEMENTS + 2, results.size());
         for (MetricName metricName : results) {
             if(metricName.getName().equalsIgnoreCase("foo.bar.baz")){
@@ -607,12 +710,24 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
     }
 
     @Test
+    public void testGetTokenMetricNamesWithoutWildCard() throws Exception {
+        String tenantId = TENANT_A;
+        String query = "one.foo.three00.bar.baz";
+        List<MetricName> results = elasticTokensIO.getMetricNames(tenantId, query);
+
+        compareMetricNamesWithoutWildCard(results);
+    }
+
+    @Test
     public void testGetMetricNamesWithoutWildCard() throws Exception {
         String tenantId = TENANT_A;
         String query = "one.foo.three00.bar.baz";
+        List<MetricName> results = elasticIO.getMetricNames(tenantId, query);
 
-        List<MetricName> results = elasticTokensIO.getMetricNames(tenantId, query);
+        compareMetricNamesWithoutWildCard(results);
+    }
 
+    private void compareMetricNamesWithoutWildCard(List<MetricName> results) {
         Set<String> expectedResults = new HashSet<String>() {{
             add("one.foo.three00.bar.baz|true");
         }};
