@@ -86,7 +86,8 @@ public class ElasticTokensIO implements TokenDiscoveryIO {
             String response = elasticsearchRestHelper.fetchTokenDocuments(indexes, tenantId, query);
 
             List<MetricName> metricNames = getMetricNames(response);
-            return metricNames;
+            Set<MetricName> uniqueMetricNames = new HashSet<>(metricNames);
+            return new ArrayList<>(uniqueMetricNames);
         } catch (IOException e) {
             log.error("IOException: Elasticsearch token query failed for tenantId {}. {}", tenantId, e.getMessage());
             throw new RuntimeException(String.format("searchESByIndexes failed with message: %s", e.getMessage()), e);

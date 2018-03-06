@@ -25,6 +25,13 @@ public class ElasticTokensIOTest {
     }
 
     @Test
+    public void testGetIndexesToSearch() throws IOException {
+        String[] indices = elasticTokensIO.getIndexesToSearch();
+        assertEquals(1, indices.length);
+        assertEquals("metric_tokens", indices[0]);
+    }
+
+    @Test
     public void testCreateSingleRequest_WithNullMetricName() throws IOException {
         final String TENANT_A = "12345";
         Locator locator = Locator.createLocatorFromPathComponents(TENANT_A);
