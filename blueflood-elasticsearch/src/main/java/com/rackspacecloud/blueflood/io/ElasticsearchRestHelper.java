@@ -468,7 +468,7 @@ public class ElasticsearchRestHelper {
         return metric.getUnit();
     }
 
-    protected int index(String urlFormat, String bulkString) throws IOException {
+    public int index(String urlFormat, String bulkString) throws IOException {
         String tempUrl = String.format(urlFormat, getBaseUrl());
         HttpEntity entity = new NStringEntity(bulkString, ContentType.APPLICATION_JSON);
         int statusCode = 0;
@@ -557,11 +557,6 @@ public class ElasticsearchRestHelper {
             headers[i++] = new BasicHeader(key, headersMap.get(key));
         }
         return headers;
-    }
-
-    @VisibleForTesting
-    public void setBaseUrlForTestOnly(String url) {
-        baseUrlArray[0] = url;
     }
 
     @VisibleForTesting
