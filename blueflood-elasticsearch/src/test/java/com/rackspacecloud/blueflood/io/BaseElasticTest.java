@@ -1,6 +1,5 @@
 package com.rackspacecloud.blueflood.io;
 
-import com.github.tlrx.elasticsearch.test.EsSetup;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import junit.framework.Assert;
@@ -22,9 +21,9 @@ public abstract class BaseElasticTest {
     protected static final String TENANT_C = "someothergal";
     protected static final String UNIT = "horse length";
 
-    protected static final Map<String, List<Locator>> locatorMap = new HashMap<String, List<Locator>>();
+    protected static final Map<String, List<Locator>> locatorMap = new HashMap<>();
 
-    protected EsSetup esSetup;
+    protected static ElasticsearchRestHelper helper;
 
     protected SearchResult createExpectedResult(String tenantId, int x, String y, int z, String unit) {
         Locator locator = createTestLocator(tenantId, x, y, z);
@@ -42,7 +41,7 @@ public abstract class BaseElasticTest {
      *      one.two.three29.fourC.five2
      *
      */
-    protected Locator createTestLocator(String tenantId, int x, String y, int z) {
+    protected static Locator createTestLocator(String tenantId, int x, String y, int z) {
         String xs = (x < 10 ? "0" : "") + String.valueOf(x);
         return Locator.createLocatorFromPathComponents(
                 tenantId, "one", "two", "three" + xs,
@@ -50,9 +49,9 @@ public abstract class BaseElasticTest {
                 "five" + String.valueOf(z));
     }
 
-    protected List<Locator> createComplexTestLocators(String tenantId) {
+    protected static List<Locator> createComplexTestLocators(String tenantId) {
         Locator locator;
-        List<Locator> locators = new ArrayList<Locator>();
+        List<Locator> locators = new ArrayList<>();
         locatorMap.put(tenantId, locators);
         for (int x = 0; x < NUM_PARENT_ELEMENTS; x++) {
             for (String y : CHILD_ELEMENTS) {
@@ -78,15 +77,16 @@ public abstract class BaseElasticTest {
 
     protected void createTestMetrics(List<IMetric> metrics) throws IOException {
         insertDiscovery(metrics);
-        esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
+        helper.refreshIndex("metric_metadata");
+        helper.refreshIndex("metric_tokens");
+        //esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
     }
-
 
     protected abstract void insertDiscovery(List<IMetric> metrics) throws IOException;
 
     protected List<IMetric> createTestMetrics(String tenantId) {
         Metric metric;
-        List<IMetric> metrics = new ArrayList<IMetric>();
+        List<IMetric> metrics = new ArrayList<>();
         List<Locator> locators = createComplexTestLocators(tenantId);
         for (Locator locator : locators) {
             metric = new Metric(locator, 123456789L, 0, new TimeValue(1, TimeUnit.DAYS), UNIT);
@@ -95,9 +95,9 @@ public abstract class BaseElasticTest {
         return metrics;
     }
 
-    protected List<IMetric> createTestMetricsFromInterface(String tenantId) {
+    protected static List<IMetric> createTestMetricsFromInterface(String tenantId) {
         IMetric metric;
-        List<IMetric> metrics = new ArrayList<IMetric>();
+        List<IMetric> metrics = new ArrayList<>();
         BluefloodCounterRollup counter = new BluefloodCounterRollup();
 
         List<Locator> locators = createComplexTestLocators(tenantId);

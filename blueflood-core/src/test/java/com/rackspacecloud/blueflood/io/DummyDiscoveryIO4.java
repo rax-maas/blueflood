@@ -10,6 +10,7 @@ import java.util.List;
 public class DummyDiscoveryIO4 implements DiscoveryIO {
 
     public DummyDiscoveryIO4(String parameter) {
+
     }
 
     @Override

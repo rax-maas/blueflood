@@ -40,7 +40,7 @@ public class HttpOptionsHandlerIntegrationTest extends HttpIntegrationTestBase {
 
     @Before
     public void setUp() {
-        parameterMap = new HashMap<String, String>();
+        parameterMap = new HashMap<>();
         allowedOrigins = Configuration.getInstance().getStringProperty(CoreConfig.CORS_ALLOWED_ORIGINS).split(",");
         allowedHeaders = Configuration.getInstance().getStringProperty(CoreConfig.CORS_ALLOWED_HEADERS).split(",");
         allowedMethods = Configuration.getInstance().getStringProperty(CoreConfig.CORS_ALLOWED_METHODS).split(",");

@@ -26,6 +26,9 @@ services:
   elasticsearch:
     image: elasticsearch:1.7
     command: elasticsearch -Des.cluster.name="blueflood"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
 
   bf_finder:
     image: rackerlabs/graphite-api-blueflood-finder

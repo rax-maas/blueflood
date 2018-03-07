@@ -86,18 +86,16 @@ public class HttpEventsIngestionHandlerTest extends HandlerTestsBase {
 
     @Test
     public void testElasticSearchInsertCalledWhenPut() throws Exception {
-        List<Map<String, Object>> events = new ArrayList<Map<String, Object>>();
         Map<String, Object> event = createRandomEvent();
-        events.add(event);
         handler.handle(context, createPutOneEventRequest(event));
-        verify(searchIO).insert(TENANT, events);
+        verify(searchIO).insert(TENANT, event);
     }
 
     @Test
     public void testInvalidRequestBody() throws Exception {
         ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         handler.handle(context, createRequest(HttpMethod.POST, "", "{\"xxx\": \"yyy\"}"));
-        verify(searchIO, never()).insert(anyString(), anyList());
+        verify(searchIO, never()).insert(anyString(), anyMap());
         verify(channel).write(argument.capture());
 
         String errorResponseBody = argument.getValue().content().toString(Charset.defaultCharset());
@@ -113,7 +111,7 @@ public class HttpEventsIngestionHandlerTest extends HandlerTestsBase {
         final String malformedJSON = "{\"when\":, what]}"; //causes JsonParseException
         handler.handle(context, createRequest(HttpMethod.POST, "", malformedJSON));
         ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
-        verify(searchIO, never()).insert(anyString(), anyList());
+        verify(searchIO, never()).insert(anyString(), anyMap());
         verify(channel).write(argument.capture());
 
         String errorResponseBody = argument.getValue().content().toString(Charset.defaultCharset());
@@ -129,7 +127,7 @@ public class HttpEventsIngestionHandlerTest extends HandlerTestsBase {
         Map<String, Object> event = new HashMap<String, Object>();
         ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         handler.handle(context, createPutOneEventRequest(event));
-        verify(searchIO, never()).insert(anyString(), anyList());
+        verify(searchIO, never()).insert(anyString(), anyMap());
         verify(channel).write(argument.capture());
 
         String errorResponseBody = argument.getValue().content().toString(Charset.defaultCharset());
@@ -148,7 +146,7 @@ public class HttpEventsIngestionHandlerTest extends HandlerTestsBase {
         event.put(Event.FieldLabels.when.name(), System.currentTimeMillis());
         ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         handler.handle(context, createPutOneEventRequest(event));
-        verify(searchIO, never()).insert(anyString(), anyList());
+        verify(searchIO, never()).insert(anyString(), anyMap());
         verify(channel).write(argument.capture());
 
         String errorResponseBody = argument.getValue().content().toString(Charset.defaultCharset());
@@ -171,7 +169,7 @@ public class HttpEventsIngestionHandlerTest extends HandlerTestsBase {
         event.put(Event.FieldLabels.when.name(), collectionTimeInPast);
         ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         handler.handle(context, createPutOneEventRequest(event));
-        verify(searchIO, never()).insert(anyString(), anyList());
+        verify(searchIO, never()).insert(anyString(), anyMap());
         verify(channel).write(argument.capture());
 
         String errorResponseBody = argument.getValue().content().toString(Charset.defaultCharset());
@@ -195,7 +193,7 @@ public class HttpEventsIngestionHandlerTest extends HandlerTestsBase {
         event.put(Event.FieldLabels.when.name(), collectionTimeInFuture);
         ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         handler.handle(context, createPutOneEventRequest(event));
-        verify(searchIO, never()).insert(anyString(), anyList());
+        verify(searchIO, never()).insert(anyString(), anyMap());
         verify(channel).write(argument.capture());
 
         String errorResponseBody = argument.getValue().content().toString(Charset.defaultCharset());
@@ -214,7 +212,7 @@ public class HttpEventsIngestionHandlerTest extends HandlerTestsBase {
         event.put(Event.FieldLabels.data.name(), "data");
         ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         handler.handle(context, createPutOneEventRequest(event));
-        verify(searchIO, never()).insert(anyString(), anyList());
+        verify(searchIO, never()).insert(anyString(), anyMap());
         verify(channel).write(argument.capture());
 
         String errorResponseBody = argument.getValue().content().toString(Charset.defaultCharset());

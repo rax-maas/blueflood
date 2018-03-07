@@ -1,30 +1,30 @@
 package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.rackspacecloud.blueflood.http.HttpIntegrationTestBase;
+import com.rackspacecloud.blueflood.io.EventElasticSearchIO;
 import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.Event;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpDelete;
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.util.EntityUtils;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.junit.AfterClass;
 import org.junit.Test;
 
 import static junit.framework.Assert.assertEquals;
 import static org.junit.Assert.*;
-import static com.rackspacecloud.blueflood.TestUtils.*;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.regex.Pattern;
 
 /**
  * Testing posting annotations to blueflood.
  */
 public class HttpHandlerAnnotationIntegrationTest extends HttpIntegrationTestBase {
-
-    private final String INVALID_DATA = "Invalid Data: " + ERROR_TITLE;
 
     //A time stamp 2 days ago
     private final long baseMillis = System.currentTimeMillis() - 172800000;
@@ -45,12 +45,12 @@ public class HttpHandlerAnnotationIntegrationTest extends HttpIntegrationTestBas
 
         //Sleep for a while
         Thread.sleep(1200);
-        Map<String, List<String>> query = new HashMap<String, List<String>>();
+        Map<String, List<String>> query = new HashMap<>();
         query.put(Event.tagsParameterName, Arrays.asList("deployment"));
         List<Map<String, Object>> results = eventsSearchIO.search(tenant_id, query);
         assertEquals( batchSize, results.size() );
 
-        query = new HashMap<String, List<String>>();
+        query = new HashMap<>();
         query.put(Event.fromParameterName, Arrays.asList(String.valueOf(baseMillis - 86400000)));
         query.put(Event.untilParameterName, Arrays.asList(String.valueOf(baseMillis + (86400000*3))));
         results = eventsSearchIO.search(tenant_id, query);
@@ -77,15 +77,14 @@ public class HttpHandlerAnnotationIntegrationTest extends HttpIntegrationTestBas
         String tenant_id = "444444";
 
         createAndInsertTestEvents(tenant_id, batchSize);
-        esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
 
-        Map<String, List<String>> query = new HashMap<String, List<String>>();
+        Map<String, List<String>> query = new HashMap<>();
         query.put(Event.tagsParameterName, Arrays.asList("deployment"));
 
         List<Map<String, Object>> results = eventsSearchIO.search(tenant_id, query);
         assertEquals( batchSize, results.size() );
 
-        query = new HashMap<String, List<String>>();
+        query = new HashMap<>();
         query.put(Event.fromParameterName, Arrays.asList(String.valueOf(baseMillis - 86400000)));
         query.put(Event.untilParameterName, Arrays.asList(String.valueOf(baseMillis + (86400000 * 3))));
 
@@ -164,20 +163,33 @@ public class HttpHandlerAnnotationIntegrationTest extends HttpIntegrationTestBas
 
 
     private void createAndInsertTestEvents(final String tenant, int eventCount) throws Exception {
-        ArrayList<Map<String, Object>> eventList = new ArrayList<Map<String, Object>>();
         for (int i=0; i<eventCount; i++) {
             Event event = new Event();
             event.setWhat("deployment");
             event.setWhen(Calendar.getInstance().getTimeInMillis());
             event.setData("deploying prod");
             event.setTags("deployment");
-
-            eventList.add(event.toMap());
+            eventsSearchIO.insert(tenant, event.toMap());
         }
-        eventsSearchIO.insert(tenant, eventList);
+
+        ((EventElasticSearchIO)eventsSearchIO).elasticsearchRestHelper.refreshIndex(EventElasticSearchIO.EVENT_INDEX);
     }
 
     private ErrorResponse getErrorResponse(HttpResponse response) throws IOException {
         return new ObjectMapper().readValue(response.getEntity().getContent(), ErrorResponse.class);
+    }
+
+    @AfterClass
+    public static void tearDownClass() throws Exception{
+        URIBuilder builder = new URIBuilder().setScheme("http").setHost("127.0.0.1").setPort(9200).setPath("/events");
+        HttpDelete delete = new HttpDelete(builder.build());
+        HttpResponse response = client.execute(delete);
+        if(response.getStatusLine().getStatusCode() != 200)
+        {
+            System.out.println("Couldn't delete 'events' index after running tests.");
+        }
+        else {
+            System.out.println("Successfully deleted 'events' index after running tests.");
+        }
     }
 }

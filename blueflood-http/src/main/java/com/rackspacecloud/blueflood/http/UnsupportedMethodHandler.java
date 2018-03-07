@@ -18,6 +18,8 @@ package com.rackspacecloud.blueflood.http;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Set;
 
@@ -25,6 +27,8 @@ public class UnsupportedMethodHandler implements HttpRequestHandler {
 
     private final RouteMatcher routeMatcher;
     private final FullHttpResponse response;
+
+    private static final Logger log = LoggerFactory.getLogger(UnsupportedMethodHandler.class);
 
     public UnsupportedMethodHandler(RouteMatcher router) {
         this.routeMatcher = router;
@@ -42,6 +46,8 @@ public class UnsupportedMethodHandler implements HttpRequestHandler {
         }
         final String methodsAllowed =  result.length() > 0 ? result.substring(0, result.length() - 1): "";
         response.headers().add("Allow", methodsAllowed);
+        log.error(String.format("UnsupportedMethodHandler: URL is [%s]", request.getUri()));
+        log.error(String.format("UnsupportedMethodHandler: method is [%s]", request.getMethod()));
         HttpResponder.getInstance().respond(context, request, response);
     }
 }

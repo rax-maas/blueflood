@@ -600,16 +600,4 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
         HttpResponse response = client.execute(get);
         Assert.assertEquals(415, response.getStatusLine().getStatusCode());
     }
-
-    @Test
-    public void testGetMetricNameSearchWithAcceptNonJsonShouldReturn415() throws Exception {
-        // test the GET /v2.0/%s/metrics_name/search
-        parameterMap = new HashMap<String, String>();
-        parameterMap.put(Event.fromParameterName, String.valueOf(baseMillis - 86400000));
-        parameterMap.put(Event.untilParameterName, String.valueOf(baseMillis + (86400000*3)));
-        HttpGet get = new HttpGet(getMetricNameSearchURI(TENANT_ID));
-        get.setHeader(HttpHeaders.ACCEPT, ContentType.APPLICATION_ATOM_XML.toString());
-        HttpResponse response = client.execute(get);
-        Assert.assertEquals(415, response.getStatusLine().getStatusCode());
-    }
 }

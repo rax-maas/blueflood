@@ -16,7 +16,6 @@
 
 package com.rackspacecloud.blueflood.io;
 
-import com.github.tlrx.elasticsearch.test.EsSetup;
 import com.rackspacecloud.blueflood.service.ElasticIOConfig;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Locator;
@@ -25,9 +24,14 @@ import com.rackspacecloud.blueflood.types.Token;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
-import org.elasticsearch.action.bulk.BulkRequestBuilder;
-import org.elasticsearch.action.index.IndexRequestBuilder;
-import org.elasticsearch.client.Client;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
+import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.entity.ContentType;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.nio.entity.NStringEntity;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -35,6 +39,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -51,78 +56,125 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
     protected ElasticTokensIO elasticTokensIO;
 
     @Before
-    public void setup() throws IOException {
-        esSetup = new EsSetup();
-        esSetup.execute(EsSetup.deleteAll());
-        esSetup.execute(EsSetup.createIndex(ElasticIO.ELASTICSEARCH_INDEX_NAME_WRITE)
-                .withSettings(EsSetup.fromClassPath("index_settings.json"))
-                .withMapping("metrics", EsSetup.fromClassPath("metrics_mapping.json")));
+    public void setup() throws Exception {
+        helper = ElasticsearchRestHelper.getInstance();
+        tearDown();
 
-        elasticIO = new ElasticIO(esSetup.client());
+        elasticIO = new ElasticIO();
 
         elasticIO.insertDiscovery(createTestMetrics(TENANT_A));
         elasticIO.insertDiscovery(createTestMetrics(TENANT_B));
         elasticIO.insertDiscovery(createTestMetricsFromInterface(TENANT_C));
 
-        esSetup.execute(EsSetup.createIndex(ElasticTokensIO.ELASTICSEARCH_TOKEN_INDEX_NAME_WRITE)
-                               .withMapping("tokens", EsSetup.fromClassPath("tokens_mapping.json")));
 
         String TOKEN_INDEX_NAME_OLD = ElasticTokensIO.ELASTICSEARCH_TOKEN_INDEX_NAME_WRITE + "_v1";
-        esSetup.execute(EsSetup.createIndex(TOKEN_INDEX_NAME_OLD)
-                               .withMapping("tokens", EsSetup.fromClassPath("tokens_mapping.json")));
 
-        elasticTokensIO = new ElasticTokensIO(esSetup.client()) {
+        elasticTokensIO = new ElasticTokensIO() {
             @Override
             protected String[] getIndexesToSearch() {
                 return new String[] {ElasticTokensIO.ELASTICSEARCH_TOKEN_INDEX_NAME_READ,
-                                     TOKEN_INDEX_NAME_OLD};
+                        TOKEN_INDEX_NAME_OLD};
             }
         };
 
         //inserting to metric_tokens
         elasticTokensIO.insertDiscovery(createTestTokens(TENANT_A));
         elasticTokensIO.insertDiscovery(createTestTokens(TENANT_B));
-        elasticTokensIO.insertDiscovery(createTestTokens(TENANT_C));
+
+        // Following code is deviation from using batch insertion just to improve the code coverage#
+        // At this time, it's not so smart, as this is getting called for every test method.
+        // I had to pick between two - minimum code change with code coverage improvement VS efficient change
+        // with code coverage improvement. Given this check-in contains huge load of changes, I pick minimize code
+        // change in test code at the cost of efficiency.
+        List<Token> tokens  = createTestTokens(TENANT_C);
+        for(Token token : tokens){
+            elasticTokensIO.insertDiscovery(token);
+        }
 
         //inserting same tokens to old version of metric_tokens
-        this.insertTokenDiscovery(createTestTokens(TENANT_A), TOKEN_INDEX_NAME_OLD, esSetup.client());
-        this.insertTokenDiscovery(createTestTokens(TENANT_B), TOKEN_INDEX_NAME_OLD, esSetup.client());
-        this.insertTokenDiscovery(createTestTokens(TENANT_C), TOKEN_INDEX_NAME_OLD, esSetup.client());
+        this.insertTokenDiscovery(createTestTokens(TENANT_A), TOKEN_INDEX_NAME_OLD, elasticTokensIO.elasticsearchRestHelper);
+        this.insertTokenDiscovery(createTestTokens(TENANT_B), TOKEN_INDEX_NAME_OLD, elasticTokensIO.elasticsearchRestHelper);
+        this.insertTokenDiscovery(createTestTokens(TENANT_C), TOKEN_INDEX_NAME_OLD, elasticTokensIO.elasticsearchRestHelper);
 
-        esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
+        helper.refreshIndex("metric_metadata");
+        helper.refreshIndex("metric_tokens");
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        List<String> typesToEmpty = new ArrayList<>();
+        typesToEmpty.add("/metric_metadata/metrics/_query");
+        typesToEmpty.add("/metric_tokens/tokens/_query");
+        typesToEmpty.add("/metric_tokens_v1/tokens/_query");
+
+        for (String typeToEmpty : typesToEmpty)
+            deleteAllDocuments(typeToEmpty);
+    }
+
+    private void deleteAllDocuments(String typeToEmpty) throws URISyntaxException, IOException {
+        URIBuilder builder = new URIBuilder().setScheme("http")
+                .setHost("127.0.0.1").setPort(9200)
+                .setPath(typeToEmpty);
+
+        HttpEntityEnclosingRequestBase delete = new HttpEntityEnclosingRequestBase() {
+            @Override
+            public String getMethod() {
+                return "DELETE";
+            }
+        };
+        delete.setURI(builder.build());
+
+        String deletePayload = "{\"query\":{\"match_all\":{}}}";
+        HttpEntity entity = new NStringEntity(deletePayload, ContentType.APPLICATION_JSON);
+        delete.setEntity(entity);
+
+        HttpClient client = HttpClientBuilder.create().build();
+        HttpResponse response = client.execute(delete);
+        if(response.getStatusLine().getStatusCode() != 200)
+        {
+            System.out.println(String.format("Couldn't delete index [%s] after running tests.", typeToEmpty));
+        }
+        else {
+            System.out.println(String.format("Successfully deleted [%s] index after running tests.", typeToEmpty));
+        }
     }
 
     private List<Token> createTestTokens(String tenantId) {
         return Token.getUniqueTokens(createComplexTestLocators(tenantId).stream())
-                    .collect(toList());
+                .collect(toList());
     }
 
-    public void insertTokenDiscovery(List<Token> tokens, String indexName, Client esClient) throws IOException {
-        if (tokens.size() == 0) return;
+    public int indexTokens(List<Token> tokens, String indexName,
+                           ElasticsearchRestHelper elasticsearchRestHelper) throws IOException {
+        String bulkString = bulkStringifyTokens(tokens, indexName);
+        String urlFormat = "%s/_bulk";
+        return elasticsearchRestHelper.index(urlFormat, bulkString);
+    }
 
-        BulkRequestBuilder bulk = esClient.prepareBulk();
+    private String bulkStringifyTokens(List<Token> tokens, String indexName){
+        StringBuilder sb = new StringBuilder();
 
-        for (Token token : tokens) {
-            bulk.add(createSingleRequest(token, indexName, esClient));
+        for(Token token : tokens){
+            sb.append(String.format(
+                    "{ \"index\" : { \"_index\" : \"%s\", \"_type\" : \"%s\", \"_id\" : \"%s\", \"routing\" : \"%s\" } }%n",
+                    indexName, ElasticTokensIO.ES_DOCUMENT_TYPE,
+                    token.getId(), token.getLocator().getTenantId()));
+
+            sb.append(String.format(
+                    "{ \"%s\" : \"%s\", \"%s\" : \"%s\", \"%s\" : \"%s\", \"%s\" : \"%s\" }%n",
+                    ESFieldLabel.token.toString(), token.getToken(),
+                    ESFieldLabel.parent.toString(), token.getParent(),
+                    ESFieldLabel.isLeaf.toString(), token.isLeaf(),
+                    ESFieldLabel.tenantId.toString(), token.getLocator().getTenantId()));
         }
 
-        bulk.execute().actionGet();
+        return sb.toString();
     }
 
-
-    IndexRequestBuilder createSingleRequest(Token token, String indexName, Client esClient) throws IOException {
-
-        return esClient.prepareIndex(indexName, ElasticTokensIO.ES_DOCUMENT_TYPE)
-                     .setId(token.getId())
-                     .setSource(ElasticTokensIO.createSourceContent(token))
-                     .setCreate(true)
-                     .setRouting(token.getLocator().getTenantId());
-    }
-
-
-    @After
-    public void tearDown() {
-        esSetup.terminate();
+    public void insertTokenDiscovery(List<Token> tokens, String indexName,
+                                     ElasticsearchRestHelper elasticsearchRestHelper) throws IOException {
+        if (tokens.size() == 0) return;
+        this.indexTokens(tokens, indexName, elasticsearchRestHelper);
     }
 
     @Override
@@ -131,33 +183,7 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
 
         Stream<Locator> locators = metrics.stream().map(IMetric::getLocator);
         elasticTokensIO.insertDiscovery(Token.getUniqueTokens(locators)
-                                             .collect(toList()));
-    }
-
-    @Test(expected=IllegalArgumentException.class)
-    public void testCreateSingleRequest_WithNullMetricName() throws IOException {
-        Discovery discovery = new Discovery(TENANT_A, null);
-        elasticIO.createSingleRequest(discovery);
-    }
-
-    @Test
-    public void testCreateSingleRequest() throws IOException {
-        final String METRIC_NAME = "a.b.c.m1";
-        Discovery discovery = new Discovery(TENANT_A, METRIC_NAME);
-        IndexRequestBuilder builder = elasticIO.createSingleRequest(discovery);
-        Assert.assertNotNull(builder);
-        assertEquals(TENANT_A + ":" + METRIC_NAME, builder.request().id());
-        final String expectedIndex =
-                "index {" +
-                        "[" + ElasticIO.ELASTICSEARCH_INDEX_NAME_WRITE + "]" +
-                        "[" + ElasticIO.ES_DOCUMENT_TYPE + "]" +
-                        "["+ TENANT_A + ":" + METRIC_NAME + "], " +
-                        "source[{" +
-                        "\"tenantId\":\"" + TENANT_A + "\"," +
-                        "\"metric_name\":\"" + METRIC_NAME + "\"" +
-                        "}]}";
-        assertEquals(expectedIndex, builder.request().toString());
-        assertEquals(builder.request().routing(), TENANT_A);
+                .collect(toList()));
     }
 
     @Test
@@ -286,23 +312,22 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
         // New index name and the locator to be written to it
         String ES_DUP = ElasticIO.ELASTICSEARCH_INDEX_NAME_WRITE + "_2";
         Locator testLocator = createTestLocator(TENANT_A, 0, "A", 0);
-        // Metric is aleady there in old
+        // Metric is already there in old
         List<SearchResult> results = elasticIO.search(TENANT_A, testLocator.getMetricName());
         assertEquals(results.size(), 1);
         assertEquals(results.get(0).getMetricName(), testLocator.getMetricName());
-        // Actually create the new index
-        esSetup.execute(EsSetup.createIndex(ES_DUP)
-                .withSettings(EsSetup.fromClassPath("index_settings.json"))
-                .withMapping("metrics", EsSetup.fromClassPath("metrics_mapping.json")));
+
         // Insert metric into the new index
         elasticIO.setINDEX_NAME_WRITE(ES_DUP);
-        ArrayList metricList = new ArrayList();
+        List<IMetric> metricList = new ArrayList();
         metricList.add(new Metric(createTestLocator(TENANT_A, 0, "A", 0), 987654321L, 0, new TimeValue(1, TimeUnit.DAYS), UNIT));
-        elasticIO.insertDiscovery(metricList);
-        esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
-        // Set up aliases
-        esSetup.client().admin().indices().prepareAliases().addAlias(ES_DUP, "metric_metadata_read")
-                .addAlias(ElasticIO.ELASTICSEARCH_INDEX_NAME_WRITE, "metric_metadata_read").execute().actionGet();
+
+        // Calling insertDiscovery with single metric in loop rather than metrics collection to improve on code coverage.
+        for(IMetric metric : metricList){
+            elasticIO.insertDiscovery(metric);
+        }
+
+        helper.refreshIndex(ES_DUP);
         elasticIO.setINDEX_NAME_READ("metric_metadata_read");
         results = elasticIO.search(TENANT_A, testLocator.getMetricName());
         // Should just be one result

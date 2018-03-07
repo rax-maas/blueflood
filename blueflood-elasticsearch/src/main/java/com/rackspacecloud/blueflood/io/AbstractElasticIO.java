@@ -3,32 +3,32 @@ package com.rackspacecloud.blueflood.io;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.ElasticIOConfig;
 import com.rackspacecloud.blueflood.utils.GlobPattern;
 import com.rackspacecloud.blueflood.utils.Metrics;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.Client;
-import org.elasticsearch.common.lang3.StringUtils;
-import org.elasticsearch.index.query.*;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 import static com.rackspacecloud.blueflood.types.Locator.METRIC_TOKEN_SEPARATOR_REGEX;
 import static java.util.stream.Collectors.toSet;
-import static org.elasticsearch.index.query.QueryBuilders.*;
 
 public abstract class AbstractElasticIO implements DiscoveryIO {
+    private static final Logger log = LoggerFactory.getLogger(AbstractElasticIO.class);
 
-    protected Client client;
+    public ElasticsearchRestHelper elasticsearchRestHelper;
+    protected static final String ELASTICSEARCH_DOCUMENT_TYPE = "metrics";
 
-    // todo: these should be instances per client.
     protected final Timer searchTimer = Metrics.timer(getClass(), "Search Duration");
     protected final Timer esMetricNamesQueryTimer = Metrics.timer(getClass(), "ES Metric Names Query Duration");
     protected final Timer writeTimer = Metrics.timer(getClass(), "Write Duration");
@@ -37,67 +37,100 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
     protected Histogram queryBatchHistogram = Metrics.histogram(getClass(), "Query Batch Size");
     private final Histogram searchResultsSizeHistogram = Metrics.histogram(getClass(), "Metrics search results size");
 
-    public static String METRICS_TOKENS_AGGREGATE = "metric_tokens";
     public static String ELASTICSEARCH_INDEX_NAME_WRITE = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_INDEX_NAME_WRITE);
     public static String ELASTICSEARCH_INDEX_NAME_READ = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_INDEX_NAME_READ);
 
-    public static int MAX_RESULT_LIMIT = 100000;
-
     //grabs chars until the next "." which is basically a token
     protected static final String REGEX_TO_GRAB_SINGLE_TOKEN = "[^.]*";
+
+    private String queryToFetchMetricNamesFromElasticsearchFormat = "{\n" +
+            "  \"size\": 0,\n" +
+            "  \"query\": {\n" +
+            "    \"bool\": {\n" +
+            "      \"must\": [\n" +
+            "        {\n" +
+            "          \"term\": {\n" +
+            "            \"tenantId\": \"%s\"\n" +
+            "          }\n" +
+            "        },\n" +
+            "        {\n" +
+            "          \"regexp\": {\n" +
+            "            \"metric_name\": {\n" +
+            "              \"value\": \"%s\"\n" +
+            "            }\n" +
+            "          }\n" +
+            "        }\n" +
+            "      ]\n" +
+            "    }\n" +
+            "  },\n" +
+            "  \"aggs\": {\n" +
+            "    \"metric_name_tokens\": {\n" +
+            "      \"terms\": {\n" +
+            "        \"field\": \"metric_name\",\n" +
+            "        \"include\": \"%s\",\n" +
+            "        \"execution_hint\": \"map\",\n" +
+            "        \"size\": 0\n" +
+            "      }\n" +
+            "    }\n" +
+            "  }\n" +
+            "}";
 
 
     public List<SearchResult> search(String tenant, String query) throws Exception {
         return search(tenant, Arrays.asList(query));
     }
 
-
     public List<SearchResult> search(String tenant, List<String> queries) throws Exception {
-        String[] indexes = getIndexesToSearch();
-
-        return searchESByIndexes(tenant, queries, indexes);
+        return searchUsingRestApi(tenant, queries);
     }
 
-    private List<SearchResult> searchESByIndexes(String tenant, List<String> queries, String[] indexes) {
-        List<SearchResult> results = new ArrayList<SearchResult>();
+    private List<SearchResult> searchUsingRestApi(String tenant, List<String> queries) {
+        List<SearchResult> results = new ArrayList<>();
         Timer.Context multiSearchCtx = searchTimer.time();
-        SearchResponse response;
+        int hitsCount;
+
         try {
             queryBatchHistogram.update(queries.size());
-            BoolQueryBuilder bqb = boolQuery();
-            QueryBuilder qb;
+            String response = elasticsearchRestHelper.fetch(
+                    ELASTICSEARCH_INDEX_NAME_READ, ELASTICSEARCH_DOCUMENT_TYPE, tenant, queries);
 
-            for (String query : queries) {
-                GlobPattern pattern = new GlobPattern(query);
-                if (!pattern.hasWildcard()) {
-                    qb = termQuery(ESFieldLabel.metric_name.name(), query);
-                } else {
-                    qb = regexpQuery(ESFieldLabel.metric_name.name(), pattern.compiled().toString());
-                }
-
-                bqb.should(boolQuery()
-                                .must(termQuery(ESFieldLabel.tenantId.toString(), tenant))
-                                .must(qb)
-                );
-            }
-
-            response = client.prepareSearch(indexes)
-                    .setRouting(tenant)
-                    .setSize(MAX_RESULT_LIMIT)
-                    .setVersion(true)
-                    .setQuery(bqb)
-                    .execute()
-                    .actionGet();
+            List<SearchResult> searchResults = getSearchResults(response);
+            hitsCount = searchResults.size();
+            results.addAll(searchResults);
+        } catch (JsonProcessingException e) {
+            log.error("Elasticsearch metrics query failed for tenantId {}. {}", tenant, e.getMessage());
+            throw new RuntimeException(String.format("searchUsingRestApi failed with message: %s", e.getMessage()), e);
+        } catch (IOException e) {
+            log.error("Elasticsearch metrics query failed for tenantId {}. {}", tenant, e.getMessage());
+            throw new RuntimeException(String.format("searchUsingRestApi failed with message: %s", e.getMessage()), e);
         } finally {
             multiSearchCtx.stop();
         }
 
-        searchResultsSizeHistogram.update(response.getHits().getHits().length);
-        for (SearchHit hit : response.getHits().getHits()) {
-            SearchResult result = convertHitToMetricDiscoveryResult(hit);
-            results.add(result);
-        }
+        searchResultsSizeHistogram.update(hitsCount);
+
         return dedupResults(results);
+    }
+
+    private List<SearchResult> getSearchResults(String response) throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode root = mapper.readTree(response);
+
+        Iterator<JsonNode> iter = root.get("hits").get("hits").elements();
+
+        List<SearchResult> searchResults = new ArrayList<>();
+        while(iter.hasNext()){
+            JsonNode source = iter.next().get("_source");
+            String metricName = source.get(ESFieldLabel.metric_name.toString()).asText();
+            String tenantId = source.get(ESFieldLabel.tenantId.toString()).asText();
+            String unit = null;
+            if(source.has(ESFieldLabel.unit.toString()))
+                unit = source.get(ESFieldLabel.unit.toString()).asText();
+
+            SearchResult result = new SearchResult(tenantId, metricName, unit);
+            searchResults.add(result);
+        }
+        return searchResults;
     }
 
     /**
@@ -119,41 +152,36 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
     public List<MetricName> getMetricNames(final String tenant, final String query) throws Exception {
 
         Timer.Context esMetricNamesQueryTimerCtx = esMetricNamesQueryTimer.time();
-        SearchResponse response;
+        String response;
 
         try {
-            response = getMetricNamesFromES(tenant, regexToGrabCurrentAndNextLevel(query));
+            String regexString = regexToGrabCurrentAndNextLevel(query);
+            // replace one '\' char with two '\\'
+            regexString = regexString.replaceAll("\\\\", "\\\\\\\\");
+            response = getMetricNamesFromES(tenant, regexString);
         } finally {
             esMetricNamesQueryTimerCtx.stop();
         }
 
         // For example, if query = foo.bar.*, base level is 3 which is equal to the number of tokens in the query.
         int baseLevel = getTotalTokens(query);
-        MetricIndexData metricIndexData = buildMetricIndexData(response, baseLevel);
+        MetricIndexData metricIndexData = getMetricIndexData(response, baseLevel);
 
         List<MetricName> metricNames = new ArrayList<>();
 
         //Metric Names matching query which have next level
         metricNames.addAll(metricIndexData.getMetricNamesWithNextLevel()
-                                          .stream()
-                                          .map(x -> new MetricName(x, false))
-                                          .collect(toSet()));
+                .stream()
+                .map(x -> new MetricName(x, false))
+                .collect(toSet()));
 
         //complete metric names matching query
         metricNames.addAll(metricIndexData.getCompleteMetricNamesAtBaseLevel()
-                                          .stream()
-                                          .map(x -> new MetricName(x, true))
-                                          .collect(toSet()));
+                .stream()
+                .map(x -> new MetricName(x, true))
+                .collect(toSet()));
 
         return metricNames;
-    }
-
-    private int getTotalTokens(String query) {
-
-        if (StringUtils.isEmpty(query))
-            return 0;
-
-        return query.split(METRIC_TOKEN_SEPARATOR_REGEX).length;
     }
 
     /**
@@ -201,39 +229,38 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
      * @param regexMetricName
      * @return
      */
-    private SearchResponse getMetricNamesFromES(final String tenant, final String regexMetricName) {
+    private String getMetricNamesFromES(final String tenant, final String regexMetricName) throws IOException {
+        String metricNamesFromElasticsearchQueryString = String.format(queryToFetchMetricNamesFromElasticsearchFormat,
+                tenant, regexMetricName, regexMetricName);
 
-        AggregationBuilder aggregationBuilder =
-                AggregationBuilders.terms(METRICS_TOKENS_AGGREGATE)
-                        .field(ESFieldLabel.metric_name.name())
-                        .include(regexMetricName)
-                        .executionHint("map")
-                        .size(0);
-
-        TermQueryBuilder tenantIdQuery = QueryBuilders.termQuery(ESFieldLabel.tenantId.toString(), tenant);
-        RegexpQueryBuilder metricNameQuery = QueryBuilders.regexpQuery(ESFieldLabel.metric_name.name(), regexMetricName);
-
-        return client.prepareSearch(new String[] {ELASTICSEARCH_INDEX_NAME_READ})
-                .setRouting(tenant)
-                .setSize(0)
-                .setVersion(true)
-                .setQuery(QueryBuilders.boolQuery().must(tenantIdQuery).must(metricNameQuery))
-                .addAggregation(aggregationBuilder)
-                .execute()
-                .actionGet();
+        return elasticsearchRestHelper.fetchDocuments(
+                ELASTICSEARCH_INDEX_NAME_READ, ELASTICSEARCH_DOCUMENT_TYPE, metricNamesFromElasticsearchQueryString);
     }
 
-
-    private MetricIndexData buildMetricIndexData(final SearchResponse response, final int baseLevel) {
-
+    private MetricIndexData getMetricIndexData(final String response, final int baseLevel) throws IOException {
         MetricIndexData metricIndexData = new MetricIndexData(baseLevel);
-        Terms aggregateTerms = response.getAggregations().get(METRICS_TOKENS_AGGREGATE);
 
-        for (Terms.Bucket bucket: aggregateTerms.getBuckets()) {
-            metricIndexData.add(bucket.getKey(), bucket.getDocCount());
+
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode root = mapper.readTree(response);
+
+        Iterator<JsonNode> iter = root.get("aggregations").get("metric_name_tokens").get("buckets").elements();
+
+        while(iter.hasNext()){
+            JsonNode node = iter.next();
+            String key = node.get("key").asText();
+            long docCount = node.get("doc_count").asInt();
+            metricIndexData.add(key, docCount);
         }
-
         return metricIndexData;
+    }
+
+    private int getTotalTokens(String query) {
+
+        if (StringUtils.isEmpty(query))
+            return 0;
+
+        return query.split(METRIC_TOKEN_SEPARATOR_REGEX).length;
     }
 
     /**
@@ -300,11 +327,6 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
         return pattern.compiled().toString();
     }
 
-    protected abstract String[] getIndexesToSearch();
-
     protected abstract List<SearchResult> dedupResults(List<SearchResult> results);
-
-    protected abstract SearchResult convertHitToMetricDiscoveryResult(SearchHit hit);
-
 }
 

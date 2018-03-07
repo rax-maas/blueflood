@@ -25,6 +25,7 @@ import com.rackspacecloud.blueflood.types.Event;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
@@ -73,7 +74,7 @@ public class HttpAnnotationsEndToEndTest {
         esSetup.execute(EsSetup.createIndex(EventElasticSearchIO.EVENT_INDEX)
                 .withSettings(EsSetup.fromClassPath("index_settings.json"))
                 .withMapping("graphite_event", EsSetup.fromClassPath("events_mapping.json")));
-        eventsSearchIO = new EventElasticSearchIO(esSetup.client());
+        eventsSearchIO = new EventElasticSearchIO();
         HttpMetricsIngestionServer server = new HttpMetricsIngestionServer(context);
         server.setHttpEventsIngestionHandler(new HttpEventsIngestionHandler(eventsSearchIO));
 
@@ -99,7 +100,7 @@ public class HttpAnnotationsEndToEndTest {
         Assert.assertEquals(200, response.getStatusLine().getStatusCode());
         Thread.sleep(1000);
 
-        Map<String,String> parameterMap = new HashMap<String, String>();
+        Map<String,String> parameterMap = new HashMap<>();
         parameterMap.put(Event.fromParameterName, String.valueOf(baseMillis - 86400000));
         parameterMap.put(Event.untilParameterName, String.valueOf(baseMillis + (86400000*3)));
         HttpGet get = new HttpGet(getAnnotationsQueryURI(parameterMap));
@@ -154,8 +155,16 @@ public class HttpAnnotationsEndToEndTest {
     public static void tearDownClass() throws Exception{
         Configuration.getInstance().setProperty(CoreConfig.EVENTS_MODULES.name(), "");
         System.clearProperty(CoreConfig.EVENTS_MODULES.name());
-        if (esSetup != null) {
-            esSetup.terminate();
+
+        URIBuilder builder = new URIBuilder().setScheme("http").setHost("127.0.0.1").setPort(9200).setPath("/events");
+        HttpDelete delete = new HttpDelete(builder.build());
+        HttpResponse response = client.execute(delete);
+        if(response.getStatusLine().getStatusCode() != 200)
+        {
+            System.out.println("Couldn't delete 'events' index after running tests.");
+        }
+        else {
+            System.out.println("Successfully deleted 'events' index after running tests.");
         }
 
         if (vendor != null) {
