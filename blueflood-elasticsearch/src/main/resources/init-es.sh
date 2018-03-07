@@ -64,17 +64,13 @@ checkFile tokens_mapping.json
 curl $AUTH -XDELETE $ELASTICSEARCH_URL'/blueflood_initialized_marker/' >& /dev/null
 curl $AUTH -XDELETE $ELASTICSEARCH_URL'/events/' >& /dev/null
 curl $AUTH -XDELETE $ELASTICSEARCH_URL'/metric_metadata/' >& /dev/null
-curl $AUTH -XDELETE $ELASTICSEARCH_URL'/metric_metadata_2/' >& /dev/null
 curl $AUTH -XDELETE $ELASTICSEARCH_URL'/metric_metadata_v2/' >& /dev/null
 curl $AUTH -XDELETE $ELASTICSEARCH_URL'/metric_metadata_write/' >& /dev/null
 curl $AUTH -XDELETE $ELASTICSEARCH_URL'/metric_tokens/' >& /dev/null
-curl $AUTH -XDELETE $ELASTICSEARCH_URL'/metric_tokens_v1/' >& /dev/null
 
 #create the new indices
 curl $AUTH -XPUT $ELASTICSEARCH_URL'/metric_metadata'
-curl $AUTH -XPUT $ELASTICSEARCH_URL'/metric_metadata_2'
 curl $AUTH -XPUT $ELASTICSEARCH_URL'/metric_tokens'
-curl $AUTH -XPUT $ELASTICSEARCH_URL'/metric_tokens_v1'
 curl $AUTH -XPUT $ELASTICSEARCH_URL'/events'
 
 #create the aliases
@@ -93,25 +89,13 @@ curl $AUTH -XPOST $ELASTICSEARCH_URL'/_aliases' -d '
 curl $AUTH -XPOST $ELASTICSEARCH_URL'/_aliases' -d '
 {
     "actions" : [
-        { "add" : { "alias" : "metric_metadata_read", "index" : "metric_metadata_2" } }
+        { "add" : { "alias" : "metric_tokens_write", "index" : "metric_tokens" } }
     ]
 }'
 curl $AUTH -XPOST $ELASTICSEARCH_URL'/_aliases' -d '
 {
     "actions" : [
-        { "add" : { "alias" : "metric_tokens_v1_write", "index" : "metric_tokens_v1" } }
-    ]
-}'
-curl $AUTH -XPOST $ELASTICSEARCH_URL'/_aliases' -d '
-{
-    "actions" : [
-        { "add" : { "alias" : "metric_tokens_v1_write", "index" : "metric_tokens_v1" } }
-    ]
-}'
-curl $AUTH -XPOST $ELASTICSEARCH_URL'/_aliases' -d '
-{
-    "actions" : [
-        { "add" : { "alias" : "metric_tokens_v1_read", "index" : "metric_tokens_v1" } }
+        { "add" : { "alias" : "metric_tokens_read", "index" : "metric_tokens" } }
     ]
 }'
 
@@ -124,22 +108,9 @@ curl $AUTH -XPOST $ELASTICSEARCH_URL'/metric_metadata/_open'
 curl $AUTH -XDELETE $ELASTICSEARCH_URL'/metric_metadata/_mapping/metrics' >& /dev/null
 curl $AUTH -XPUT $ELASTICSEARCH_URL'/metric_metadata/_mapping/metrics' -d @metrics_mapping.json
 
-#add index settings to metric_metadata_2 index
-curl $AUTH -XPOST $ELASTICSEARCH_URL'/metric_metadata_2/_close'
-curl $AUTH -XPUT $ELASTICSEARCH_URL'/metric_metadata_2/_settings' -d @index_settings.json
-curl $AUTH -XPOST $ELASTICSEARCH_URL'/metric_metadata_2/_open'
-
-#add mappings to metric_metadata_2 index
-curl $AUTH -XDELETE $ELASTICSEARCH_URL'/metric_metadata_2/_mapping/metrics' >& /dev/null
-curl $AUTH -XPUT $ELASTICSEARCH_URL'/metric_metadata_2/_mapping/metrics' -d @metrics_mapping.json
-
 #add mappings to metric_tokens index
 curl $AUTH -XDELETE $ELASTICSEARCH_URL'/metric_tokens/_mapping/tokens' >& /dev/null
 curl $AUTH -XPUT $ELASTICSEARCH_URL'/metric_tokens/_mapping/tokens' -d @tokens_mapping.json
-
-#add mappings to metric_tokens_v1 index
-curl $AUTH -XDELETE $ELASTICSEARCH_URL'/metric_tokens_v1/_mapping/tokens' >& /dev/null
-curl $AUTH -XPUT $ELASTICSEARCH_URL'/metric_tokens_v1/_mapping/tokens' -d @tokens_mapping.json
 
 #add mappings to graphite_event index
 curl $AUTH -XDELETE $ELASTICSEARCH_URL'/events/_mapping/graphite_event' >& /dev/null

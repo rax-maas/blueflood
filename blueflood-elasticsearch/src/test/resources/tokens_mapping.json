@@ -1,0 +1,29 @@
+{
+    "tokens": {
+        "_routing": {
+            "required": true
+        },
+        "properties": {
+            "tenantId": {
+                "type": "string",
+                "index": "not_analyzed",
+                "doc_values": true
+            },
+            "token": {
+                "type": "string",
+                "index": "not_analyzed",
+                "doc_values": true
+            },
+            "parent": {
+                "type": "string",
+                "index": "not_analyzed",
+                "doc_values": true
+            },
+            "isLeaf": {
+                "type": "boolean",
+                "index": "not_analyzed",
+                "doc_values": true
+            }
+        }
+    }
+}
