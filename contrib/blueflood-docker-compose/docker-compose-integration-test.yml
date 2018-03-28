@@ -1,0 +1,58 @@
+# using Docker-Compose Version 3
+version: '3'
+
+services:
+  # Configuration for seed cassandra node. Also, this is the only node
+  cassandra:
+    container_name: cassandra-node
+    image: cassandra:2.1
+    ports:
+        - "7000:7000"
+        - "7001:7001"
+        - "9042:9042"
+        - "9160:9160"
+        - "7199:7199"
+
+    # Exposing ports for inter cluster communication.
+    expose:
+      - 7000 # Intra-node communication
+      - 7001 # TLS intra-node communication
+      - 7199 # JMX
+      - 9042 # CQL
+      - 9160 # Thrift service
+
+    command: bash -c 'if [ -z "$$(ls -A /var/lib/cassandra/)" ] ; then sleep 0; fi && /docker-entrypoint.sh cassandra -f'
+
+    # Network for the nodes to communicate
+    networks:
+      - dc1ring
+
+    # Docker container environment variable. We are using the
+    # CASSANDRA_CLUSTER_NAME to name the cluster. This needs to be the same
+    # across clusters. We are also declaring that 'cassandra' is a seed node.
+    environment:
+      - CASSANDRA_CLUSTER_NAME=dev_cluster
+      - CASSANDRA_SEEDS=cassandra
+
+    # Cassandra ulimt recommended settings
+    ulimits:
+      memlock: -1
+      nproc: 32768
+      nofile: 100000
+
+  elasticsearch:
+    container_name: elasticsearch-node
+    image: elasticsearch:1.7
+    #image: elasticsearch:2.4.1
+    #image: elasticsearch:5.6.5
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    command: elasticsearch -Des.cluster.name="elasticsearch"
+    #command: elasticsearch -Ecluster.name="elasticsearch"
+    
+    environment:
+      - cluster.name="elasticsearch"
+
+networks:
+  dc1ring:
