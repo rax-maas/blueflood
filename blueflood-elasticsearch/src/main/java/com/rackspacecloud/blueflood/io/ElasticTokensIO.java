@@ -272,7 +272,9 @@ public class ElasticTokensIO implements TokenDiscoveryIO {
 
         String parent = (String)source.get(ESFieldLabel.parent.toString());
         String token = (String)source.get(ESFieldLabel.token.toString());
-        boolean isCompleteName = (Boolean)source.get(ESFieldLabel.isLeaf.toString());
+
+        String isLeafInStringFormat = source.get(ESFieldLabel.isLeaf.toString()).toString();
+        boolean isCompleteName = Boolean.parseBoolean(isLeafInStringFormat);
 
         StringBuilder metricName = new StringBuilder(parent);
         if (metricName.length() > 0) {
