@@ -234,7 +234,10 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
                 tenant, regexMetricName, regexMetricName);
 
         return elasticsearchRestHelper.fetchDocuments(
-                ELASTICSEARCH_INDEX_NAME_READ, ELASTICSEARCH_DOCUMENT_TYPE, metricNamesFromElasticsearchQueryString);
+                ELASTICSEARCH_INDEX_NAME_READ,
+                ELASTICSEARCH_DOCUMENT_TYPE,
+                tenant,
+                metricNamesFromElasticsearchQueryString);
     }
 
     private MetricIndexData getMetricIndexData(final String response, final int baseLevel) throws IOException {

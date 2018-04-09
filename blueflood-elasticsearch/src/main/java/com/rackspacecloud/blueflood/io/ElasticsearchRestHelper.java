@@ -166,7 +166,7 @@ public class ElasticsearchRestHelper {
 
     public String fetch(String indexName, String documentType, String tenantId, List<String> queries) throws IOException {
         String queryDslString = getQueryDslString(tenantId, queries);
-        return fetchDocuments(indexName, documentType, queryDslString);
+        return fetchDocuments(indexName, documentType, tenantId, queryDslString);
     }
 
     public String fetchTokenDocuments(String[] indices, String tenantId, String query) throws IOException {
@@ -179,9 +179,10 @@ public class ElasticsearchRestHelper {
         return fetchDocs(queryDslString, urlFormat);
     }
 
-    public String fetchDocuments(String indexName, String documentType, String queryDslString) throws IOException {
-        //Example URL: localhost:9200/metric_metadata/metrics/_search&size=50";
-        String temp = String.format("%s/%s/_search?size=%d", indexName, documentType, MAX_RESULT_LIMIT);
+    public String fetchDocuments(String indexName, String documentType, String tenantId, String queryDslString) throws IOException {
+        //Example URL: localhost:9200/metric_metadata/metrics/_search?routing=123456&size=100
+        String temp = String.format("%s/%s/_search?routing=%s&size=%d",
+                indexName, documentType, tenantId, MAX_RESULT_LIMIT);
         String urlFormat = "%s/" + temp;
 
         return fetchDocs(queryDslString, urlFormat);
