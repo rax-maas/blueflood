@@ -11,6 +11,7 @@ import com.rackspacecloud.blueflood.types.Token;
 import com.rackspacecloud.blueflood.utils.GlobPattern;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import org.apache.commons.lang.StringUtils;
+import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,10 +57,13 @@ public class ElasticTokensIO implements TokenDiscoveryIO {
 
         Timer.Context ctx = writeTimer.time();
         try {
-            elasticsearchRestHelper.indexTokens(tokens);
-        } catch (Exception esEx) {
-            log.error(("ElasticTokensIO: Error during bulk insert to ES. Message: [" + esEx.getMessage() + "]"));
-            throw esEx;
+            int statusCode = elasticsearchRestHelper.indexTokens(tokens);
+            if(statusCode != HttpStatus.SC_OK && statusCode != HttpStatus.SC_CREATED){
+                String errorMessage =
+                        String.format("Indexing tokens into elasticsearch failed with status code [%s]", statusCode);
+                log.error(errorMessage);
+                throw new IOException(errorMessage);
+            }
         } finally {
             ctx.stop();
         }

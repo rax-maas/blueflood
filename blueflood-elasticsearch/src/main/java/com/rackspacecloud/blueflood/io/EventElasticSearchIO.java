@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rackspacecloud.blueflood.types.Event;
 import com.rackspacecloud.blueflood.utils.Metrics;
+import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,17 +44,18 @@ public class EventElasticSearchIO implements EventsIO {
     }
 
     @Override
-    public void insert(String tenantId, Map<String, Object> event) {
+    public void insert(String tenantId, Map<String, Object> event) throws IOException {
         Timer.Context eventInsertTimerContext = eventInsertTimer.time();
 
         try {
             event.put(Event.FieldLabels.tenantId.toString(), tenantId);
-            elasticsearchRestHelper.indexEvent(event);
-        }
-        catch (IOException e){
-            String format = "Indexing event into elasticsearch failed. Exception message: %s";
-            log.error(String.format(format, e.getMessage()));
-            throw new RuntimeException(String.format(format, e.getMessage()), e);
+            int statusCode = elasticsearchRestHelper.indexEvent(event);
+            if(statusCode != HttpStatus.SC_OK && statusCode != HttpStatus.SC_CREATED){
+                String errorMessage =
+                        String.format("Indexing events into elasticsearch failed with status code [%s]", statusCode);
+                log.error(errorMessage);
+                throw new IOException(errorMessage);
+            }
         }
         finally {
             eventInsertTimerContext.stop();
