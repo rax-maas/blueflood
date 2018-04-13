@@ -198,7 +198,7 @@ public class ElasticsearchRestHelper {
             callCount++;
             String url = callQ.remove();
 
-            logger.info("Using url [{}]", url);
+            logger.debug("Using url [{}]", url);
             HttpPost httpPost = new HttpPost(url);
             httpPost.setHeaders(getHeaders());
             HttpEntity httpEntity = new NStringEntity(queryDslString, ContentType.APPLICATION_JSON);
@@ -480,7 +480,7 @@ public class ElasticsearchRestHelper {
         while(!callQ.isEmpty() && callCount < MAX_CALL_COUNT) {
             callCount++;
             String url = callQ.remove();
-            logger.info("Using url [{}]", url);
+            logger.debug("Using url [{}]", url);
             HttpPost httpPost = new HttpPost(url);
             httpPost.setHeaders(getHeaders());
             httpPost.setEntity(entity);

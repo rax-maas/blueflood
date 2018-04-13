@@ -22,6 +22,7 @@ import com.rackspacecloud.blueflood.types.IMetric;
 
 import com.codahale.metrics.Timer;
 
+import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +44,7 @@ public class ElasticIO extends AbstractElasticIO {
     }
 
     // REST call to index into ES
-    public void insertDiscovery(List<IMetric> batch) {
+    public void insertDiscovery(List<IMetric> batch) throws IOException {
         batchHistogram.update(batch.size());
         if (batch.size() == 0) {
             return;
@@ -57,10 +58,13 @@ public class ElasticIO extends AbstractElasticIO {
                     continue;
                 }
             }
-            elasticsearchRestHelper.indexMetrics(batch);
-        } catch (IOException e) {
-            log.error("Indexing metrics into elasticsearch failed. {}", e.getMessage());
-            throw new RuntimeException(String.format("insertDiscovery failed with message: %s", e.getMessage()), e);
+            int statusCode = elasticsearchRestHelper.indexMetrics(batch);
+            if(statusCode != HttpStatus.SC_OK && statusCode != HttpStatus.SC_CREATED){
+                String errorMessage =
+                        String.format("Indexing metrics into elasticsearch failed with status code [%s]", statusCode);
+                log.error(errorMessage);
+                throw new IOException(errorMessage);
+            }
         } finally {
             ctx.stop();
         }
