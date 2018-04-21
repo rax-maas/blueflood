@@ -96,6 +96,8 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
         this.insertTokenDiscovery(createTestTokens(TENANT_B), TOKEN_INDEX_NAME_OLD, elasticTokensIO.elasticsearchRestHelper);
         this.insertTokenDiscovery(createTestTokens(TENANT_C), TOKEN_INDEX_NAME_OLD, elasticTokensIO.elasticsearchRestHelper);
 
+        Thread.sleep(5 * 1000);
+
         helper.refreshIndex("metric_metadata");
         helper.refreshIndex("metric_tokens");
     }
@@ -144,11 +146,11 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
                 .collect(toList());
     }
 
-    public int indexTokens(List<Token> tokens, String indexName,
+    public void indexTokens(List<Token> tokens, String indexName,
                            ElasticsearchRestHelper elasticsearchRestHelper) throws IOException {
         String bulkString = bulkStringifyTokens(tokens, indexName);
         String urlFormat = "%s/_bulk";
-        return elasticsearchRestHelper.index(urlFormat, bulkString);
+        elasticsearchRestHelper.index(urlFormat, bulkString);
     }
 
     private String bulkStringifyTokens(List<Token> tokens, String indexName){
@@ -368,6 +370,7 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
         createTestMetrics(tenantId, new HashSet<String>() {{
             add("foo.bar.baz");
         }});
+        Thread.sleep(5 * 1000);
 
         List<MetricName> results = getDiscoveryIO(type).getMetricNames(tenantId, query);
 
@@ -402,6 +405,7 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
         createTestMetrics(tenantId, new HashSet<String>() {{
             add("foo.bar.baz");
         }});
+        Thread.sleep(5 * 1000);
 
         List<MetricName> results = getDiscoveryIO(type).getMetricNames(tenantId, query);
 
@@ -451,6 +455,7 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
         createTestMetrics(tenantId, new HashSet<String>() {{
             add("one.foo.three00.bar.baz");
         }});
+        Thread.sleep(5 * 1000);
 
         List<MetricName> results = getDiscoveryIO(type).getMetricNames(tenantId, query);
 
@@ -488,6 +493,7 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
         createTestMetrics(tenantId, new HashSet<String>() {{
             add("one.foo.three00.bar.baz");
         }});
+        Thread.sleep(5 * 1000);
 
         List<MetricName> results = getDiscoveryIO(type).getMetricNames(tenantId, query);
 

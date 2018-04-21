@@ -1,6 +1,7 @@
 package com.rackspacecloud.blueflood.io;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.service.ElasticIOConfig;
@@ -13,7 +14,8 @@ import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.*;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.nio.entity.NStringEntity;
 import org.apache.http.util.EntityUtils;
@@ -28,15 +30,25 @@ import static java.util.stream.Collectors.joining;
 public class ElasticsearchRestHelper {
     private static final Logger logger = LoggerFactory.getLogger(ElasticsearchRestHelper.class);
     private final CloseableHttpClient closeableHttpClient;
-    private static String[] baseUrlArray;
-    private static int baseUrlIndex;
-    private static int MAX_CALL_COUNT = 10;
-    private static int MAX_RESULT_LIMIT =
-            Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_DISCOVERY_RESULT_SIZE);
+    private PoolingHttpClientConnectionManager pool;
+    private String[] baseUrlArray;
+    private int baseUrlIndex;
+    private int MAX_CALL_COUNT = 10;
+    private int MAX_RESULT_LIMIT = Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_DISCOVERY_RESULT_SIZE);
+    private static final String ElasticsearchHelperThreadPoolName = "Blueflood Elasticsearch";
+
+    private ElasticsearchThreadPoolManager threadPoolManager;
+
+    {
+        threadPoolManager = new ElasticsearchThreadPoolManager(ElasticsearchHelperThreadPoolName,
+                Configuration.getInstance().getIntegerProperty(ElasticIOConfig.ELASTICSEARCH_INGEST_MIN_THREADS),
+                Configuration.getInstance().getIntegerProperty(ElasticIOConfig.ELASTICSEARCH_INGEST_MAX_THREADS));
+    }
 
     public static ElasticsearchRestHelper getInstance() {
         return new ElasticsearchRestHelper();
     }
+
 
     private ElasticsearchRestHelper(){
         logger.info("Creating a new instance of ElasticsearchRestHelper...");
@@ -45,10 +57,14 @@ public class ElasticsearchRestHelper {
 
         initializeBaseUrlCollection(endpoints);
 
-        this.closeableHttpClient = HttpClientBuilder.create().build();
+        this.pool = new PoolingHttpClientConnectionManager();
+        int maxThreadsPerRoute = config.getIntegerProperty(ElasticIOConfig.ELASTICSEARCH_HTTP_CLIENT_THREADS_PER_ROUTE);
+        pool.setDefaultMaxPerRoute(maxThreadsPerRoute);
+        pool.setMaxTotal(endpoints.length * maxThreadsPerRoute);
+        this.closeableHttpClient = HttpClients.custom().setConnectionManager(pool).build();
     }
 
-    private static String getBaseUrl(){
+    private String getBaseUrl(){
         if(baseUrlIndex >= baseUrlArray.length) baseUrlIndex = 0;
         return String.format("http://%s", baseUrlArray[baseUrlIndex++]);
     }
@@ -378,19 +394,19 @@ public class ElasticsearchRestHelper {
             return queryRegex.replaceAll("\\.\\*", "[^.]*");
     }
 
-    public int indexMetrics(List<IMetric> metrics) throws IOException {
+    public void indexMetrics(List<IMetric> metrics) throws IOException {
         String bulkString = bulkStringify(metrics);
         String urlFormat = "%s/_bulk";
-        return index(urlFormat, bulkString);
+        index(urlFormat, bulkString);
     }
 
-    public int indexTokens(List<Token> tokens) throws IOException {
+    public void indexTokens(List<Token> tokens) throws IOException {
         String bulkString = bulkStringifyTokens(tokens);
         String urlFormat = "%s/_bulk";
-        return index(urlFormat, bulkString);
+        index(urlFormat, bulkString);
     }
 
-    public int indexEvent(Map<String, Object> event) throws IOException {
+    public void indexEvent(Map<String, Object> event) throws IOException {
         String eventString = stringifyEvent(event);
         String temp = String.format("%s/%s?routing=%s",
                 EventElasticSearchIO.EVENT_INDEX, EventElasticSearchIO.ES_TYPE,
@@ -398,7 +414,7 @@ public class ElasticsearchRestHelper {
 
         String urlFormat = "%s/" + temp;
 
-        return index(urlFormat, eventString);
+        index(urlFormat, eventString);
     }
 
     private String stringifyEvent(Map<String, Object> event){
@@ -469,51 +485,65 @@ public class ElasticsearchRestHelper {
         return metric.getUnit();
     }
 
-    public int index(String urlFormat, String bulkString) throws IOException {
-        String tempUrl = String.format(urlFormat, getBaseUrl());
-        HttpEntity entity = new NStringEntity(bulkString, ContentType.APPLICATION_JSON);
-        int statusCode = 0;
+    public ListenableFuture<Boolean> index(final String urlFormat, final String bulkString) throws IOException {
+        int remainingCapacityOfTheBlockingQueue = threadPoolManager.remainingCapacityOfTheQueue();
+        logger.debug("Remaining capacity of ES blocking queue: [" + remainingCapacityOfTheBlockingQueue + "]");
 
-        Queue<String> callQ = new LinkedList<>();
-        callQ.add(tempUrl);
-        int callCount = 0;
-        while(!callQ.isEmpty() && callCount < MAX_CALL_COUNT) {
-            callCount++;
-            String url = callQ.remove();
-            logger.debug("Using url [{}]", url);
-            HttpPost httpPost = new HttpPost(url);
-            httpPost.setHeaders(getHeaders());
-            httpPost.setEntity(entity);
-
-            CloseableHttpResponse response = null;
-
-            try {
-                response = closeableHttpClient.execute(httpPost);
-                statusCode = response.getStatusLine().getStatusCode();
-                String str = EntityUtils.toString(response.getEntity());
-                EntityUtils.consume(response.getEntity());
-
-                if (statusCode != HttpStatus.SC_OK && statusCode != HttpStatus.SC_CREATED) {
-                    logger.error("index method failed with status code: {} and error: {}", statusCode, str);
-                }
-            } catch (Exception e) {
-                if(response == null){
-                    logger.error("index method failed with message: {}", e.getMessage());
-                    url = String.format(urlFormat, getBaseUrl());
-                    callQ.add(url);
-                }
-                else {
-                    logger.error("index method failed with status code: {} and exception message: {}",
-                            statusCode, e.getMessage());
-                }
-            } finally {
-                if(response != null) {
-                    response.close();
-                }
-            }
+        if(threadPoolManager.remainingCapacityOfTheQueue() == 0) {
+            logger.warn("Remaining capacity of ES blocking queue: [" + remainingCapacityOfTheBlockingQueue + "]");
         }
 
-        return statusCode;
+        return threadPoolManager.listeningExecutorService.submit(() -> {
+            String tempUrl = String.format(urlFormat, getBaseUrl());
+            HttpEntity entity = new NStringEntity(bulkString, ContentType.APPLICATION_JSON);
+            int statusCode = 0;
+
+            Queue<String> callQ = new LinkedList<>();
+            callQ.add(tempUrl);
+            int callCount = 0;
+            while(!callQ.isEmpty() && callCount < MAX_CALL_COUNT) {
+                callCount++;
+                String url = callQ.remove();
+                logger.debug("Using url [{}]", url);
+                HttpPost httpPost = new HttpPost(url);
+                httpPost.setHeaders(getHeaders());
+                httpPost.setEntity(entity);
+
+                CloseableHttpResponse response = null;
+
+                try {
+                    logger.debug("ElasticsearchRestHelper.index Thread name in use: [" + Thread.currentThread().getName() + "]");
+                    response = closeableHttpClient.execute(httpPost);
+
+                    statusCode = response.getStatusLine().getStatusCode();
+                    String str = EntityUtils.toString(response.getEntity());
+                    EntityUtils.consume(response.getEntity());
+
+                    if (statusCode != HttpStatus.SC_OK && statusCode != HttpStatus.SC_CREATED) {
+                        logger.error("index method failed with status code: {} and error: {}", statusCode, str);
+                    }
+                } catch (Exception e) {
+                    if(response == null){
+                        logger.error("index method failed with message: {}", e.getMessage());
+                        url = String.format(urlFormat, getBaseUrl());
+                        callQ.add(url);
+                    }
+                    else {
+                        logger.error("index method failed with status code: {} and exception message: {}",
+                                statusCode, e.getMessage());
+                    }
+                } finally {
+                    if(response != null) {
+                        response.close();
+                    }
+                }
+            }
+
+            if(statusCode != HttpStatus.SC_OK && statusCode != HttpStatus.SC_CREATED)
+                throw new IOException("Elasticsearch indexing failed with status code: [" + statusCode + "]");
+
+            return true;
+        });
     }
 
     private String getTermQueryString(String key, String value){

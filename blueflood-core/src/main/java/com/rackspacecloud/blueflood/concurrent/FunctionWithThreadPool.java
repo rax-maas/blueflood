@@ -38,6 +38,10 @@ public abstract class FunctionWithThreadPool<I, O> {
         this.executor = executor;
         this.listeningExecutor = MoreExecutors.listeningDecorator(executor);
     }
+
+    public int remainingCapacityOfTheQueue(){
+        return this.executor.getQueue().remainingCapacity();
+    }
     
     public FunctionWithThreadPool<I, O> withLogger(Logger log) {
         this.log = log;

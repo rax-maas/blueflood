@@ -49,13 +49,7 @@ public class EventElasticSearchIO implements EventsIO {
 
         try {
             event.put(Event.FieldLabels.tenantId.toString(), tenantId);
-            int statusCode = elasticsearchRestHelper.indexEvent(event);
-            if(statusCode != HttpStatus.SC_OK && statusCode != HttpStatus.SC_CREATED){
-                String errorMessage =
-                        String.format("Indexing events into elasticsearch failed with status code [%s]", statusCode);
-                log.error(errorMessage);
-                throw new IOException(errorMessage);
-            }
+            elasticsearchRestHelper.indexEvent(event);
         }
         finally {
             eventInsertTimerContext.stop();
