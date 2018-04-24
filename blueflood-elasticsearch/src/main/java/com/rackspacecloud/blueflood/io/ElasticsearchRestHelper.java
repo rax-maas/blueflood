@@ -1,7 +1,6 @@
 package com.rackspacecloud.blueflood.io;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.service.ElasticIOConfig;
@@ -24,8 +23,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.stream.Collectors.joining;
 
@@ -34,23 +31,14 @@ public class ElasticsearchRestHelper {
     private final CloseableHttpClient closeableHttpClient;
     private PoolingHttpClientConnectionManager pool;
     private String[] baseUrlArray;
-    private AtomicInteger baseUrlIndex;
+    private int baseUrlIndex;
+    private int numberOfElasticsearchEndpoints;
     private int MAX_CALL_COUNT = 10;
     private int MAX_RESULT_LIMIT = Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_DISCOVERY_RESULT_SIZE);
-    private static final String ElasticsearchHelperThreadPoolName = "Blueflood Elasticsearch";
-
-    private ElasticsearchThreadPoolManager threadPoolManager;
-
-    {
-        threadPoolManager = new ElasticsearchThreadPoolManager(ElasticsearchHelperThreadPoolName,
-                Configuration.getInstance().getIntegerProperty(ElasticIOConfig.ELASTICSEARCH_INGEST_MIN_THREADS),
-                Configuration.getInstance().getIntegerProperty(ElasticIOConfig.ELASTICSEARCH_INGEST_MAX_THREADS));
-    }
 
     public static ElasticsearchRestHelper getInstance() {
         return new ElasticsearchRestHelper();
     }
-
 
     private ElasticsearchRestHelper(){
         logger.info("Creating a new instance of ElasticsearchRestHelper...");
@@ -67,20 +55,23 @@ public class ElasticsearchRestHelper {
     }
 
     private String getNextBaseUrl(){
-        if(baseUrlIndex.get() >= baseUrlArray.length) baseUrlIndex.set(0);
-        String nextBaseUrl = String.format("http://%s", baseUrlArray[baseUrlIndex.get()]);
-        baseUrlIndex.set(baseUrlIndex.get()+1);
-        return nextBaseUrl;
+        return String.format("http://%s", baseUrlArray[getNextIndexSync()]);
+    }
+
+    private synchronized int getNextIndexSync(){
+        if(baseUrlIndex >= numberOfElasticsearchEndpoints) baseUrlIndex = 0;
+        return baseUrlIndex++;
     }
 
     private void initializeBaseUrlCollection(String[] endpoints) {
         baseUrlArray = new String[endpoints.length];
+        numberOfElasticsearchEndpoints = endpoints.length;
 
-        for(int i = 0; i < endpoints.length; i++){
+        for(int i = 0; i < numberOfElasticsearchEndpoints; i++){
             baseUrlArray[i] = endpoints[i].trim();
         }
 
-        baseUrlIndex = new AtomicInteger();
+        baseUrlIndex = 0;
     }
 
     public String fetchEvents(String tenantId, Map<String, List<String>> query) throws IOException {
@@ -491,86 +482,59 @@ public class ElasticsearchRestHelper {
 
     //If index() fails for whatever reason, it always throws IOException because indexing failed for Elasticsearch.
     public void index(final String urlFormat, final String bulkString) throws IOException {
-        final ListenableFuture<Boolean> future = indexAsync(urlFormat, bulkString);
-        try {
-            future.get();
-        } catch (InterruptedException e) {
-            logAndThrowIOException(e);
-        } catch (ExecutionException e) {
-            logAndThrowIOException(e);
-        }
-    }
+        String tempUrl = String.format(urlFormat, getNextBaseUrl());
+        HttpEntity entity = new NStringEntity(bulkString, ContentType.APPLICATION_JSON);
+        int statusCode = 0;
 
-    private void logAndThrowIOException(Exception e) throws IOException {
-        logger.error("Elasticsearch indexing failed with message: {}", e.getMessage());
-        throw new IOException("Elasticsearch indexing failed with message:" + e.getMessage());
-    }
-    
-    public ListenableFuture<Boolean> indexAsync(final String urlFormat, final String bulkString) {
-        int remainingCapacityOfTheBlockingQueue = threadPoolManager.remainingCapacityOfTheQueue();
-        logger.debug("Remaining capacity of ES blocking queue: [{}]", remainingCapacityOfTheBlockingQueue);
+        /*
+        Here I am using Queue to keep a round-robin selection of next base url. If current base URL fails for
+        whatever reason (with response == null), then in catch block, I am enqueueing the next base URL so that
+        in next iteration call picks up the new URL. If URL works, queue will be empty and loop will break out.
+        */
+        Queue<String> callQ = new LinkedList<>();
+        callQ.add(tempUrl);
+        int callCount = 0;
+        while(!callQ.isEmpty() && callCount < MAX_CALL_COUNT) {
+            callCount++;
+            String url = callQ.remove();
+            logger.debug("Using url [{}]", url);
+            HttpPost httpPost = new HttpPost(url);
+            httpPost.setHeaders(getHeaders());
+            httpPost.setEntity(entity);
 
-        if(threadPoolManager.remainingCapacityOfTheQueue() == 0) {
-            logger.warn("Remaining capacity of ES blocking queue: [{}]", remainingCapacityOfTheBlockingQueue);
-        }
+            CloseableHttpResponse response = null;
 
-        return threadPoolManager.getListeningExecutorService().submit(() -> {
-            String tempUrl = String.format(urlFormat, getNextBaseUrl());
-            HttpEntity entity = new NStringEntity(bulkString, ContentType.APPLICATION_JSON);
-            int statusCode = 0;
+            try {
+                logger.debug("ElasticsearchRestHelper.index Thread name in use: [{}]", Thread.currentThread().getName());
+                response = closeableHttpClient.execute(httpPost);
 
-            /*
-            Here I am using Queue to keep a round-robin selection of next base url. If current base URL fails for
-            whatever reason (with response == null), then in catch block, I am enqueueing the next base URL so that
-            in next iteration call picks up the new URL. If URL works, queue will be empty and loop will break out.
-            */
-            Queue<String> callQ = new LinkedList<>();
-            callQ.add(tempUrl);
-            int callCount = 0;
-            while(!callQ.isEmpty() && callCount < MAX_CALL_COUNT) {
-                callCount++;
-                String url = callQ.remove();
-                logger.debug("Using url [{}]", url);
-                HttpPost httpPost = new HttpPost(url);
-                httpPost.setHeaders(getHeaders());
-                httpPost.setEntity(entity);
+                statusCode = response.getStatusLine().getStatusCode();
+                String str = EntityUtils.toString(response.getEntity());
+                EntityUtils.consume(response.getEntity());
 
-                CloseableHttpResponse response = null;
-
-                try {
-                    logger.debug("ElasticsearchRestHelper.index Thread name in use: [{}]", Thread.currentThread().getName());
-                    response = closeableHttpClient.execute(httpPost);
-
-                    statusCode = response.getStatusLine().getStatusCode();
-                    String str = EntityUtils.toString(response.getEntity());
-                    EntityUtils.consume(response.getEntity());
-
-                    if (statusCode != HttpStatus.SC_OK && statusCode != HttpStatus.SC_CREATED) {
-                        logger.error("index method failed with status code: {} and error: {}", statusCode, str);
-                    }
-                }
-                catch (Exception e) {
-                    if(response == null){
-                        logger.error("index method failed with message: {}", e.getMessage());
-                        url = String.format(urlFormat, getNextBaseUrl());
-                        callQ.add(url);
-                    }
-                    else {
-                        logger.error("index method failed with status code: {} and exception message: {}",
-                                statusCode, e.getMessage());
-                    }
-                } finally {
-                    if(response != null) {
-                        response.close();
-                    }
+                if (statusCode != HttpStatus.SC_OK && statusCode != HttpStatus.SC_CREATED) {
+                    logger.error("index method failed with status code: {} and error: {}", statusCode, str);
                 }
             }
+            catch (Exception e) {
+                if(response == null){
+                    logger.error("index method failed with message: {}", e.getMessage());
+                    url = String.format(urlFormat, getNextBaseUrl());
+                    callQ.add(url);
+                }
+                else {
+                    logger.error("index method failed with status code: {} and exception message: {}",
+                            statusCode, e.getMessage());
+                }
+            } finally {
+                if(response != null) {
+                    response.close();
+                }
+            }
+        }
 
-            if(statusCode != HttpStatus.SC_OK && statusCode != HttpStatus.SC_CREATED)
-                throw new IOException("Elasticsearch indexing failed with status code: [" + statusCode + "]");
-
-            return true;
-        });
+        if(statusCode != HttpStatus.SC_OK && statusCode != HttpStatus.SC_CREATED)
+            throw new IOException("Elasticsearch indexing failed with status code: [" + statusCode + "]");
     }
 
     private String getTermQueryString(String key, String value){
