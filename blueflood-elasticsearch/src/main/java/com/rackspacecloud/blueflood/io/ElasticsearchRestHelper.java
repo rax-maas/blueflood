@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.stream.Collectors.joining;
 
@@ -32,7 +33,7 @@ public class ElasticsearchRestHelper {
     private final CloseableHttpClient closeableHttpClient;
     private PoolingHttpClientConnectionManager pool;
     private String[] baseUrlArray;
-    private int baseUrlIndex;
+    private AtomicInteger baseUrlIndex;
     private int MAX_CALL_COUNT = 10;
     private int MAX_RESULT_LIMIT = Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_DISCOVERY_RESULT_SIZE);
     private static final String ElasticsearchHelperThreadPoolName = "Blueflood Elasticsearch";
@@ -64,9 +65,11 @@ public class ElasticsearchRestHelper {
         this.closeableHttpClient = HttpClients.custom().setConnectionManager(pool).build();
     }
 
-    private String getBaseUrl(){
-        if(baseUrlIndex >= baseUrlArray.length) baseUrlIndex = 0;
-        return String.format("http://%s", baseUrlArray[baseUrlIndex++]);
+    private String getNextBaseUrl(){
+        if(baseUrlIndex.get() >= baseUrlArray.length) baseUrlIndex.set(0);
+        String nextBaseUrl = String.format("http://%s", baseUrlArray[baseUrlIndex.get()]);
+        baseUrlIndex.set(baseUrlIndex.get()+1);
+        return nextBaseUrl;
     }
 
     private void initializeBaseUrlCollection(String[] endpoints) {
@@ -76,11 +79,11 @@ public class ElasticsearchRestHelper {
             baseUrlArray[i] = endpoints[i].trim();
         }
 
-        baseUrlIndex = 0;
+        baseUrlIndex = new AtomicInteger();
     }
 
     public String fetchEvents(String tenantId, Map<String, List<String>> query) throws IOException {
-        String tempUrl = String.format("%s/%s/%s/_search?routing=%s&size=%d", getBaseUrl(),
+        String tempUrl = String.format("%s/%s/%s/_search?routing=%s&size=%d", getNextBaseUrl(),
                 EventElasticSearchIO.EVENT_INDEX, EventElasticSearchIO.ES_TYPE, tenantId, MAX_RESULT_LIMIT);
 
         String queryDslString = getDslString(tenantId, query);
@@ -108,7 +111,7 @@ public class ElasticsearchRestHelper {
             } catch (Exception e) {
                 if(response == null){
                     logger.error("fetchEvents failed with message: {}", e.getMessage());
-                    url = String.format("%s/%s/%s/_search?routing=%s&size=%d", getBaseUrl(),
+                    url = String.format("%s/%s/%s/_search?routing=%s&size=%d", getNextBaseUrl(),
                             EventElasticSearchIO.EVENT_INDEX, EventElasticSearchIO.ES_TYPE,
                             tenantId, MAX_RESULT_LIMIT);
                     callQ.add(url);
@@ -205,7 +208,7 @@ public class ElasticsearchRestHelper {
     }
 
     private String fetchDocs(String queryDslString, String urlFormat) throws IOException {
-        String tempUrl = String.format(urlFormat, getBaseUrl());
+        String tempUrl = String.format(urlFormat, getNextBaseUrl());
 
         Queue<String> callQ = new LinkedList<>();
         callQ.add(tempUrl);
@@ -231,7 +234,7 @@ public class ElasticsearchRestHelper {
             } catch (Exception e) {
                 if(response == null){
                     logger.error("fetchDocs failed with message: {}", e.getMessage());
-                    url = String.format(urlFormat, getBaseUrl());
+                    url = String.format(urlFormat, getNextBaseUrl());
                     callQ.add(url);
                 }
                 else {
@@ -493,11 +496,16 @@ public class ElasticsearchRestHelper {
             logger.warn("Remaining capacity of ES blocking queue: [" + remainingCapacityOfTheBlockingQueue + "]");
         }
 
-        return threadPoolManager.listeningExecutorService.submit(() -> {
-            String tempUrl = String.format(urlFormat, getBaseUrl());
+        return threadPoolManager.getListeningExecutorService().submit(() -> {
+            String tempUrl = String.format(urlFormat, getNextBaseUrl());
             HttpEntity entity = new NStringEntity(bulkString, ContentType.APPLICATION_JSON);
             int statusCode = 0;
 
+            /*
+            Here I am using Queue to keep a round-robin selection of next base url. If current base URL fails for
+            whatever reason (with response == null), then in catch block, I am enqueueing the next base URL so that
+            in next iteration call picks up the new URL. If URL works, queue will be empty and loop will break out.
+             */
             Queue<String> callQ = new LinkedList<>();
             callQ.add(tempUrl);
             int callCount = 0;
@@ -525,7 +533,7 @@ public class ElasticsearchRestHelper {
                 } catch (Exception e) {
                     if(response == null){
                         logger.error("index method failed with message: {}", e.getMessage());
-                        url = String.format(urlFormat, getBaseUrl());
+                        url = String.format(urlFormat, getNextBaseUrl());
                         callQ.add(url);
                     }
                     else {

@@ -99,10 +99,10 @@ public class DiscoveryWriter extends FunctionWithThreadPool<List<List<IMetric>>,
 
     public ListenableFuture<Boolean> processMetrics(final List<List<IMetric>> input) {
         int remainingCapacityOfTheBlockingQueue = this.remainingCapacityOfTheQueue();
-        log.debug("Remaining capacity of DiscoveryWriter blocking queue: [" + remainingCapacityOfTheBlockingQueue + "]");
+        log.debug("Remaining capacity of DiscoveryWriter blocking queue: [{}]", remainingCapacityOfTheBlockingQueue);
 
         if(remainingCapacityOfTheBlockingQueue == 0){
-            log.warn("Remaining capacity of DiscoveryWriter blocking queue: [" + remainingCapacityOfTheBlockingQueue + "]");
+            log.warn("Remaining capacity of DiscoveryWriter blocking queue: [{}]", remainingCapacityOfTheBlockingQueue);
         }
 
         // process en masse.

@@ -7,7 +7,7 @@ import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import java.util.concurrent.ThreadPoolExecutor;
 
 public class ElasticsearchThreadPoolManager {
-    public final ListeningExecutorService listeningExecutorService;
+    private final ListeningExecutorService listeningExecutorService;
     private final ThreadPoolExecutor threadPoolExecutor;
 
     public int remainingCapacityOfTheQueue(){
@@ -17,6 +17,10 @@ public class ElasticsearchThreadPoolManager {
     public ElasticsearchThreadPoolManager(ThreadPoolExecutor threadPoolExecutor){
         this.threadPoolExecutor = threadPoolExecutor;
         this.listeningExecutorService = MoreExecutors.listeningDecorator(this.threadPoolExecutor);
+    }
+
+    public ListeningExecutorService getListeningExecutorService(){
+        return listeningExecutorService;
     }
 
     public ElasticsearchThreadPoolManager(String threadPoolName, int corePoolSize, int maxPoolSize){
