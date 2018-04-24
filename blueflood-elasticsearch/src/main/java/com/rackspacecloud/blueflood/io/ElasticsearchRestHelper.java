@@ -549,9 +549,6 @@ public class ElasticsearchRestHelper {
                         logger.error("index method failed with status code: {} and error: {}", statusCode, str);
                     }
                 }
-                catch (IOException ex){
-                    throw ex;
-                }
                 catch (Exception e) {
                     if(response == null){
                         logger.error("index method failed with message: {}", e.getMessage());

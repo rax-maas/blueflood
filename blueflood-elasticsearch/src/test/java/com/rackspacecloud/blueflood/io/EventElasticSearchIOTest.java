@@ -138,8 +138,6 @@ public class EventElasticSearchIOTest {
         createTestEvents(TENANT_WITH_SYMBOLS, TENANT_WITH_SYMBOLS_NUM);
         createRangeEvents(TENANT_RANGE, TENANT_RANGE_EVENTS_NUM, RANGE_STEP_IN_SECONDS);
 
-        Thread.sleep(5*1000);
-
         int statusCode = searchIO.elasticsearchRestHelper.refreshIndex(EventElasticSearchIO.EVENT_INDEX);
         if(statusCode != 200) {
             System.out.println(String.format("Refresh for %s failed with status code: %d",
