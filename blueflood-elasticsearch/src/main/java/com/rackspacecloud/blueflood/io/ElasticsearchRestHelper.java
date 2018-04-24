@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.stream.Collectors.joining;
@@ -488,12 +489,29 @@ public class ElasticsearchRestHelper {
         return metric.getUnit();
     }
 
-    public ListenableFuture<Boolean> index(final String urlFormat, final String bulkString) throws IOException {
+    //If index() fails for whatever reason, it always throws IOException because indexing failed for Elasticsearch.
+    public void index(final String urlFormat, final String bulkString) throws IOException {
+        final ListenableFuture<Boolean> future = indexAsync(urlFormat, bulkString);
+        try {
+            future.get();
+        } catch (InterruptedException e) {
+            logAndThrowIOException(e);
+        } catch (ExecutionException e) {
+            logAndThrowIOException(e);
+        }
+    }
+
+    private void logAndThrowIOException(Exception e) throws IOException {
+        logger.error("Elasticsearch indexing failed with message: {}", e.getMessage());
+        throw new IOException("Elasticsearch indexing failed with message:" + e.getMessage());
+    }
+    
+    public ListenableFuture<Boolean> indexAsync(final String urlFormat, final String bulkString) {
         int remainingCapacityOfTheBlockingQueue = threadPoolManager.remainingCapacityOfTheQueue();
-        logger.debug("Remaining capacity of ES blocking queue: [" + remainingCapacityOfTheBlockingQueue + "]");
+        logger.debug("Remaining capacity of ES blocking queue: [{}]", remainingCapacityOfTheBlockingQueue);
 
         if(threadPoolManager.remainingCapacityOfTheQueue() == 0) {
-            logger.warn("Remaining capacity of ES blocking queue: [" + remainingCapacityOfTheBlockingQueue + "]");
+            logger.warn("Remaining capacity of ES blocking queue: [{}]", remainingCapacityOfTheBlockingQueue);
         }
 
         return threadPoolManager.getListeningExecutorService().submit(() -> {
@@ -505,7 +523,7 @@ public class ElasticsearchRestHelper {
             Here I am using Queue to keep a round-robin selection of next base url. If current base URL fails for
             whatever reason (with response == null), then in catch block, I am enqueueing the next base URL so that
             in next iteration call picks up the new URL. If URL works, queue will be empty and loop will break out.
-             */
+            */
             Queue<String> callQ = new LinkedList<>();
             callQ.add(tempUrl);
             int callCount = 0;
@@ -520,7 +538,7 @@ public class ElasticsearchRestHelper {
                 CloseableHttpResponse response = null;
 
                 try {
-                    logger.debug("ElasticsearchRestHelper.index Thread name in use: [" + Thread.currentThread().getName() + "]");
+                    logger.debug("ElasticsearchRestHelper.index Thread name in use: [{}]", Thread.currentThread().getName());
                     response = closeableHttpClient.execute(httpPost);
 
                     statusCode = response.getStatusLine().getStatusCode();
@@ -530,7 +548,11 @@ public class ElasticsearchRestHelper {
                     if (statusCode != HttpStatus.SC_OK && statusCode != HttpStatus.SC_CREATED) {
                         logger.error("index method failed with status code: {} and error: {}", statusCode, str);
                     }
-                } catch (Exception e) {
+                }
+                catch (IOException ex){
+                    throw ex;
+                }
+                catch (Exception e) {
                     if(response == null){
                         logger.error("index method failed with message: {}", e.getMessage());
                         url = String.format(urlFormat, getNextBaseUrl());
