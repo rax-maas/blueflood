@@ -57,13 +57,7 @@ public class ElasticTokensIO implements TokenDiscoveryIO {
 
         Timer.Context ctx = writeTimer.time();
         try {
-            int statusCode = elasticsearchRestHelper.indexTokens(tokens);
-            if(statusCode != HttpStatus.SC_OK && statusCode != HttpStatus.SC_CREATED){
-                String errorMessage =
-                        String.format("Indexing tokens into elasticsearch failed with status code [%s]", statusCode);
-                log.error(errorMessage);
-                throw new IOException(errorMessage);
-            }
+            elasticsearchRestHelper.indexTokens(tokens);
         } finally {
             ctx.stop();
         }

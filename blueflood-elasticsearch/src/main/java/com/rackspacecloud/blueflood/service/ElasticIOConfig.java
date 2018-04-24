@@ -23,7 +23,8 @@ public enum ElasticIOConfig implements ConfigDefaults {
     ELASTICSEARCH_INDEX_NAME_WRITE("metric_metadata"),
     ELASTICSEARCH_INDEX_NAME_READ("metric_metadata"),
     ELASTICSEARCH_TOKEN_INDEX_NAME_READ("metric_tokens"),
-    ELASTICSEARCH_TOKEN_INDEX_NAME_WRITE("metric_tokens");
+    ELASTICSEARCH_TOKEN_INDEX_NAME_WRITE("metric_tokens"),
+    ELASTICSEARCH_HTTP_CLIENT_THREADS_PER_ROUTE("30");
 
     static {
         Configuration.getInstance().loadDefaults(ElasticIOConfig.values());

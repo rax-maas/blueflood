@@ -47,6 +47,7 @@ public class ElasticIO extends AbstractElasticIO {
     public void insertDiscovery(List<IMetric> batch) throws IOException {
         batchHistogram.update(batch.size());
         if (batch.size() == 0) {
+            log.debug("ElasticIO: batch size for insertDiscovery is zero, so skip calling Elasticsearch ingest.");
             return;
         }
 
@@ -58,13 +59,8 @@ public class ElasticIO extends AbstractElasticIO {
                     continue;
                 }
             }
-            int statusCode = elasticsearchRestHelper.indexMetrics(batch);
-            if(statusCode != HttpStatus.SC_OK && statusCode != HttpStatus.SC_CREATED){
-                String errorMessage =
-                        String.format("Indexing metrics into elasticsearch failed with status code [%s]", statusCode);
-                log.error(errorMessage);
-                throw new IOException(errorMessage);
-            }
+
+            elasticsearchRestHelper.indexMetrics(batch);
         } finally {
             ctx.stop();
         }

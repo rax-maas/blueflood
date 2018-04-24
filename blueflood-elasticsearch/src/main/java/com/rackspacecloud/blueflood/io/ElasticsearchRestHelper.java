@@ -13,7 +13,8 @@ import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.*;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.nio.entity.NStringEntity;
 import org.apache.http.util.EntityUtils;
@@ -28,11 +29,12 @@ import static java.util.stream.Collectors.joining;
 public class ElasticsearchRestHelper {
     private static final Logger logger = LoggerFactory.getLogger(ElasticsearchRestHelper.class);
     private final CloseableHttpClient closeableHttpClient;
-    private static String[] baseUrlArray;
-    private static int baseUrlIndex;
-    private static int MAX_CALL_COUNT = 10;
-    private static int MAX_RESULT_LIMIT =
-            Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_DISCOVERY_RESULT_SIZE);
+    private PoolingHttpClientConnectionManager pool;
+    private String[] baseUrlArray;
+    private int baseUrlIndex;
+    private int numberOfElasticsearchEndpoints;
+    private int MAX_CALL_COUNT = 10;
+    private int MAX_RESULT_LIMIT = Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_DISCOVERY_RESULT_SIZE);
 
     public static ElasticsearchRestHelper getInstance() {
         return new ElasticsearchRestHelper();
@@ -45,18 +47,27 @@ public class ElasticsearchRestHelper {
 
         initializeBaseUrlCollection(endpoints);
 
-        this.closeableHttpClient = HttpClientBuilder.create().build();
+        this.pool = new PoolingHttpClientConnectionManager();
+        int maxThreadsPerRoute = config.getIntegerProperty(ElasticIOConfig.ELASTICSEARCH_HTTP_CLIENT_THREADS_PER_ROUTE);
+        pool.setDefaultMaxPerRoute(maxThreadsPerRoute);
+        pool.setMaxTotal(endpoints.length * maxThreadsPerRoute);
+        this.closeableHttpClient = HttpClients.custom().setConnectionManager(pool).build();
     }
 
-    private static String getBaseUrl(){
-        if(baseUrlIndex >= baseUrlArray.length) baseUrlIndex = 0;
-        return String.format("http://%s", baseUrlArray[baseUrlIndex++]);
+    private String getNextBaseUrl(){
+        return String.format("http://%s", baseUrlArray[getNextIndexSync()]);
+    }
+
+    private synchronized int getNextIndexSync(){
+        if(baseUrlIndex >= numberOfElasticsearchEndpoints) baseUrlIndex = 0;
+        return baseUrlIndex++;
     }
 
     private void initializeBaseUrlCollection(String[] endpoints) {
         baseUrlArray = new String[endpoints.length];
+        numberOfElasticsearchEndpoints = endpoints.length;
 
-        for(int i = 0; i < endpoints.length; i++){
+        for(int i = 0; i < numberOfElasticsearchEndpoints; i++){
             baseUrlArray[i] = endpoints[i].trim();
         }
 
@@ -64,7 +75,7 @@ public class ElasticsearchRestHelper {
     }
 
     public String fetchEvents(String tenantId, Map<String, List<String>> query) throws IOException {
-        String tempUrl = String.format("%s/%s/%s/_search?routing=%s&size=%d", getBaseUrl(),
+        String tempUrl = String.format("%s/%s/%s/_search?routing=%s&size=%d", getNextBaseUrl(),
                 EventElasticSearchIO.EVENT_INDEX, EventElasticSearchIO.ES_TYPE, tenantId, MAX_RESULT_LIMIT);
 
         String queryDslString = getDslString(tenantId, query);
@@ -92,7 +103,7 @@ public class ElasticsearchRestHelper {
             } catch (Exception e) {
                 if(response == null){
                     logger.error("fetchEvents failed with message: {}", e.getMessage());
-                    url = String.format("%s/%s/%s/_search?routing=%s&size=%d", getBaseUrl(),
+                    url = String.format("%s/%s/%s/_search?routing=%s&size=%d", getNextBaseUrl(),
                             EventElasticSearchIO.EVENT_INDEX, EventElasticSearchIO.ES_TYPE,
                             tenantId, MAX_RESULT_LIMIT);
                     callQ.add(url);
@@ -189,7 +200,7 @@ public class ElasticsearchRestHelper {
     }
 
     private String fetchDocs(String queryDslString, String urlFormat) throws IOException {
-        String tempUrl = String.format(urlFormat, getBaseUrl());
+        String tempUrl = String.format(urlFormat, getNextBaseUrl());
 
         Queue<String> callQ = new LinkedList<>();
         callQ.add(tempUrl);
@@ -215,7 +226,7 @@ public class ElasticsearchRestHelper {
             } catch (Exception e) {
                 if(response == null){
                     logger.error("fetchDocs failed with message: {}", e.getMessage());
-                    url = String.format(urlFormat, getBaseUrl());
+                    url = String.format(urlFormat, getNextBaseUrl());
                     callQ.add(url);
                 }
                 else {
@@ -378,19 +389,19 @@ public class ElasticsearchRestHelper {
             return queryRegex.replaceAll("\\.\\*", "[^.]*");
     }
 
-    public int indexMetrics(List<IMetric> metrics) throws IOException {
+    public void indexMetrics(List<IMetric> metrics) throws IOException {
         String bulkString = bulkStringify(metrics);
         String urlFormat = "%s/_bulk";
-        return index(urlFormat, bulkString);
+        index(urlFormat, bulkString);
     }
 
-    public int indexTokens(List<Token> tokens) throws IOException {
+    public void indexTokens(List<Token> tokens) throws IOException {
         String bulkString = bulkStringifyTokens(tokens);
         String urlFormat = "%s/_bulk";
-        return index(urlFormat, bulkString);
+        index(urlFormat, bulkString);
     }
 
-    public int indexEvent(Map<String, Object> event) throws IOException {
+    public void indexEvent(Map<String, Object> event) throws IOException {
         String eventString = stringifyEvent(event);
         String temp = String.format("%s/%s?routing=%s",
                 EventElasticSearchIO.EVENT_INDEX, EventElasticSearchIO.ES_TYPE,
@@ -398,7 +409,7 @@ public class ElasticsearchRestHelper {
 
         String urlFormat = "%s/" + temp;
 
-        return index(urlFormat, eventString);
+        index(urlFormat, eventString);
     }
 
     private String stringifyEvent(Map<String, Object> event){
@@ -469,11 +480,17 @@ public class ElasticsearchRestHelper {
         return metric.getUnit();
     }
 
-    public int index(String urlFormat, String bulkString) throws IOException {
-        String tempUrl = String.format(urlFormat, getBaseUrl());
+    //If index() fails for whatever reason, it always throws IOException because indexing failed for Elasticsearch.
+    public void index(final String urlFormat, final String bulkString) throws IOException {
+        String tempUrl = String.format(urlFormat, getNextBaseUrl());
         HttpEntity entity = new NStringEntity(bulkString, ContentType.APPLICATION_JSON);
         int statusCode = 0;
 
+        /*
+        Here I am using Queue to keep a round-robin selection of next base url. If current base URL fails for
+        whatever reason (with response == null), then in catch block, I am enqueueing the next base URL so that
+        in next iteration call picks up the new URL. If URL works, queue will be empty and loop will break out.
+        */
         Queue<String> callQ = new LinkedList<>();
         callQ.add(tempUrl);
         int callCount = 0;
@@ -488,7 +505,9 @@ public class ElasticsearchRestHelper {
             CloseableHttpResponse response = null;
 
             try {
+                logger.debug("ElasticsearchRestHelper.index Thread name in use: [{}]", Thread.currentThread().getName());
                 response = closeableHttpClient.execute(httpPost);
+
                 statusCode = response.getStatusLine().getStatusCode();
                 String str = EntityUtils.toString(response.getEntity());
                 EntityUtils.consume(response.getEntity());
@@ -496,10 +515,11 @@ public class ElasticsearchRestHelper {
                 if (statusCode != HttpStatus.SC_OK && statusCode != HttpStatus.SC_CREATED) {
                     logger.error("index method failed with status code: {} and error: {}", statusCode, str);
                 }
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 if(response == null){
                     logger.error("index method failed with message: {}", e.getMessage());
-                    url = String.format(urlFormat, getBaseUrl());
+                    url = String.format(urlFormat, getNextBaseUrl());
                     callQ.add(url);
                 }
                 else {
@@ -513,7 +533,8 @@ public class ElasticsearchRestHelper {
             }
         }
 
-        return statusCode;
+        if(statusCode != HttpStatus.SC_OK && statusCode != HttpStatus.SC_CREATED)
+            throw new IOException("Elasticsearch indexing failed with status code: [" + statusCode + "]");
     }
 
     private String getTermQueryString(String key, String value){

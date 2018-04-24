@@ -144,11 +144,11 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
                 .collect(toList());
     }
 
-    public int indexTokens(List<Token> tokens, String indexName,
+    public void indexTokens(List<Token> tokens, String indexName,
                            ElasticsearchRestHelper elasticsearchRestHelper) throws IOException {
         String bulkString = bulkStringifyTokens(tokens, indexName);
         String urlFormat = "%s/_bulk";
-        return elasticsearchRestHelper.index(urlFormat, bulkString);
+        elasticsearchRestHelper.index(urlFormat, bulkString);
     }
 
     private String bulkStringifyTokens(List<Token> tokens, String indexName){
