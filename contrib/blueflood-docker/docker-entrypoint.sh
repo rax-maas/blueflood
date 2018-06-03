@@ -91,7 +91,7 @@ log4j.logger.org.apache.http.headers=INFO
 log4j.rootLogger=INFO, console
 EOL
 
-/usr/bin/java \
+exec /usr/bin/java \
         -Dblueflood.config=file:./blueflood.conf \
         -Dlog4j.configuration=file:./blueflood-log4j.properties \
         -Xms$MIN_HEAP_SIZE \
