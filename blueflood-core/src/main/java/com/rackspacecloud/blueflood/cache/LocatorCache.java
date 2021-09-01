@@ -5,10 +5,14 @@ import com.codahale.metrics.MetricRegistry;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.utils.Metrics;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * This class is used to cache locator's that were written recently to our persistence layers by the available writers.
@@ -20,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  *  {@link com.rackspacecloud.blueflood.inputs.processors.DiscoveryWriter} This supports metric discovery (/metric/search)
  *  {@link com.rackspacecloud.blueflood.inputs.processors.TokenDiscoveryWriter} This support metric tokens discovery (metric_name/search)
  *
- * Each writer maintains its own indicator in {@link LocatorCacheEntry} to indicate whether a locator is current. This
+ * Each writer maintains its own marker in the cache to indicate whether a locator is current. This
  * is useful in cases, where persisting a locator with one writer is successful but not with other writers.
  *
  */
@@ -28,34 +32,23 @@ public class LocatorCache {
 
     // this collection is used to reduce the number of locators that get written.
     // Simply, if a locator has been seen within the last 10 minutes, don't bother.
-    private final Cache<String, LocatorCacheEntry> insertedLocators;
+    private final Cache<String, Boolean> insertedLocators;
 
     // this collection is used to reduce the number of delayed locators that get
     // written per slot. Simply, if a locator has been seen for a slot, don't bother.
     private final Cache<String, Boolean> insertedDelayedLocators;
 
-    private static LocatorCache instance = new LocatorCache(10, TimeUnit.MINUTES,
-                                                            3, TimeUnit.DAYS);
+    private final static LocatorCache instance = new LocatorCache(10, TimeUnit.MINUTES, 3, TimeUnit.DAYS);
 
+    public enum Layer { BATCH, DISCOVERY, TOKEN_DISCOVERY }
 
     static {
         Metrics.getRegistry().register(MetricRegistry.name(LocatorCache.class, "Current Locators Count"),
-                new Gauge<Long>() {
-                    @Override
-                    public Long getValue() {
-                        return instance.getCurrentLocatorCount();
-                    }
-                });
+                (Gauge<Long>) instance::getCurrentLocatorCount);
 
         Metrics.getRegistry().register(MetricRegistry.name(LocatorCache.class, "Current Delayed Locators Count"),
-                new Gauge<Long>() {
-                    @Override
-                    public Long getValue() {
-                        return instance.getCurrentDelayedLocatorCount();
-                    }
-                });
+                (Gauge<Long>) instance::getCurrentDelayedLocatorCount);
     }
-
 
     public static LocatorCache getInstance() {
         return instance;
@@ -63,18 +56,19 @@ public class LocatorCache {
 
     protected LocatorCache(long expireAfterAccessDuration, TimeUnit expireAfterAccessTimeUnit,
                            long expireAfterWriteDuration, TimeUnit expireAfterWriteTimeUnit) {
-
+        int concurrency = Configuration.getInstance().getIntegerProperty(CoreConfig.LOCATOR_CACHE_CONCURRENCY);
         insertedLocators =
                 CacheBuilder.newBuilder()
                         .expireAfterAccess(expireAfterAccessDuration, expireAfterAccessTimeUnit)
                         .expireAfterWrite(expireAfterWriteDuration, expireAfterWriteTimeUnit)
-                        .concurrencyLevel(16)
+                        .concurrencyLevel(concurrency)
                         .build();
 
         insertedDelayedLocators =
                 CacheBuilder.newBuilder()
                         .expireAfterAccess(expireAfterAccessDuration, expireAfterAccessTimeUnit)
-                        .concurrencyLevel(16)
+                        .expireAfterWrite(expireAfterWriteDuration, expireAfterWriteTimeUnit)
+                        .concurrencyLevel(concurrency)
                         .build();
     }
 
@@ -96,43 +90,27 @@ public class LocatorCache {
 
     /**
      * Checks if Locator is recently inserted in the batch layer
-     *
-     * @param loc
-     * @return
      */
     public boolean isLocatorCurrentInBatchLayer(Locator loc) {
-        LocatorCacheEntry entry = insertedLocators.getIfPresent(loc.toString());
-        return entry != null && entry.isBatchCurrent();
+        return isLocatorCurrentInLayer(loc, Layer.BATCH);
     }
 
     /**
      * Checks if Locator is recently inserted in the discovery layer
-     *
-     * @param loc
-     * @return
      */
     public boolean isLocatorCurrentInDiscoveryLayer(Locator loc) {
-        LocatorCacheEntry entry = insertedLocators.getIfPresent(loc.toString());
-        return entry != null && entry.isDiscoveryCurrent();
+        return isLocatorCurrentInLayer(loc, Layer.DISCOVERY);
     }
 
     /**
      * Checks if Locator is recently inserted in the token discovery layer
-     *
-     * @param loc
-     * @return
      */
     public boolean isLocatorCurrentInTokenDiscoveryLayer(Locator loc) {
-        LocatorCacheEntry entry = insertedLocators.getIfPresent(loc.toString());
-        return entry != null && entry.isTokenDiscoveryCurrent();
+        return isLocatorCurrentInLayer(loc, Layer.TOKEN_DISCOVERY);
     }
 
     /**
      * Check if the delayed locator is recently inserted for a given slot
-     *
-     * @param slot
-     * @param locator
-     * @return
      */
     public boolean isDelayedLocatorForASlotCurrent(int slot, Locator locator) {
         return insertedDelayedLocators.getIfPresent(getLocatorSlotKey(slot, locator)) != null;
@@ -142,45 +120,29 @@ public class LocatorCache {
         return slot + "," + locator.toString();
     }
 
-    private LocatorCacheEntry getOrCreateInsertedLocatorEntry(Locator loc) {
-        LocatorCacheEntry entry = insertedLocators.getIfPresent(loc.toString());
-
-        if(entry == null) {
-            entry = new LocatorCacheEntry();
-            insertedLocators.put(loc.toString(), entry);
-        }
-
-        return entry;
-    }
-
     /**
      * Marks the Locator as recently inserted in the batch layer
-     * @param loc
      */
     public void setLocatorCurrentInBatchLayer(Locator loc) {
-        getOrCreateInsertedLocatorEntry(loc).setBatchCurrent();
+        setLocatorCurrentInLayer(loc, Layer.BATCH);
     }
 
     /**
      * Marks the Locator as recently inserted in the discovery layer
-     * @param loc
      */
     public void setLocatorCurrentInDiscoveryLayer(Locator loc) {
-        getOrCreateInsertedLocatorEntry(loc).setDiscoveryCurrent();
+        setLocatorCurrentInLayer(loc, Layer.DISCOVERY);
     }
 
     /**
      * Marks the Locator as recently inserted in the token discovery layer
-     * @param loc
      */
     public void setLocatorCurrentInTokenDiscoveryLayer(Locator loc) {
-        getOrCreateInsertedLocatorEntry(loc).setTokenDiscoveryCurrent();
+        setLocatorCurrentInLayer(loc, Layer.TOKEN_DISCOVERY);
     }
 
     /**
      * Marks the delayed locator as recently inserted for a given slot
-     * @param slot
-     * @param locator
      */
     public void setDelayedLocatorForASlotCurrent(int slot, Locator locator) {
         insertedDelayedLocators.put(getLocatorSlotKey(slot, locator), Boolean.TRUE);
@@ -198,36 +160,40 @@ public class LocatorCache {
     }
 
     /**
-     * Cache entry which defines where the locator has been inserted into during the caching period.
+     * Checks if a locator is cached in the given layer. It works like other isLocatorCurrentIn* methods but accepts
+     * the "layer" as an argument instead of as part of the method name.
+     * @param locator value to check for in the cache
+     * @param layer the layer that the locator value must be in
+     * @return true if the locator is set in the layer, else false
      */
-    private class LocatorCacheEntry {
-        private boolean discoveryCurrent = false;
-        private boolean batchCurrent = false;
-        private boolean tokenDiscoveryCurrent = false;
-
-        void setDiscoveryCurrent() {
-            this.discoveryCurrent = true;
-        }
-
-        void setBatchCurrent() {
-            this.batchCurrent = true;
-        }
-
-        void setTokenDiscoveryCurrent() {
-            this.tokenDiscoveryCurrent = true;
-        }
-
-        boolean isDiscoveryCurrent() {
-            return discoveryCurrent;
-        }
-
-        boolean isBatchCurrent() {
-            return batchCurrent;
-        }
-
-        boolean isTokenDiscoveryCurrent() {
-            return tokenDiscoveryCurrent;
-        }
+    public boolean isLocatorCurrentInLayer(Locator locator, Layer layer) {
+        return insertedLocators.getIfPresent(toCacheKey(locator, layer)) != null;
     }
 
+    /**
+     * Sets a locator as current in a given layer. It works like other setLocatorCurrentIn* methods but accepts the
+     * "layer" as an argument instead of as part of the method name.
+     * @param locator value to set as current in the cache
+     * @param layer the layer in which to set it current
+     */
+    public void setLocatorCurrentInLayer(Locator locator, Layer layer) {
+        insertedLocators.put(toCacheKey(locator, layer), true);
+    }
+
+    private String toCacheKey(Locator locator, Layer layer) {
+        return layer.name() + "." + locator.toString();
+    }
+
+    /**
+     * Gets all locators that are current in the given layer. Use with caution, as this could be a huge list.
+     * Recommended only for use in testing.
+     */
+    public List<Locator> getAllCurrentInLayer(Layer layer) {
+        String prefix = layer.name() + ".";
+        return insertedLocators.asMap().keySet().stream()
+                .filter(key -> key.startsWith(prefix))
+                .map(key -> key.replaceFirst(prefix, ""))
+                .map(Locator::createLocatorFromDbKey)
+                .collect(Collectors.toList());
+    }
 }

@@ -134,6 +134,12 @@ public enum CoreConfig implements ConfigDefaults {
 
     METRIC_BATCH_SIZE("100"),
 
+    // The metrics batch writer uses a cache to determine if it's updated various marker "layers" with a metric
+    // recently. This setting tunes write concurrency of the cache.
+    // IMPORTANT: All threads writing to the database contend for access to this cache. Setting the concurrency too low
+    // will impact metric writing throughput.
+    LOCATOR_CACHE_CONCURRENCY("16"),
+
     CASSANDRA_REQUEST_TIMEOUT("10000"),
     // set <= 0 to not retry
     CASSANDRA_MAX_RETRIES("5"),
