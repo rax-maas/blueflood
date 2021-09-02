@@ -66,6 +66,21 @@
               </sources>
             </configuration>
           </execution>
+          <execution>
+            <id>add-integration-test-resources</id>
+            <phase>generate-test-resources</phase>
+            <goals>
+              <goal>add-test-resource</goal>
+            </goals>
+            <configuration>
+              <!-- Configures the resource directory of integration tests. -->
+              <resources>
+                <resource>
+                  <directory>src/integration-test/resources</directory>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
    
@@ -119,9 +134,6 @@
                 <CASSANDRA_DRIVER>datastax</CASSANDRA_DRIVER>
               </systemPropertyVariables>
               <testSourceDirectory>src/integration-test/java</testSourceDirectory>
-              <!-- do not require zookeeper for these tests. -->
-              <argLine>-DZOOKEEPER_CLUSTER=NONE</argLine>
-              <argLine>-Dlog4j.configuration=file://${basedir}/src/test/resources/log4j-test.properties ${jacoco.agent.it.argLine} -Xmx1024m -XX:MaxPermSize=256m</argLine>
               <!-- Skips integration tests if the value of skip.integration.tests property is true -->
               <skipTests>${skip.integration.tests}</skipTests>
               <includes>
