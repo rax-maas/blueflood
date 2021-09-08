@@ -1,0 +1,53 @@
+language: java
+jdk:
+  - oraclejdk8
+
+sudo: false
+
+cache:
+  directories:
+    - $HOME/.m2
+
+# this is to suppress Travis running its default mvn install
+install: true
+
+script: 
+  - mvn clean install -Dmaven.javadoc.skip --quiet
+
+after_success:
+  - mvn package -P all-modules dependency:resolve -Dmaven.test.skip -Dmaven.javadoc.skip -Dcassandra.skip
+  - mvn jacoco:report jacoco:report-integration coveralls:report
+
+before_deploy:
+  - git config --global user.email "builds@travis-ci.com"
+  - git config --global user.name "Travis CI"
+  - source versions.properties; export GIT_TAG=blueflood-${RELEASE_VERSION}
+  - git tag $GIT_TAG -a -m "Generated tag from TravisCI for build $TRAVIS_BUILD_NUMBER"
+  - git push -q https://$API_KEY@github.com/rackerlabs/blueflood --tags
+  - cp ./blueflood-all/target/blueflood-all-*-jar-with-dependencies.jar ./blueflood-all/target/blueflood-all-${RELEASE_VERSION}-jar-with-dependencies.jar
+
+deploy:
+  skip_cleanup: true
+  provider: releases
+  api_key: $API_KEY
+  file_glob: true
+  file:
+    - "./blueflood-all/target/blueflood-all-${RELEASE_VERSION}-jar-with-dependencies.jar"
+  on:
+    repo: rackerlabs/blueflood
+    tags: false
+    branch: rax-release
+    jdk: oraclejdk8
+
+after_deploy:
+  # change pom.xml files to the next dev version
+  - source versions.properties; mvn versions:set -DnewVersion=${NEXT_DEV_VERSION}
+  - mvn versions:commit  # commit the new version in the pom.xml file
+  - git commit -a -m "Updating pom.xml files to the next development version for build $TRAVIS_BUILD_NUMBER"
+  - git push -q https://$API_KEY@gihub.com/rackerlabs/blueflood origin master
+
+notifications:
+  irc: "irc.freenode.net#blueflood"
+  email:
+    recepients:
+      - blueflood-discuss@googlegroups.com
