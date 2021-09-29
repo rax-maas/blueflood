@@ -1,8 +1,13 @@
 package com.rackspacecloud.blueflood.cache;
 
-import com.google.code.tempusfugit.temporal.Condition;
+import com.google.code.tempusfugit.concurrency.RepeatingRule;
+import com.google.code.tempusfugit.concurrency.annotations.Repeating;
 import com.rackspacecloud.blueflood.types.Locator;
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -24,6 +29,9 @@ import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 
 public class LocatorCacheTest {
+
+    @Rule
+    public RepeatingRule repeatedly = new RepeatingRule();
 
     private final LocatorCache cache = LocatorCache.getInstance(
             60, SECONDS, 60, SECONDS);
@@ -221,6 +229,80 @@ public class LocatorCacheTest {
                 assertThat(cache.isDelayedLocatorForASlotCurrent(1, locator), is(false)));
     }
 
+    private static class Record {
+        public final Locator locator;
+        public final LocatorCache.Layer layer;
+
+        public Record(Locator locator, LocatorCache.Layer layer) {
+            this.locator = locator;
+            this.layer = layer;
+        }
+    }
+
+    @Test
+    // Repeat in order to exercise multiple values for the various random settings in the test, providing greater
+    // overall coverage.
+    @Repeating(repetition = 25)
+    public void handlesRandomConcurrencyLoad() {
+        Random r = new Random();
+        ConcurrentLinkedQueue<LocatorCacheTest.Record> myRecords = new ConcurrentLinkedQueue<>();
+        int concurrency = 2 + r.nextInt(20);
+        int executions = 1 + r.nextInt(1000);
+        System.out.println("Test concurrency with " + concurrency + " threads and " + executions + " executions");
+        doConcurrently(concurrency, executions, () -> {
+            // For each execution, put a random locator in a random layer
+            Locator locator = Locator.createLocatorFromDbKey("foo." + r.nextInt(1000));
+            LocatorCache.Layer layer = LocatorCache.Layer.values()[r.nextInt(3)];
+            if (!cache.isLocatorCurrentInLayer(locator, layer)) {
+                cache.setLocatorCurrentInLayer(locator, layer);
+            }
+            // Remember what we did
+            myRecords.offer(new LocatorCacheTest.Record(locator, layer));
+        });
+        // Sanity check our data
+        assertThat(myRecords.size(), equalTo(executions));
+        // Now verify that everything we set is remembered
+        for (LocatorCacheTest.Record record : myRecords) {
+            assertThat(record.locator, isCurrentIn(cache, record.layer));
+        }
+    }
+
+    private static Matcher<Locator> isCurrentIn(LocatorCache cache, LocatorCache.Layer layer) {
+        return new IsCurrentInMatcher(cache, layer);
+    }
+
+    private static class IsCurrentInMatcher extends BaseMatcher<Locator> {
+        private final LocatorCache cache;
+        private final LocatorCache.Layer layer;
+
+        public IsCurrentInMatcher(LocatorCache cache, LocatorCache.Layer layer) {
+            this.cache = cache;
+            this.layer = layer;
+        }
+
+        @Override
+        public boolean matches(Object item) {
+            if (!(item instanceof Locator)) {
+                return false;
+            }
+            Locator locator = (Locator) item;
+            return cache.isLocatorCurrentInLayer(locator, layer);
+        }
+
+        @Override
+        public void describeTo(Description description) {
+            description.appendText("a locator value that's current in the '" + layer + "' layer");
+        }
+
+        @Override
+        public void describeMismatch(Object item, Description description) {
+            description
+                    .appendValue(item)
+                    .appendText(" is missing; layer contains: ")
+                    .appendValue(cache.getAllCurrentInLayer(layer));
+        }
+    }
+
     @Test
     // DO NOT synchronize this cache. It bottlenecks all the database writing threads and kills write performance!
     // This is difficult to show in a unit test, but it's clearly observable in production.
@@ -230,6 +312,38 @@ public class LocatorCacheTest {
             if (line.contains("synchronized")) {
                 fail("Found 'synchronized' in line:\n" + line);
             }
+        }
+    }
+
+    /**
+     * Test helper that executes a given runnable multiple times in multiple threads. This was written, rather than
+     * using tempus fugit's @Concurrent annotation, because I want to run lots of operations on the cache in parallel,
+     * then verify the results, and then I want to repeat that test several times.
+     *
+     * @param concurrency how many threads will run at the same time
+     * @param executions  how many times to execute the runnable
+     * @param runnable    the runnable to execute
+     */
+    private void doConcurrently(int concurrency, int executions, Runnable runnable) {
+        ExecutorService executorService = Executors.newFixedThreadPool(concurrency);
+        CountDownLatch starter = new CountDownLatch(1);
+        for (int i = 0; i < executions; i++) {
+            executorService.submit(() -> {
+                starter.await();
+                runnable.run();
+                return true;
+            });
+        }
+        try {
+            // let all threads get ready
+            Thread.sleep(100);
+            // signal all threads to start
+            starter.countDown();
+            // wait for all threads to finish
+            executorService.shutdown();
+            assertThat(executorService.awaitTermination(10, SECONDS), is(true));
+        } catch (InterruptedException e) {
+            throw new RuntimeException("Unexpected interrupt", e);
         }
     }
 }
