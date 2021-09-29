@@ -39,8 +39,6 @@ public class HttpMultiRollupsQueryHandlerIntegrationTest extends HttpIntegration
 
     private final long TIME_DIFF = 2000;
     private final String tenant_id = "333333";
-    private long start = System.currentTimeMillis() - TIME_DIFF;
-    private long end = System.currentTimeMillis() + TIME_DIFF;
 
     @Test
     public void testHttpMultiRollupsQueryHandler() throws Exception {
@@ -48,10 +46,12 @@ public class HttpMultiRollupsQueryHandlerIntegrationTest extends HttpIntegration
         String postfix = getPostfix();
 
         // post multi metrics for ingestion and verify
+        final long start = System.currentTimeMillis() - TIME_DIFF;
         HttpResponse response = postMetric(tenant_id, postAggregatedPath, "sample_payload.json", postfix);
         assertEquals( "Should get status 200 from ingestion server for POST", 200, response.getStatusLine().getStatusCode() );
         EntityUtils.consume(response.getEntity());
 
+        final long end = System.currentTimeMillis() + TIME_DIFF;
         JsonObject responseObject = getMultiMetricRetry( tenant_id, start, end, "200", "FULL", "",
                 "['3333333.G1s" + postfix + "','3333333.G10s" + postfix + "']", 2 );
 
