@@ -92,20 +92,6 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
 
     @BeforeClass
     public static void setUpHttp() throws Exception {
-
-        Configuration.getInstance().init();
-        Configuration.getInstance().setProperty(CoreConfig.CORS_ENABLED, "true");
-        Configuration.getInstance().setProperty(CoreConfig.CORS_ALLOWED_ORIGINS, configAllowedOrigins);
-        Configuration.getInstance().setProperty(CoreConfig.CORS_ALLOWED_HEADERS, configAllowedHeaders);
-        Configuration.getInstance().setProperty(CoreConfig.CORS_ALLOWED_METHODS, configAllowedMethods);
-        Configuration.getInstance().setProperty(CoreConfig.CORS_ALLOWED_MAX_AGE, configAllowedMaxAge);
-
-
-        // This is to help with Travis, which intermittently fail the following tests due
-        // to getting TimeoutException. This is done here because it needs to be before
-        // RollupHandler is instantiated.
-        Configuration.getInstance().setProperty(CoreConfig.ROLLUP_ON_READ_TIMEOUT_IN_SECONDS, "20");
-
         setupElasticSearch();
 
         setupIngestionServer();
