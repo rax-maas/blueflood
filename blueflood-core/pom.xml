@@ -374,13 +374,26 @@
         <version>3.18.2-GA</version>
         <scope>test</scope>
     </dependency>
-
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-library</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.google.code.tempus-fugit</groupId>
+      <artifactId>tempus-fugit</artifactId>
+      <version>1.2-SNAPSHOT</version>
+    </dependency>
   </dependencies>
 
   <repositories>
     <repository>
       <id>clojars.org</id>
       <url>http://clojars.org/repo</url>
+    </repository>
+    <repository>
+      <!-- For tempus-fugit 1.2-SNAPSHOT -->
+      <id>Sonatype</id>
+      <url>https://oss.sonatype.org/content/groups/public/</url>
     </repository>
   </repositories>
 

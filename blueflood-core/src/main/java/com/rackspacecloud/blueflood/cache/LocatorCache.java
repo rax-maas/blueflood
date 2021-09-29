@@ -100,7 +100,7 @@ public class LocatorCache {
      * @param loc
      * @return
      */
-    public synchronized boolean isLocatorCurrentInBatchLayer(Locator loc) {
+    public boolean isLocatorCurrentInBatchLayer(Locator loc) {
         LocatorCacheEntry entry = insertedLocators.getIfPresent(loc.toString());
         return entry != null && entry.isBatchCurrent();
     }
@@ -111,7 +111,7 @@ public class LocatorCache {
      * @param loc
      * @return
      */
-    public synchronized boolean isLocatorCurrentInDiscoveryLayer(Locator loc) {
+    public boolean isLocatorCurrentInDiscoveryLayer(Locator loc) {
         LocatorCacheEntry entry = insertedLocators.getIfPresent(loc.toString());
         return entry != null && entry.isDiscoveryCurrent();
     }
@@ -122,7 +122,7 @@ public class LocatorCache {
      * @param loc
      * @return
      */
-    public synchronized boolean isLocatorCurrentInTokenDiscoveryLayer(Locator loc) {
+    public boolean isLocatorCurrentInTokenDiscoveryLayer(Locator loc) {
         LocatorCacheEntry entry = insertedLocators.getIfPresent(loc.toString());
         return entry != null && entry.isTokenDiscoveryCurrent();
     }
@@ -134,7 +134,7 @@ public class LocatorCache {
      * @param locator
      * @return
      */
-    public synchronized boolean isDelayedLocatorForASlotCurrent(int slot, Locator locator) {
+    public boolean isDelayedLocatorForASlotCurrent(int slot, Locator locator) {
         return insertedDelayedLocators.getIfPresent(getLocatorSlotKey(slot, locator)) != null;
     }
 
@@ -157,7 +157,7 @@ public class LocatorCache {
      * Marks the Locator as recently inserted in the batch layer
      * @param loc
      */
-    public synchronized void setLocatorCurrentInBatchLayer(Locator loc) {
+    public void setLocatorCurrentInBatchLayer(Locator loc) {
         getOrCreateInsertedLocatorEntry(loc).setBatchCurrent();
     }
 
@@ -165,7 +165,7 @@ public class LocatorCache {
      * Marks the Locator as recently inserted in the discovery layer
      * @param loc
      */
-    public synchronized void setLocatorCurrentInDiscoveryLayer(Locator loc) {
+    public void setLocatorCurrentInDiscoveryLayer(Locator loc) {
         getOrCreateInsertedLocatorEntry(loc).setDiscoveryCurrent();
     }
 
@@ -173,7 +173,7 @@ public class LocatorCache {
      * Marks the Locator as recently inserted in the token discovery layer
      * @param loc
      */
-    public synchronized void setLocatorCurrentInTokenDiscoveryLayer(Locator loc) {
+    public void setLocatorCurrentInTokenDiscoveryLayer(Locator loc) {
         getOrCreateInsertedLocatorEntry(loc).setTokenDiscoveryCurrent();
     }
 
@@ -182,18 +182,18 @@ public class LocatorCache {
      * @param slot
      * @param locator
      */
-    public synchronized void setDelayedLocatorForASlotCurrent(int slot, Locator locator) {
+    public void setDelayedLocatorForASlotCurrent(int slot, Locator locator) {
         insertedDelayedLocators.put(getLocatorSlotKey(slot, locator), Boolean.TRUE);
     }
 
     @VisibleForTesting
-    public synchronized void resetCache() {
+    public void resetCache() {
         insertedLocators.invalidateAll();
         insertedDelayedLocators.invalidateAll();
     }
 
     @VisibleForTesting
-    public synchronized void resetInsertedLocatorsCache() {
+    public void resetInsertedLocatorsCache() {
         insertedLocators.invalidateAll();
     }
 
