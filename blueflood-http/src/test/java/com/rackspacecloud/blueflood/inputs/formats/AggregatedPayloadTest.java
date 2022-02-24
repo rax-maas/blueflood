@@ -7,11 +7,8 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.regex.Pattern;
 
-import static com.rackspacecloud.blueflood.TestUtils.FUTURE_COLLECTION_TIME_REGEX;
-import static com.rackspacecloud.blueflood.TestUtils.PAST_COLLECTION_TIME_REGEX;
-import static com.rackspacecloud.blueflood.TestUtils.getJsonFromFile;
+import static com.rackspacecloud.blueflood.utils.TestUtils.getJsonFromFile;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
 
@@ -31,7 +28,7 @@ public class AggregatedPayloadTest {
         long timestamp = System.currentTimeMillis() + TIME_DIFF_MS
                 + Configuration.getInstance().getLongProperty( CoreConfig.AFTER_CURRENT_COLLECTIONTIME_MS );
 
-        String json = getJsonFromFile("sample_payload.json", timestamp, POSTFIX);
+        String json = getJsonFromFile("dataFiles/sample_payload.json", timestamp, POSTFIX);
         payload = AggregatedPayload.create(json);
 
         List<ErrorResponse.ErrorData> errors = payload.getValidationErrors();
@@ -45,7 +42,7 @@ public class AggregatedPayloadTest {
         long timestamp = System.currentTimeMillis() - TIME_DIFF_MS
                 - Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
 
-        String json = getJsonFromFile( "sample_payload.json", timestamp, POSTFIX);
+        String json = getJsonFromFile("dataFiles/sample_payload.json", timestamp, POSTFIX);
         payload = AggregatedPayload.create(json);
 
         List<ErrorResponse.ErrorData> errors = payload.getValidationErrors();
@@ -60,7 +57,7 @@ public class AggregatedPayloadTest {
         long shortDelay = Configuration.getInstance().getLongProperty(CoreConfig.SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS);
         long collectionTime = timeNow - trackerDelayMs - shortDelay - TIME_DIFF_MS;
 
-        String json = getJsonFromFile( "sample_single_aggregated_payload.json", collectionTime, POSTFIX);
+        String json = getJsonFromFile("dataFiles/sample_single_aggregated_payload.json", collectionTime, POSTFIX);
         payload = AggregatedPayload.create(json);
 
         assertTrue("payload has delayed metrics", payload.hasDelayedMetrics(timeNow));

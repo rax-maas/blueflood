@@ -26,7 +26,7 @@ public class RollupExecutionContext {
         owner.interrupt();
     }
 
-    void incrementReadCounter() {
+    public void incrementReadCounter() {
         readCounter.incrementAndGet();
     }
 
@@ -34,11 +34,11 @@ public class RollupExecutionContext {
         writeCounter.incrementAndGet();
     }
 
-    boolean doneReading() {
+    public boolean doneReading() {
         return readCounter.get() == 0;
     }
 
-    boolean doneWriting() {
+    public boolean doneWriting() {
         return writeCounter.get() == 0;
     }
 

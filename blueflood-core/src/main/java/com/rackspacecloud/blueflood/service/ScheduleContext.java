@@ -231,7 +231,7 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
      *
      */
     // only one thread should be calling in this puppy.
-    void scheduleEligibleSlots(long maxAgeMillis, long rollupDelayForMetricsWithShortDelay, long rollupWaitForMetricsWithLongDelay) {
+    public void scheduleEligibleSlots(long maxAgeMillis, long rollupDelayForMetricsWithShortDelay, long rollupWaitForMetricsWithLongDelay) {
         long now = scheduleTime;
         ArrayList<Integer> shardKeys = new ArrayList<Integer>(shardStateManager.getManagedShards());
         Collections.shuffle(shardKeys);
@@ -314,7 +314,7 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
      * @return
      */
     @VisibleForTesting
-    SlotKey getNextScheduled() {
+    public SlotKey getNextScheduled() {
         synchronized (scheduledSlots) {
             if (scheduledSlots.size() == 0)
                 return null;
@@ -379,7 +379,7 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
      *
      * @param slotKey
      */
-    void clearFromRunning(SlotKey slotKey) {
+    public void clearFromRunning(SlotKey slotKey) {
         synchronized (runningSlots) {
             runningSlots.remove(slotKey);
             UpdateStamp stamp = shardStateManager.getUpdateStamp(slotKey);
@@ -407,14 +407,14 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
     /**
      * true if anything is scheduled.
      */
-    boolean hasScheduled() {
+    public boolean hasScheduled() {
         return getScheduledCount() > 0;
     }
 
     /**
      * returns the number of scheduled rollups.
      */
-    int getScheduledCount() {
+    public int getScheduledCount() {
         synchronized (scheduledSlots) {
             return scheduledSlots.size();
         }
@@ -435,13 +435,13 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
     }
 
     // precondition: shard is unmanaged.
-    void addShard(int shard) {
+    public void addShard(int shard) {
         shardStateManager.add(shard);
         lockManager.addShard(shard);    
     }
     
     // precondition: shard is managed.
-    void removeShard(int shard) {
+    public void removeShard(int shard) {
         shardStateManager.remove(shard);
         lockManager.removeShard(shard);
     }

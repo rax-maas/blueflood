@@ -60,7 +60,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-class ZKShardLockManager implements ConnectionStateListener, ShardLockManager, ZKShardLockManagerMBean {
+public class ZKShardLockManager implements ConnectionStateListener, ShardLockManager, ZKShardLockManagerMBean {
     private static final Logger log = LoggerFactory.getLogger(ZKShardLockManager.class);
     private static final AtomicInteger UNIQUE_IDENTIFIER = new AtomicInteger(0);
 

@@ -60,12 +60,6 @@
 
     <!-- testing dependencies -->
     <dependency>
-      <groupId>pl.pragmatists</groupId>
-      <artifactId>JUnitParams</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>com.github.tlrx</groupId>
       <artifactId>elasticsearch-test</artifactId>
       <version>1.2.1</version>
@@ -96,7 +90,10 @@
       <artifactId>httpmime</artifactId>
       <version>4.3.1</version>
     </dependency>
-
+    <dependency>
+      <groupId>pl.pragmatists</groupId>
+      <artifactId>JUnitParams</artifactId>
+    </dependency>
   </dependencies>
 
 </project>

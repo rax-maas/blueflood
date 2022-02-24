@@ -5,10 +5,9 @@ import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Table;
 import com.google.common.collect.Tables;
-import com.rackspacecloud.blueflood.io.CassandraUtilsIO;
 import com.rackspacecloud.blueflood.io.MetadataIO;
+import com.rackspacecloud.blueflood.test.CassandraUtilsIO;
 import com.rackspacecloud.blueflood.types.Locator;
-
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;

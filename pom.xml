@@ -33,6 +33,7 @@
     <module>blueflood-http</module>
     <module>blueflood-cloudfiles</module>
     <module>blueflood-rollupTools</module>
+    <module>blueflood-integration-tests</module>
   </modules>
 
   <description>
@@ -60,17 +61,6 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>com.netflix.astyanax</groupId>
-        <artifactId>astyanax-core</artifactId>
-        <version>1.56.34</version>
-      </dependency>
-      <dependency>
-        <groupId>com.datastax.cassandra</groupId>
-        <artifactId>cassandra-driver-core</artifactId>
-        <version>3.2.0</version>
-        <classifier>shaded</classifier>
-      </dependency>
-      <dependency>
         <groupId>pl.pragmatists</groupId>
         <artifactId>JUnitParams</artifactId>
         <version>1.0.6</version>
@@ -80,20 +70,8 @@
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>
         <version>4.12</version>
-        <scope>test</scope>
+<!--        <scope>test</scope>-->
         <optional>true</optional>
-      </dependency>
-      <dependency>
-        <groupId>org.hamcrest</groupId>
-        <artifactId>hamcrest-core</artifactId>
-        <version>1.3</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.hamcrest</groupId>
-        <artifactId>hamcrest-library</artifactId>
-        <version>1.3</version>
-        <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
@@ -106,38 +84,6 @@
   <build>
     <pluginManagement>
       <plugins>
-        <plugin>
-          <groupId>org.codehaus.mojo</groupId>
-          <artifactId>build-helper-maven-plugin</artifactId>
-          <version>1.10</version>
-        </plugin>
-        <plugin>
-          <groupId>org.codehaus.mojo</groupId>
-          <artifactId>cassandra-maven-plugin</artifactId>
-          <version>${cassandra.plugin.version}</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-surefire-plugin</artifactId>
-          <version>2.19.1</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-failsafe-plugin</artifactId>
-          <version>2.19.1</version>
-          <configuration>
-            <systemPropertyVariables>
-              <!-- Load properties for the IT's from the module-local properties file -->
-              <blueflood.config>file:${basedir}/src/integration-test/resources/blueflood.properties</blueflood.config>
-            </systemPropertyVariables>
-            <!--
-            Include the jacoco agent for maven builds; note that IntelliJ WILL NOT resolve this property and won't apply
-            the arg line as a result. Don't put anything else important here! Use the IT blueflood.properties or some
-            other config mechanism appropriate to the integration tests.
-            -->
-            <argLine>${jacoco.agent.it.argLine}</argLine>
-          </configuration>
-        </plugin>
         <plugin>
           <groupId>com.spotify</groupId>
           <artifactId>docker-maven-plugin</artifactId>
@@ -215,58 +161,10 @@
         </executions>
       </plugin>
 
-      <!-- Used for integration tests -->
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>build-helper-maven-plugin</artifactId>
-        <version>1.8</version>
-        <executions>
-          <execution>
-            <id>reserve-network-port</id>
-            <goals>
-              <goal>reserve-network-port</goal>
-            </goals>
-            <phase>process-test-resources</phase>
-            <configuration>
-              <portNames>
-                <portName>cassandra.rpcPort</portName>
-                <portName>cassandra.nativeTransportPort</portName>
-                <portName>cassandra.jmxPort</portName>
-                <portName>cassandra.storagePort</portName>
-                <portName>cassandra.stopPort</portName>
-              </portNames>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>org.jacoco</groupId>
-        <artifactId>jacoco-maven-plugin</artifactId>
-        <version>0.7.2.201409121644</version>
-        <executions>
-          <execution>
-            <id>prepare-agent</id>
-            <goals>
-              <goal>prepare-agent</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>prepare-it-agent</id>
-            <phase>pre-integration-test</phase>
-            <goals>
-              <goal>prepare-agent-integration</goal>
-            </goals>
-            <configuration>
-              <propertyName>jacoco.agent.it.argLine</propertyName>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
+        <version>2.19.1</version>
         <configuration>
           <!-- Skips unit tests if the value of skip.unit.tests property is true -->
           <skipTests>${skip.unit.tests}</skipTests>
@@ -285,9 +183,8 @@
         <configuration>
           <jacocoReports>
             <jacocoReport>blueflood-core/target/site/jacoco/jacoco.xml</jacocoReport>
-            <jacocoReport>blueflood-core/target/site/jacoco-it/jacoco.xml</jacocoReport>
+            <jacocoReport>blueflood-integration-tests/target/site/jacoco-it/jacoco.xml</jacocoReport>
             <jacocoReport>blueflood-http/target/site/jacoco/jacoco.xml</jacocoReport>
-            <jacocoReport>blueflood-http/target/site/jacoco-it/jacoco.xml</jacocoReport>
           </jacocoReports>
         </configuration>
       </plugin>
@@ -302,7 +199,7 @@
           <cassandraDir>/tmp/bf-cassandra-${cassandra.plugin.version}-${maven.build.timestamp}/</cassandraDir>
           <loadFailureIgnore>false</loadFailureIgnore>
           <startNativeTransport>true</startNativeTransport>
-          <script>${project.basedir}/src/cassandra/cli/load.cdl</script>
+          <script>${main.basedir}/src/cassandra/cli/load.cdl</script>
           <cqlVersion>3.0.0</cqlVersion>
         </configuration>
         <executions>

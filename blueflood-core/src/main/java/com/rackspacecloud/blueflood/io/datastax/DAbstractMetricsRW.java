@@ -324,7 +324,7 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
      * @param metric
      * @return
      */
-    protected boolean isDelayed(IMetric metric) {
+    public boolean isDelayed(IMetric metric) {
         long delay = clock.now().getMillis() - metric.getCollectionTime();
         return delay > MAX_AGE_ALLOWED;
     }
@@ -364,7 +364,7 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
      * @param metric
      * @return
      */
-    protected BoundStatement getBoundStatementForMetricIfDelayed(IMetric metric) {
+    public BoundStatement getBoundStatementForMetricIfDelayed(IMetric metric) {
         Locator locator = metric.getLocator();
         if ( isDelayed(metric) ) {
             int slot = getDelayedSlot(metric);

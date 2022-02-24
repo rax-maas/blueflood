@@ -80,7 +80,7 @@ public class ShardStateManager {
         this.clock = clock;
     }
 
-    protected Collection<Integer> getManagedShards() {
+    public Collection<Integer> getManagedShards() {
         return Collections.unmodifiableCollection(this.shards);
     }
 
@@ -104,7 +104,7 @@ public class ShardStateManager {
         return shardToGranularityStates.get(shard).granularityToSlots.get(granularity);
     }
 
-    protected UpdateStamp getUpdateStamp(SlotKey slotKey) {
+    public UpdateStamp getUpdateStamp(SlotKey slotKey) {
         SlotStateManager slotStateManager = this.getSlotStateManager(slotKey.getShard(), slotKey.getGranularity());
         UpdateStamp stamp = slotStateManager.slotToUpdateStampMap.get(slotKey.getSlot());
         return stamp;
@@ -186,7 +186,7 @@ public class ShardStateManager {
         }
     }
 
-    protected class SlotStateManager {
+    public class SlotStateManager {
         private final int shard;
         final Granularity granularity;
         final ConcurrentMap<Integer, UpdateStamp> slotToUpdateStampMap;
@@ -310,7 +310,7 @@ public class ShardStateManager {
         }
 
         // gets a snapshot of the last updates
-        protected Map<Integer, UpdateStamp> getSlotStamps() {
+        public Map<Integer, UpdateStamp> getSlotStamps() {
             // essentially a copy on read map.
             return Collections.unmodifiableMap(slotToUpdateStampMap);
         }

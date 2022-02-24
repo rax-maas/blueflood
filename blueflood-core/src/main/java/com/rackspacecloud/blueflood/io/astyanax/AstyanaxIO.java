@@ -113,11 +113,11 @@ public class AstyanaxIO {
         return connectionPoolConfiguration;
     }
 
-    protected static Keyspace getKeyspace() {
+    public static Keyspace getKeyspace() {
         return keyspace;
     }
 
-    protected AbstractSerializer serializerFor(RollupType rollupType, Granularity gran) {
+    public AbstractSerializer serializerFor(RollupType rollupType, Granularity gran) {
         if (rollupType == null) {
             rollupType = RollupType.BF_BASIC;
         }
