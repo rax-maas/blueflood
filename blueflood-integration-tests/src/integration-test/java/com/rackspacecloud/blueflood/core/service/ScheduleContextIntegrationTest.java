@@ -44,8 +44,7 @@ public class ScheduleContextIntegrationTest {
         manageShards.add(5);
         manageShards.add(7);
         manageShards.add(11);
-        context = new ScheduleContext(1234, manageShards, Configuration.getInstance().getStringProperty(
-            CoreConfig.ZOOKEEPER_CLUSTER));
+        context = new ScheduleContext(1234, manageShards, Configuration.getInstance().getStringProperty(CoreConfig.ZOOKEEPER_CLUSTER));
         shardStateManager = context.getShardStateManager();
     }
 

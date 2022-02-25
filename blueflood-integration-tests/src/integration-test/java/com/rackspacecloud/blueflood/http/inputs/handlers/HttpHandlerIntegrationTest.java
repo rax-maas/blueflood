@@ -375,8 +375,7 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
         long pastTime = System.currentTimeMillis() - TIME_DIFF_MS - BEFORE_CURRENT_COLLECTIONTIME_MS;
         long futureTime = System.currentTimeMillis() + TIME_DIFF_MS + AFTER_CURRENT_COLLECTIONTIME_MS;
 
-        String jsonBody = getJsonFromFile(
-            "dataFiles/sample_multi_aggregated_payload_with_different_time.json", postfix);
+        String jsonBody = getJsonFromFile("dataFiles/sample_multi_aggregated_payload_with_different_time.json", postfix);
         jsonBody = updateTimeStampJson(jsonBody, "\"%TIMESTAMP_1%\"", validTime);
         jsonBody = updateTimeStampJson(jsonBody, "\"%TIMESTAMP_2%\"", pastTime);
         jsonBody = updateTimeStampJson(jsonBody, "\"%TIMESTAMP_3%\"", futureTime);

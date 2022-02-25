@@ -59,8 +59,7 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public class LocatorFetchRunnableIntegrationTest extends IntegrationTestBase {
 
-    private static final int MAX_ROLLUP_READ_THREADS = Configuration.getInstance().getIntegerProperty(
-        CoreConfig.MAX_ROLLUP_READ_THREADS);
+    private static final int MAX_ROLLUP_READ_THREADS = Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_ROLLUP_READ_THREADS);
     private static final int MAX_ROLLUP_WRITE_THREADS = Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_ROLLUP_WRITE_THREADS);
     private static int WRITE_THREADS = Configuration.getInstance().getIntegerProperty(CoreConfig.METRICS_BATCH_WRITER_THREADS);
     private static TimeValue timeout = new TimeValue(10, TimeUnit.SECONDS);
