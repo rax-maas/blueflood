@@ -99,6 +99,8 @@ public class TrackerTest {
         delayedMetrics = new ArrayList<Metric>();
         delayedMetrics.add(delayMetric1);
         delayedMetrics.add(delayMetric2);
+
+        tracker.removeAllTenants();
     }
 
     @Test
