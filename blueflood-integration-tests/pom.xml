@@ -56,6 +56,12 @@
     </dependency>
 
     <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>12.0.1</version>
+    </dependency>
+
+    <dependency>
       <groupId>pl.pragmatists</groupId>
       <artifactId>JUnitParams</artifactId>
     </dependency>
@@ -167,6 +173,7 @@
               <goal>integration-test</goal>
             </goals>
             <configuration>
+              <trimStackTrace>false</trimStackTrace>
               <systemPropertyVariables>
                 <CASSANDRA_HOSTS>${cassandra.listenAddress}:${cassandra.rpcPort}</CASSANDRA_HOSTS>
                 <DEFAULT_CASSANDRA_PORT>${cassandra.rpcPort}</DEFAULT_CASSANDRA_PORT>
@@ -180,13 +187,6 @@
               <includes>
                 <include>**/*Integration*.java</include>
               </includes>
-              <excludes>
-                <!-- requires an API service -->
-                <exclude>**/InternalApiIntegrationTest.java</exclude>
-                <!-- this one requires a live zookeeper -->
-                <exclude>**/ZKShardLockManagerIntegrationTest.java</exclude>
-                <exclude>**/ScheduleContextIntegrationTest.java</exclude>
-              </excludes>
             </configuration>
           </execution>
           <execution>
