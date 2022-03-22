@@ -379,7 +379,9 @@
               </execution>
             </executions>
             <configuration>
-              <skip>true</skip>
+              <homedir>${gpg.homedir}</homedir>
+              <keyname>${gpg.keyname}</keyname>
+              <passphrase>${gpg.passphrase}</passphrase>
             </configuration>
           </plugin>
         </plugins>
