@@ -33,7 +33,7 @@ import java.util.Collections;
 /**
  * Base class for pushing/pulling shard state. Todo: just bring the two child classes inside this one.
  */
-abstract class ShardStateWorker implements Runnable, ShardStateWorkerMBean {
+public abstract class ShardStateWorker implements Runnable, ShardStateWorkerMBean {
     private static final Logger log = LoggerFactory.getLogger(ShardStateWorker.class);
     
     protected final Collection<Integer> allShards;
@@ -108,7 +108,7 @@ abstract class ShardStateWorker implements Runnable, ShardStateWorkerMBean {
     
     public ShardStateIO getIO() { return io; }
     
-    abstract void performOperation();
+    public abstract void performOperation();
    
     //
     // JMX methods

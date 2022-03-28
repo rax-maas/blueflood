@@ -18,7 +18,6 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.codahale.metrics.Meter;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.gson.Gson;
 import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.rackspacecloud.blueflood.inputs.formats.AggregatedPayload;
 import com.rackspacecloud.blueflood.io.Instrumentation;
@@ -49,7 +48,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import static com.rackspacecloud.blueflood.TestUtils.*;
+import static com.rackspacecloud.blueflood.utils.TestUtils.*;
 import static junit.framework.Assert.assertEquals;
 import static org.mockito.Matchers.*;
 import static org.mockito.Matchers.anyInt;
@@ -91,7 +90,7 @@ public class HttpAggregatedMultiIngestionHandlerTest extends HandlerTestsBase {
         when(processor.apply(any(MetricsCollection.class))).thenReturn(mockFuture);
         when(mockFuture.get(anyLong(), any(TimeUnit.class))).thenReturn(new ArrayList<Boolean>());
 
-        String json = getJsonFromFile("sample_multi_aggregated_payload.json", postfix);
+        String json = getJsonFromFile("dataFiles/sample_multi_aggregated_payload.json", postfix);
         bundleList = HttpAggregatedMultiIngestionHandler.createBundleList(json);
 
         ingestedMetrics = Instrumentation.getIngestedMetricsMeter(TENANT);
@@ -238,7 +237,7 @@ public class HttpAggregatedMultiIngestionHandlerTest extends HandlerTestsBase {
         long delayedTime = new DefaultClockImpl().now().getMillis() - 100 -
                 Configuration.getInstance().getLongProperty(CoreConfig.ROLLUP_DELAY_MILLIS);
         FullHttpRequest request = createIngestRequest(
-                getJsonFromFile("sample_multi_aggregated_payload.json", delayedTime, postfix));
+                getJsonFromFile("dataFiles/sample_multi_aggregated_payload.json", delayedTime, postfix));
 
         long ingestedMetricsBefore = ingestedMetrics.getCount();
         long ingestedDelayedMetricsBefore = ingestedDelayedMetrics.getCount();
@@ -263,7 +262,7 @@ public class HttpAggregatedMultiIngestionHandlerTest extends HandlerTestsBase {
     public void perTenantMetricsOn_shouldRecordNonDelayedMetrics() throws Exception {
         long timestamp = new DefaultClockImpl().now().getMillis();
         FullHttpRequest request = createIngestRequest(
-                getJsonFromFile("sample_multi_aggregated_payload.json", timestamp, postfix));
+                getJsonFromFile("dataFiles/sample_multi_aggregated_payload.json", timestamp, postfix));
 
         long ingestedMetricsBefore = ingestedMetrics.getCount();
         long ingestedDelayedMetricsBefore = ingestedDelayedMetrics.getCount();
@@ -289,7 +288,7 @@ public class HttpAggregatedMultiIngestionHandlerTest extends HandlerTestsBase {
     public void perTenantMetricsOff_shouldNotRecordMetrics() throws Exception {
         long timestamp = new DefaultClockImpl().now().getMillis();
         FullHttpRequest request = createIngestRequest(
-                getJsonFromFile("sample_multi_aggregated_payload.json", timestamp, postfix));
+                getJsonFromFile("dataFiles/sample_multi_aggregated_payload.json", timestamp, postfix));
 
         long ingestedMetricsBefore = ingestedMetrics.getCount();
         long ingestedDelayedMetricsBefore = ingestedDelayedMetrics.getCount();

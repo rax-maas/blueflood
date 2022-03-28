@@ -37,7 +37,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  * fetches locators for a given slot and feeds a worker queue with rollup work. When those are all done notifies the
  * RollupService that slot can be removed from running.
   */
-class LocatorFetchRunnable implements Runnable {
+public class LocatorFetchRunnable implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(LocatorFetchRunnable.class);
     private static final int LOCATOR_WAIT_FOR_ALL_SECS = 1000;
     
@@ -62,7 +62,7 @@ class LocatorFetchRunnable implements Runnable {
 
     private Range parentRange;
 
-    LocatorFetchRunnable(ScheduleContext scheduleCtx,
+    public LocatorFetchRunnable(ScheduleContext scheduleCtx,
                          SlotKey destSlotKey,
                          ExecutorService rollupReadExecutor,
                          ThreadPoolExecutor rollupWriteExecutor) {
@@ -173,11 +173,11 @@ class LocatorFetchRunnable implements Runnable {
         return locators;
     }
 
-    protected RollupExecutionContext createRollupExecutionContext() {
+    public RollupExecutionContext createRollupExecutionContext() {
         return new RollupExecutionContext(Thread.currentThread());
     }
 
-    protected RollupBatchWriter createRollupBatchWriter(RollupExecutionContext executionContext) {
+    public RollupBatchWriter createRollupBatchWriter(RollupExecutionContext executionContext) {
         return new RollupBatchWriter(rollupWriteExecutor, executionContext);
     }
 

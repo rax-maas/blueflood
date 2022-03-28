@@ -48,7 +48,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import static com.rackspacecloud.blueflood.TestUtils.getJsonFromFile;
+import static com.rackspacecloud.blueflood.utils.TestUtils.getJsonFromFile;
 import static junit.framework.Assert.assertEquals;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.*;
@@ -92,7 +92,7 @@ public class HttpAggregatedIngestionHandlerTest extends HandlerTestsBase {
     @Before
     public void buildPayload() throws IOException {
 
-        payloadJson = getJsonFromFile("sample_payload.json", postfix);
+        payloadJson = getJsonFromFile("dataFiles/sample_payload.json", postfix);
     }
     
     @Test(expected = NumberFormatException.class)
