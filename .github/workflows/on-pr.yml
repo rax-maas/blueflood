@@ -15,7 +15,7 @@ jobs:
         with:
           java-version: ${{ matrix.java-version }}
       # Step that does that actual cache save and restore
-      - uses: actions/cache@v1
+      - uses: actions/cache@v2
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
