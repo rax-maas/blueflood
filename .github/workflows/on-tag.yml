@@ -23,7 +23,7 @@ jobs:
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-            restore-keys: |
+          restore-keys: |
               ${{ runner.os }}-maven-
       - name: Configure Git user
         run: |
@@ -34,13 +34,13 @@ jobs:
           version="${GITHUB_REF#refs/tags/}"
           echo "RELEASE_VERSION=$version" >> $GITHUB_ENV
       - name: Setup SSH Keys and known_hosts
-          env:
-            SSH_AUTH_SOCK: /tmp/ssh_agent.sock
-          run: |
-            mkdir -p ~/.ssh
-            ssh-keyscan github.com >> ~/.ssh/known_hosts
-            ssh-agent -a $SSH_AUTH_SOCK > /dev/null
-            ssh-add - <<< "${{ secrets.SSH_PRIVATE_KEY }}"
+        env:
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          ssh-agent -a $SSH_AUTH_SOCK > /dev/null
+          ssh-add - <<< "${{ secrets.SSH_PRIVATE_KEY }}"
       - name: Generate changelog
         id: changelog
         uses: metcalfc/changelog-generator@v0.4.4

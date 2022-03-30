@@ -19,7 +19,7 @@ jobs:
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-            restore-keys: |
+          restore-keys: |
               ${{ runner.os }}-maven-
       - name: Configure git user
         run: |
