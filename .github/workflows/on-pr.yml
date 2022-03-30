@@ -14,7 +14,13 @@ jobs:
       - uses: actions/setup-java@v1
         with:
           java-version: ${{ matrix.java-version }}
-          cache: maven
+      # Step that does that actual cache save and restore
+      - uses: actions/cache@v1
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
       - name: Configure git user
         run: |
           git config user.email "actions@github.com"
