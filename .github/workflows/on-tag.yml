@@ -34,9 +34,6 @@ jobs:
         run: |
           version="${GITHUB_REF#refs/tags/}"
           echo "RELEASE_VERSION=$version" >> $GITHUB_ENV
-      - uses: webfactory/ssh-agent@v0.5.4
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
       - name: Generate changelog
         id: changelog
         uses: metcalfc/changelog-generator@v0.4.4

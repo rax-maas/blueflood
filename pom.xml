@@ -418,9 +418,9 @@
   </parent>
 
   <scm>
-    <connection>scm:git@github.com:rackerlabs/blueflood.git</connection>
-    <developerConnection>scm:git:git@github.com:rackerlabs/blueflood.git</developerConnection>
-    <url>git@github.com:rackerlabs/blueflood.git</url>
+    <connection>scm:https://github.com/richarxt/blueflood</connection>
+    <developerConnection>scm:git:https://github.com/richarxt/blueflood</developerConnection>
+    <url>https://github.com/richarxt/blueflood</url>
   </scm>
 
   <developers>
