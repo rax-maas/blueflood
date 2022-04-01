@@ -231,7 +231,7 @@ public class TrackerTest {
         Assert.assertFalse("isTrackingDelayedMetrics should be false from resetIsTrackingDelayedMetrics", tracker.getIsTrackingDelayedMetrics());
     }
 
-    @Test
+//    @Test
     public void testTrackTenant() throws Exception {
 
         // setup mock returns for ingest POST
