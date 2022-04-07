@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           ref: test-ci
-      - uses: actions/setup-java@v1
+      - uses: actions/setup-java@v2
         with:
           distribution: 'zulu'
           java-version: ${{ matrix.java-version }}
@@ -39,7 +39,7 @@ jobs:
           echo "${{ steps.changelog.outputs.changelog }}" > CHANGELOG.md
           git add CHANGELOG.md
           mvn -B release:prepare -DreleaseVersion=${RELEASE_VERSION} -DpushChanges=false
-          mvn -B release:perform
+#          mvn -B release:perform
           mvn -P all-modules -B verify --no-transfer-progress
           cp ./blueflood-all/target/blueflood-all-*-jar-with-dependencies.jar ./blueflood-all/target/blueflood-all-${RELEASE_VERSION}-jar-with-dependencies.jar
         env:
