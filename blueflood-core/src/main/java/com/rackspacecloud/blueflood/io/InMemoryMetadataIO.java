@@ -1,4 +1,4 @@
-package com.rackspacecloud.blueflood.utils;
+package com.rackspacecloud.blueflood.io;
 
 import com.google.common.base.Supplier;
 import com.google.common.collect.HashBasedTable;
@@ -62,4 +62,3 @@ public class InMemoryMetadataIO implements MetadataIO, CassandraUtilsIO {
         backingTable.clear();
     }
 }
-
