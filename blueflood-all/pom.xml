@@ -11,7 +11,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <name>blueflood-all</name>
+  <name>Blueflood Artifact Assembly</name>
   <artifactId>blueflood-all</artifactId>
   <packaging>jar</packaging>
 
