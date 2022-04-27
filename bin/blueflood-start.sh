@@ -3,7 +3,7 @@
 #
 # This is a simple script that can be used to start blueflood service.
 # To run this, you must have built the blueflood package by running:
-#     mvn clean package -P all-modules
+#     mvn clean package
 #
 
 # directory where the script is located
@@ -14,7 +14,7 @@ TOPDIR=$SCRIPTDIR/..
 
 if [ ! -d $TOPDIR/blueflood-all/target ]; then
     echo "Error: blueflood-all/target directory does not exist. Please run build:"
-    echo "    mvn clean package -P all-modules"
+    echo "    mvn clean package"
     exit 1
 fi
 

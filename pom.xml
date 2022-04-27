@@ -34,6 +34,7 @@
     <module>blueflood-cloudfiles</module>
     <module>blueflood-rollupTools</module>
     <module>blueflood-integration-tests</module>
+    <module>blueflood-all</module>
   </modules>
 
   <description>
@@ -216,12 +217,6 @@
       <properties>
         <skip.unit.tests>true</skip.unit.tests>
       </properties>
-    </profile>
-    <profile>
-      <id>all-modules</id>
-      <modules>
-        <module>blueflood-all</module>
-      </modules>
     </profile>
     <profile>
       <id>logstash-support</id>
