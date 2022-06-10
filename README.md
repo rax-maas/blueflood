@@ -4,9 +4,8 @@
 
 # Blueflood
 
-[![Build Status](https://travis-ci.org/rackerlabs/blueflood.svg?branch=master)](https://travis-ci.org/rackerlabs/blueflood)
-[![Coveralls](https://coveralls.io/repos/github/rackerlabs/blueflood/badge.svg?branch=master)](https://github.com/rackerlabs/blueflood/releases)
-[![Releases](http://img.shields.io/badge/rax-release-v1.0.1956.svg)](https://coveralls.io/github/mmi-cookbooks/metrics-repose?branch=master)
+[![Unit tests](https://github.com/rax-maas/blueflood/actions/workflows/unit-test.yml/badge.svg?branch=master)](https://github.com/rax-maas/blueflood/actions/workflows/unit-test.yml)
+[![Coverage Status](https://coveralls.io/repos/github/rax-maas/blueflood/badge.svg?branch=master)](https://coveralls.io/github/rax-maas/blueflood?branch=master)
 [![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)
 
 [Discuss](https://groups.google.com/forum/#!forum/blueflood-discuss) - [Code](http://github.com/rackerlabs/blueflood) - [Site](http://blueflood.io)
@@ -83,4 +82,3 @@ Licensed under the Apache License, Version 2.0 (the "License"); you may not use 
    http://www.apache.org/licenses/LICENSE-2.0 
 
 Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-

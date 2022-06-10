@@ -99,6 +99,11 @@
             <skipDocker>true</skipDocker>
           </configuration>
         </plugin>
+        <plugin>
+          <groupId>org.jacoco</groupId>
+          <artifactId>jacoco-maven-plugin</artifactId>
+          <version>0.7.2.201409121644</version>
+        </plugin>
       </plugins>
     </pluginManagement>
     <plugins>
@@ -187,16 +192,21 @@
         <groupId>org.eluder.coveralls</groupId>
         <artifactId>coveralls-maven-plugin</artifactId>
         <version>4.1.0</version>
-        <configuration>
-          <jacocoReports>
-            <jacocoReport>blueflood-core/target/site/jacoco/jacoco.xml</jacocoReport>
-            <jacocoReport>blueflood-integration-tests/target/site/jacoco-it/jacoco.xml</jacocoReport>
-            <jacocoReport>blueflood-http/target/site/jacoco/jacoco.xml</jacocoReport>
-          </jacocoReports>
-        </configuration>
       </plugin>
 
-
+      <!-- Jacoco coverage for surefire tests in all submodules. Use jacoco:report to build reports after tests. -->
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>prepare-agent</id>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 
@@ -209,7 +219,7 @@
       </plugin>
     </plugins>
   </reporting>
-  
+
   <profiles>
     <profile>
       <id>dev</id>
