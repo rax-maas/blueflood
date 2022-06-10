@@ -26,7 +26,7 @@ import com.rackspacecloud.blueflood.io.datastax.DCassandraUtilsIO;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.MetricMetadata;
-import com.rackspacecloud.blueflood.utils.InMemoryMetadataIO;
+import com.rackspacecloud.blueflood.io.InMemoryMetadataIO;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
