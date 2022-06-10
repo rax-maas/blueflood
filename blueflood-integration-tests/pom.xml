@@ -28,7 +28,7 @@
 
   <artifactId>blueflood-integration-tests</artifactId>
 
-  <name>Module with All Integration Tests</name>
+  <name>Blueflood Integration Tests</name>
   <properties>
     <cassandra.listenAddress>127.0.0.1</cassandra.listenAddress>
     <cassandra.plugin.version>2.1.7-1</cassandra.plugin.version>
