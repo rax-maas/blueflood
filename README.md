@@ -18,49 +18,54 @@ Blueflood is a multi-tenant, distributed metric processing system. Blueflood is 
 
 The latest code will always be here on Github.
 
-    git clone https://github.com/rackerlabs/blueflood.git
+    git clone https://github.com/rax-maas/blueflood.git
     cd blueflood
-    
-You can run the entire suite of tests using Maven:
 
-    mvn test integration-test
+## Building
 
-### Building
+Blueflood builds and runs on Java 8. Ensure you're using an appropriate JDK before proceeding.
 
-Build an ['uber jar'](http://stackoverflow.com/questions/11947037/what-is-an-uber-jar) using maven:
+Blueflood builds with Maven. Use typical Maven lifecycle phases:
 
-    mvn package -P all-modules
+- `mvn clean` removes build artifacts.
+- `mvn test` runs unit tests.
+- `mvn verify` runs all tests.
+- `mvn package` builds a Blueflood package for release.
 
-The uber jar will be found in ${BLUEFLOOD_DIR}/blueflood-all/target/blueflood-all-${VERSION}-jar-with-dependencies.jar.
-This jar contains all the dependencies necessary to run Blueflood with a very simple classpath.
+Important build profiles to know about:
 
-Build a docker image:
+- `skip-unit-tests` skips unit tests in all modules.
+- `skip-integration-tests` skips the integration tests.
 
-    mvn clean package  docker:build -Pall-modules
+Blueflood's main artifact is an ['uber jar'](http://stackoverflow.com/questions/11947037/what-is-an-uber-jar), produced
+by the [`blueflood-all` module](blueflood-all/pom.xml).
 
 ### Running
 
-The best place to start is the [10 minute guide](https://github.com/rackerlabs/blueflood/wiki/10-Minute-Guide).
-In a nutshell, you must do this:
+You can easily build a ready-to-run Blueflood jar from source:
 
-    java -cp /path/to/uber.jar \
-    -Dblueflood.config=file:///path/to/blueflood.conf \
-    -Dlog4j.configuration=file:///path/to/log4j.properties \
-    com.rackspacecloud.blueflood.service.BluefloodServiceStarter
-    
-Each configuration option can be found in Configuration.java.  Each of those can be overridden on the command line by
-doing:
+    mvn package -P skip-unit-tests,skip-integration-tests
 
-    -DCONFIG_OPTION=NEW_VALUE
+However, it requires Cassandra to start and Elasticsearch for all its features to work. The best place to start is the
+[10 minute guide](https://github.com/rackerlabs/blueflood/wiki/10-Minute-Guide).
 
 ## Additional Tools
 
-The Blueflood team maintains a number of tools that are related to the project, but not essential components of it. These tools are kept in various other repos:
+The Blueflood team maintains a number of tools that are related to the project, but not essential components of it.
+These tools are kept in various other repos:
 
-* Performance Tests: Scripts for load testing a blueflood installation using [The Grinder](http://grinder.sourceforge.net/). https://github.com/rackerlabs/raxmetrics-perf-test-scripts
-* Carbon Forwarder: a process that receives data from carbon (one of the components of [Graphite](https://graphiteapp.org/)) and sends it to a Blueflood instance. https://github.com/rackerlabs/blueflood-carbon-forwarder
-* Blueflood-Finder: a plugin for graphite-web and graphite-api that allows them to using a Blueflood instance as a data backend. https://github.com/rackerlabs/blueflood-graphite-finder
-* StatsD plugin: a statsD backend that sends metrics a Blueflood instance. https://github.com/rackerlabs/blueflood-statsd-backend
+* Performance Tests: Scripts for load testing a blueflood installation using [The
+  Grinder](http://grinder.sourceforge.net/). https://github.com/rackerlabs/raxmetrics-perf-test-scripts
+
+* Carbon Forwarder: a process that receives data from carbon (one of the components of
+  [Graphite](https://graphiteapp.org/)) and sends it to a Blueflood instance.
+  https://github.com/rackerlabs/blueflood-carbon-forwarder
+
+* Blueflood-Finder: a plugin for graphite-web and graphite-api that allows them to using a Blueflood instance as a data
+  backend. https://github.com/rackerlabs/blueflood-graphite-finder
+
+* StatsD plugin: a statsD backend that sends metrics a Blueflood instance.
+  https://github.com/rackerlabs/blueflood-statsd-backend
 
 ## Contributing
 
@@ -70,8 +75,6 @@ If you would like to contribute documentation, you should get familiar with
 [our wiki](https://github.com/rackerlabs/blueflood/wiki)
 
 Also, we have set up a [Google Group](https://groups.google.com/forum/#!forum/blueflood-discuss) to answer questions.
-
-If you prefer IRC, most of the Blueflood developers are in #blueflood on Freenode. 
 
 ## License
 
