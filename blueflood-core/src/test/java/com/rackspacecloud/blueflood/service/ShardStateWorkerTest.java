@@ -28,7 +28,7 @@ public class ShardStateWorkerTest {
         final AtomicInteger counter = new AtomicInteger(0);
         final ShardStateWorker worker = new ShardStateWorker(allShards, manager, new TimeValue(100, TimeUnit.MILLISECONDS), null) {
             @Override
-            void performOperation() {
+            public void performOperation() {
                 counter.incrementAndGet();
             }
         };

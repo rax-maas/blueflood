@@ -29,108 +29,12 @@
   <artifactId>blueflood-http</artifactId>
   <packaging>jar</packaging>
 
-  <properties>
-    <cassandra.skip>false</cassandra.skip>
-  </properties>
-
-  <build>
-    <testResources>
-      <testResource>
-        <directory>src/test/resources</directory>
-      </testResource>
-    </testResources>
-
-    <plugins>
-      <!-- Used to add source directories to our build. -->
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>build-helper-maven-plugin</artifactId>
-        <version>1.8</version>
-        <executions>
-          <!-- States that the plugin's add-test-source goal is executed at generate-test-sources phase. -->
-          <execution>
-            <id>add-integration-test-sources</id>
-            <phase>generate-test-sources</phase>
-            <goals>
-              <goal>add-test-source</goal>
-            </goals>
-            <configuration>
-              <!-- Configures the source directory of integration tests. -->
-              <sources>
-                <source>src/integration-test/java</source>
-              </sources>
-            </configuration>
-          </execution>
-          <execution>
-            <id>add-integration-test-resources</id>
-            <phase>generate-test-resources</phase>
-            <goals>
-              <goal>add-test-resource</goal>
-            </goals>
-            <configuration>
-              <!-- Configures the resource directory of integration tests. -->
-              <resources>
-                <resource>
-                  <directory>src/integration-test/resources</directory>
-                </resource>
-              </resources>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-
-      <!-- Used for integration tests -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-failsafe-plugin</artifactId>
-        <version>2.15</version>
-        <executions>
-          <!-- States that both integration-test and verify goals of the Failsafe Maven plugin are executed. -->
-          <execution>
-            <id>integration-tests</id>
-            <goals>
-              <goal>integration-test</goal>
-            </goals>
-            <configuration>
-              <systemPropertyVariables>
-                <CASSANDRA_HOSTS>${cassandra.listenAddress}:${cassandra.rpcPort}</CASSANDRA_HOSTS>
-                <DEFAULT_CASSANDRA_PORT>${cassandra.rpcPort}</DEFAULT_CASSANDRA_PORT>
-                <CASSANDRA_BINXPORT_PORT>${cassandra.nativeTransportPort}</CASSANDRA_BINXPORT_PORT>
-                <CASSANDRA_BINXPORT_HOSTS>${cassandra.listenAddress}:${cassandra.nativeTransportPort}</CASSANDRA_BINXPORT_HOSTS>
-                <CASSANDRA_DRIVER>datastax</CASSANDRA_DRIVER>
-              </systemPropertyVariables>
-              <testSourceDirectory>src/integration-test/java</testSourceDirectory>
-              <!-- Skips integration tests if the value of skip.integration.tests property is true -->
-              <skipTests>${skip.integration.tests}</skipTests>
-              <includes>
-                <include>**/*Integration*.java</include>
-              </includes>
-            </configuration>
-          </execution>
-          <execution>
-            <id>verify</id>
-            <goals>
-              <goal>verify</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
-
   <dependencies>
 
     <dependency>
       <artifactId>blueflood-core</artifactId>
       <groupId>com.rackspacecloud</groupId>
       <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
-      <artifactId>blueflood-core</artifactId>
-      <groupId>com.rackspacecloud</groupId>
-      <version>${project.version}</version>
-      <type>test-jar</type>
     </dependency>
 
     <dependency>

@@ -29,9 +29,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.rackspacecloud.blueflood.TestUtils.generateJSONMetricsData;
-import static com.rackspacecloud.blueflood.TestUtils.generateJSONMetricsDataWithNumericStringValue;
-import static com.rackspacecloud.blueflood.TestUtils.generateJSONMetricsDataWithStringValue;
+import static com.rackspacecloud.blueflood.utils.TestUtils.generateJSONMetricsData;
+import static com.rackspacecloud.blueflood.utils.TestUtils.generateJSONMetricsDataWithNumericStringValue;
+import static com.rackspacecloud.blueflood.utils.TestUtils.generateJSONMetricsDataWithStringValue;
 import static org.junit.Assert.*;
 
 public class JSONMetricsContainerTest {

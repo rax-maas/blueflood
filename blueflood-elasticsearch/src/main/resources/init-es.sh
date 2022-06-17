@@ -101,21 +101,20 @@ curl $AUTH -XPOST $ELASTICSEARCH_URL'/_aliases' -d '
 
 #add index settings to metric_metadata index
 curl $AUTH -XPOST $ELASTICSEARCH_URL'/metric_metadata/_close'
-curl $AUTH -XPUT $ELASTICSEARCH_URL'/metric_metadata/_settings' -d @index_settings.json
+curl $AUTH -XPUT $ELASTICSEARCH_URL'/metric_metadata/_settings' -d @$ABSOLUTE_PATH/index_settings.json
 curl $AUTH -XPOST $ELASTICSEARCH_URL'/metric_metadata/_open'
 
 #add mappings to metric_metadata index
 curl $AUTH -XDELETE $ELASTICSEARCH_URL'/metric_metadata/_mapping/metrics' >& /dev/null
-curl $AUTH -XPUT $ELASTICSEARCH_URL'/metric_metadata/_mapping/metrics' -d @metrics_mapping.json
+curl $AUTH -XPUT $ELASTICSEARCH_URL'/metric_metadata/_mapping/metrics' -d @$ABSOLUTE_PATH/metrics_mapping.json
 
 #add mappings to metric_tokens index
 curl $AUTH -XDELETE $ELASTICSEARCH_URL'/metric_tokens/_mapping/tokens' >& /dev/null
-curl $AUTH -XPUT $ELASTICSEARCH_URL'/metric_tokens/_mapping/tokens' -d @tokens_mapping.json
+curl $AUTH -XPUT $ELASTICSEARCH_URL'/metric_tokens/_mapping/tokens' -d @$ABSOLUTE_PATH/tokens_mapping.json
 
 #add mappings to graphite_event index
 curl $AUTH -XDELETE $ELASTICSEARCH_URL'/events/_mapping/graphite_event' >& /dev/null
-curl $AUTH -XPUT $ELASTICSEARCH_URL'/events/_mapping/graphite_event' -d @events_mapping.json
+curl $AUTH -XPUT $ELASTICSEARCH_URL'/events/_mapping/graphite_event' -d @$ABSOLUTE_PATH/events_mapping.json
 
 #mark ES initialized for Blueflood by creating a marker index
 curl $AUTH -XPUT $ELASTICSEARCH_URL'/blueflood_initialized_marker'
-

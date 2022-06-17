@@ -13,7 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.Assert.*;
-import static com.rackspacecloud.blueflood.TestUtils.*;
+import static com.rackspacecloud.blueflood.utils.TestUtils.*;
 
 public class TestGsonParsing {
 
@@ -24,7 +24,7 @@ public class TestGsonParsing {
 
     @Before
     public void readJsonFile() throws IOException, InterruptedException {
-        json = getJsonFromFile("sample_payload.json", postfix);
+        json = getJsonFromFile("dataFiles/sample_payload.json", postfix);
     }
     
     @Test

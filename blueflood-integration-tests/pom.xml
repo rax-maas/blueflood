@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2013 Rackspace
+  ~
+  ~    Licensed under the Apache License, Version 2.0 (the "License");
+  ~    you may not use this file except in compliance with the License.
+  ~    You may obtain a copy of the License at
+  ~
+  ~        http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~    Unless required by applicable law or agreed to in writing, software
+  ~    distributed under the License is distributed on an "AS IS" BASIS,
+  ~    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~    See the License for the specific language governing permissions and
+  ~    limitations under the License.
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <parent>
+    <artifactId>blueflood</artifactId>
+    <groupId>com.rackspacecloud</groupId>
+    <version>2.1.0-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+  <modelVersion>4.0.0</modelVersion>
+
+  <artifactId>blueflood-integration-tests</artifactId>
+
+  <name>Blueflood Integration Tests</name>
+  <properties>
+    <cassandra.listenAddress>127.0.0.1</cassandra.listenAddress>
+    <cassandra.plugin.version>2.1.7-1</cassandra.plugin.version>
+    <skip.integration.tests>false</skip.integration.tests>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <artifactId>blueflood-core</artifactId>
+      <groupId>com.rackspacecloud</groupId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <artifactId>blueflood-http</artifactId>
+      <groupId>com.rackspacecloud</groupId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.github.tlrx</groupId>
+      <artifactId>elasticsearch-test</artifactId>
+      <version>1.2.1</version>
+      <scope>test</scope>
+      <optional>true</optional>
+    </dependency>
+
+    <dependency>
+      <groupId>pl.pragmatists</groupId>
+      <artifactId>JUnitParams</artifactId>
+    </dependency>
+
+  </dependencies>
+
+  <build>
+
+    <plugins>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <version>1.8</version>
+        <executions>
+          <execution>
+            <id>reserve-network-port</id>
+            <goals>
+              <goal>reserve-network-port</goal>
+            </goals>
+            <phase>process-test-resources</phase>
+            <configuration>
+              <portNames>
+                <portName>cassandra.rpcPort</portName>
+                <portName>cassandra.nativeTransportPort</portName>
+                <portName>cassandra.jmxPort</portName>
+                <portName>cassandra.storagePort</portName>
+                <portName>cassandra.stopPort</portName>
+              </portNames>
+            </configuration>
+          </execution>
+          <!-- States that the plugin's add-test-source goal is executed at generate-test-sources phase. -->
+          <execution>
+            <id>add-integration-test-sources</id>
+            <phase>generate-test-sources</phase>
+            <goals>
+              <goal>add-test-source</goal>
+            </goals>
+            <configuration>
+              <!-- Configures the source directory of integration tests. -->
+              <sources>
+                <source>src/integration-test/java</source>
+              </sources>
+            </configuration>
+          </execution>
+          <execution>
+            <id>add-integration-test-resources</id>
+            <phase>generate-test-resources</phase>
+            <goals>
+              <goal>add-test-resource</goal>
+            </goals>
+            <configuration>
+              <!-- Configures the resource directory of integration tests. -->
+              <resources>
+                <resource>
+                  <directory>src/integration-test/resources</directory>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>prepare-it-agent</id>
+            <phase>pre-integration-test</phase>
+            <goals>
+              <goal>prepare-agent-integration</goal>
+            </goals>
+            <configuration>
+              <propertyName>jacoco.agent.it.argLine</propertyName>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <version>2.19.1</version>
+        <configuration>
+          <systemPropertyVariables>
+            <!-- Load properties for the IT's from the module-local properties file -->
+            <blueflood.config>file:${basedir}/src/integration-test/resources/blueflood.properties</blueflood.config>
+          </systemPropertyVariables>
+          <!--
+          Include the jacoco agent for maven builds; note that IntelliJ WILL NOT resolve this property and won't apply
+          the arg line as a result. Don't put anything else important here! Use the IT blueflood.properties or some
+          other config mechanism appropriate to the integration tests.
+          -->
+          <argLine>${jacoco.agent.it.argLine}</argLine>
+        </configuration>
+        <executions>
+          <!-- States that both integration-test and verify goals of the Failsafe Maven plugin are executed. -->
+          <execution>
+            <id>integration-tests</id>
+            <goals>
+              <goal>integration-test</goal>
+            </goals>
+            <configuration>
+              <trimStackTrace>false</trimStackTrace>
+              <systemPropertyVariables>
+                <CASSANDRA_HOSTS>${cassandra.listenAddress}:${cassandra.rpcPort}</CASSANDRA_HOSTS>
+                <DEFAULT_CASSANDRA_PORT>${cassandra.rpcPort}</DEFAULT_CASSANDRA_PORT>
+                <CASSANDRA_BINXPORT_PORT>${cassandra.nativeTransportPort}</CASSANDRA_BINXPORT_PORT>
+                <CASSANDRA_BINXPORT_HOSTS>${cassandra.listenAddress}:${cassandra.nativeTransportPort}</CASSANDRA_BINXPORT_HOSTS>
+                <CASSANDRA_DRIVER>datastax</CASSANDRA_DRIVER>
+              </systemPropertyVariables>
+              <testSourceDirectory>src/integration-test/java</testSourceDirectory>
+              <!-- Skips integration tests if the value of skip.integration.tests property is true -->
+              <skipTests>${skip.integration.tests}</skipTests>
+              <includes>
+                <include>**/*Integration*.java</include>
+              </includes>
+              <excludes>
+                <!-- This test uses guava 12.0.1 version while others integration tests uses 19.0 -->
+                <exclude>**/ZKShardLockManagerIntegrationTest.java</exclude>
+              </excludes>
+            </configuration>
+          </execution>
+          <execution>
+            <id>verify</id>
+            <goals>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Spin up Cassandra -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>cassandra-maven-plugin</artifactId>
+        <version>${cassandra.plugin.version}</version>
+        <configuration>
+          <!--There are issues when running tests inside vmware fusion on a filesystem mounted from the host machine-->
+          <cassandraDir>/tmp/bf-cassandra-${cassandra.plugin.version}-${maven.build.timestamp}/</cassandraDir>
+          <loadFailureIgnore>false</loadFailureIgnore>
+          <startNativeTransport>true</startNativeTransport>
+          <script>${project.basedir}/src/cassandra/cli/load.cdl</script>
+          <cqlVersion>3.0.0</cqlVersion>
+        </configuration>
+        <executions>
+          <execution>
+            <id>delete-cassandra</id>
+            <phase>post-integration-test</phase>
+            <goals>
+              <goal>delete</goal>
+            </goals>
+          </execution>
+          <execution>
+            <goals>
+              <goal>start</goal>
+              <goal>stop</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+    </plugins>
+  </build>
+
+  <profiles>
+    <profile>
+      <id>skip-integration-tests</id>
+      <properties>
+        <skip.integration.tests>true</skip.integration.tests>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>cassandra-1.1</id>
+      <properties>
+        <cassandra.plugin.version>1.1.0-1</cassandra.plugin.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>cassandra-1.2</id>
+      <properties>
+        <cassandra.plugin.version>1.2.1-1</cassandra.plugin.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>cassandra-2.0</id>
+      <properties>
+        <cassandra.plugin.version>2.0.0-1</cassandra.plugin.version>
+      </properties>
+    </profile>
+
+  </profiles>
+
+</project>

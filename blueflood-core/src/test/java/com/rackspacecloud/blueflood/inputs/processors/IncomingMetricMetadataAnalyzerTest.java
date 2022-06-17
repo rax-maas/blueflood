@@ -7,7 +7,7 @@ import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.service.IncomingMetricMetadataAnalyzer;
 import com.rackspacecloud.blueflood.types.*;
-import com.rackspacecloud.blueflood.utils.InMemoryMetadataIO;
+import com.rackspacecloud.blueflood.io.InMemoryMetadataIO;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.rackspacecloud.blueflood.utils.Util;
 import junit.framework.Assert;
