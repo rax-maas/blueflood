@@ -17,7 +17,7 @@ jobs:
           ref: test-ci
       - uses: actions/setup-java@v2
         with:
-          distribution: 'zulu'
+          distribution: 'adopt'
           java-version: ${{ matrix.java-version }}
           cache: 'maven'
       - name: Configure Git user
@@ -38,9 +38,9 @@ jobs:
         run: |
           echo "${{ steps.changelog.outputs.changelog }}" > CHANGELOG.md
           git add CHANGELOG.md
-          mvn -B release:prepare -DreleaseVersion=${RELEASE_VERSION} -DpushChanges=false
+          mvn -B release:prepare -DreleaseVersion=${{RELEASE_VERSION}} -DpushChanges=false
           mvn -P all-modules -B verify --no-transfer-progress
-          cp ./blueflood-all/target/blueflood-all-*-jar-with-dependencies.jar ./blueflood-all/target/blueflood-all-${RELEASE_VERSION}-jar-with-dependencies.jar
+          cp ./blueflood-all/target/blueflood-all-*-jar-with-dependencies.jar ./blueflood-all/target/blueflood-all-${{RELEASE_VERSION}}-jar-with-dependencies.jar
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 #      - name: Create GitHub Release
