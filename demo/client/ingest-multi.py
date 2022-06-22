@@ -35,7 +35,7 @@ except ImportError:
 def _generate_metrics_data(tenantId, metricName):
     data = []
     # Blueflood understands millis since epoch only
-    now = long(time.time() * 1000)
+    now = int(time.time() * 1000)
     # Publish metrics with older timestamps (2 hrs before current time)
     startTimestamp = now - 2 * 60 * 60 * 1000
     endTimestamp = startTimestamp
@@ -92,7 +92,7 @@ def main():
         print('./retrieve.py --host %s --port 20000 --metric %s --tenant %s --from %s --to %s --points 100' \
             % (options.host, metricName, tenantId, start - 100000000, end + 100000000))
         print('')
-    except Exception, ex:
+    except Exception as ex:
         print(ex)
         raise Exception('Cannot ingest metrics into blueflood')
 

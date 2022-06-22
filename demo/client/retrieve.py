@@ -19,6 +19,11 @@ import time
 from optparse import OptionParser
 
 try:
+    import simplejson as json
+except ImportError:
+    import json
+
+try:
     import requests
 except ImportError:
     raise ImportError('Missing dependency requests. ' +
@@ -67,7 +72,7 @@ def main():
     if not options.points:
         options.points = 100
 
-    now = long(time.time() * 1000)
+    now = int(time.time() * 1000)
     if not options.startTime:
         options.startTime = now - 3 * 60 * 60 * 1000
     if not options.endTime:
@@ -82,12 +87,14 @@ def main():
     try:
         r = requests.get(url)
         if (r.status_code == requests.codes.ok):
-            print(r.content)
+            payload = json.loads(r.content)
+            prettyjsondata = json.dumps(payload, indent=4, separators=(',', ': '))
+            print(prettyjsondata)
         else:
             print('Failed fetching metrics. HTTP status: %s' % r.status_code)
             if r.content is not None:
                 print(r.content)
-    except Exception, ex:
+    except Exception as ex:
         print(ex)
         raise Exception('Cannot retrieve metrics from blueflood')
 
