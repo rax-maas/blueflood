@@ -40,7 +40,7 @@ jobs:
           git add CHANGELOG.md
           mvn -B release:prepare -DreleaseVersion=${RELEASE_VERSION} -DpushChanges=false -DskipTests=True
           mvn -B verify --no-transfer-progress -DskipTests=True
-          cp ../blueflood-all/target/blueflood-all-*-jar-with-dependencies.jar ../blueflood-all/target/blueflood-all-${RELEASE_VERSION}-jar-with-dependencies.jar
+          cp ../../blueflood-all/target/blueflood-all-*-jar-with-dependencies.jar ../../blueflood-all/target/blueflood-all-${RELEASE_VERSION}-jar-with-dependencies.jar
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 #      - name: Create GitHub Release
@@ -73,4 +73,4 @@ jobs:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           prerelease: false
           files: |
-            ../blueflood-all/target/blueflood-all-${RELEASE_VERSION}-jar-with-dependencies.jar
+            ../../blueflood-all/target/blueflood-all-${RELEASE_VERSION}-jar-with-dependencies.jar
