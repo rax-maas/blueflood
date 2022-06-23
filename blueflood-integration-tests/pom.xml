@@ -54,12 +54,6 @@
       <scope>test</scope>
       <optional>true</optional>
     </dependency>
-
-    <dependency>
-      <groupId>pl.pragmatists</groupId>
-      <artifactId>JUnitParams</artifactId>
-    </dependency>
-
   </dependencies>
 
   <build>
