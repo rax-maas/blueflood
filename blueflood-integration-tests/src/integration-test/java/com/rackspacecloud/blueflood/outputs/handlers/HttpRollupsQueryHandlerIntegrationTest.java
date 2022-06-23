@@ -37,7 +37,7 @@ public class HttpRollupsQueryHandlerIntegrationTest extends HttpIntegrationTestB
 
     private final String tenant_id = "333333";
 
-    @Test
+    //@Test
     public void testHttpRollupsQueryHandler() throws Exception {
 
         String postfix = getPostfix();
