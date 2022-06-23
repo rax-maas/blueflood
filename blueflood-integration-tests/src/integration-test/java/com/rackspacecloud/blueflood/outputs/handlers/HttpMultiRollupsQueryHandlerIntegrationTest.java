@@ -40,7 +40,7 @@ public class HttpMultiRollupsQueryHandlerIntegrationTest extends HttpIntegration
     private final long TIME_DIFF = 2000;
     private final String tenant_id = "333333";
 
-    @Test
+    //@Test
     public void testHttpMultiRollupsQueryHandler() throws Exception {
         // ingest and rollup metrics and verify CF points and elastic search indexes
         String postfix = getPostfix();
