@@ -32,10 +32,7 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.nio.entity.NStringEntity;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
@@ -49,6 +46,7 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
 
+@Ignore("it requires a running Elasticsearch, which isn't started by the Maven build")
 @RunWith( JUnitParamsRunner.class )
 public class ElasticIOIntegrationTest extends BaseElasticTest {
 
