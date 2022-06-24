@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          ref: test-ci
+          ref: rohit/test-cli
       - uses: actions/setup-java@v2
         with:
           distribution: 'adopt'
@@ -38,9 +38,9 @@ jobs:
         run: |
           echo "${{ steps.changelog.outputs.changelog }}" > CHANGELOG.md
           git add CHANGELOG.md
-          mvn -B release:prepare -DreleaseVersion=${RELEASE_VERSION} -DpushChanges=false
-          mvn -P all-modules -B verify --no-transfer-progress
-          cp ./blueflood-all/target/blueflood-all-*-jar-with-dependencies.jar ./blueflood-all/target/blueflood-all-${env.RELEASE_VERSION}-jar-with-dependencies.jar
+          mvn -B release:prepare -DreleaseVersion=${RELEASE_VERSION} -DpushChanges=false -Dmaven.wagon.httpconnectionManager.ttlSeconds=60
+          mvn -B verify --no-transfer-progress -Dmaven.wagon.httpconnectionManager.ttlSeconds=60
+          cp /home/runner/work/blueflood/blueflood/blueflood-all/target/blueflood-all-*-jar-with-dependencies.jar /home/runner/work/blueflood/blueflood/blueflood-all/target/blueflood-all-${RELEASE_VERSION}-jar-with-dependencies.jar
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 #      - name: Create GitHub Release
@@ -73,4 +73,4 @@ jobs:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           prerelease: false
           files: |
-            ./blueflood-all/target/blueflood-all-${RELEASE_VERSION}-jar-with-dependencies.jar
+            /home/runner/work/blueflood/blueflood/blueflood-all/target/blueflood-all-${RELEASE_VERSION}-jar-with-dependencies.jar
