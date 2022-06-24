@@ -224,6 +224,9 @@
         </dependencies>
         <configuration>
           <goals>install</goals>
+          <checkModificationExcludes>
+            <checkModificationExclude>pom.xml</checkModificationExclude>
+          </checkModificationExcludes>
         </configuration>
       </plugin>
 
