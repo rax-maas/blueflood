@@ -170,7 +170,8 @@
           <!-- This is only necessary because the failsafe plugin's test naming conventions are overridden. -->
           <excludes>
             <exclude>**/*Integration*.java</exclude>
-          </excludes>
+          </excludes>             
+          <skipITs>${skipTests}</skipITs> 
         </configuration>
       </plugin>
 
