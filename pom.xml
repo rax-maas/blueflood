@@ -171,7 +171,6 @@
           <excludes>
             <exclude>**/*Integration*.java</exclude>
           </excludes>             
-          <skipITs>${skipTests}</skipITs> 
         </configuration>
       </plugin>
 
