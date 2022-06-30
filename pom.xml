@@ -216,7 +216,7 @@
         <artifactId>maven-release-plugin</artifactId>
         <configuration>
           <goals>install</goals>
-          <arguments>$(arguments)</arguments>
+          <arguments>-Darguments</arguments>
         </configuration>
       </plugin>
 
