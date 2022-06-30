@@ -1,4 +1,4 @@
-name="Create PR on release"
+name: "Create PR on release"
 
 on:
   push:
