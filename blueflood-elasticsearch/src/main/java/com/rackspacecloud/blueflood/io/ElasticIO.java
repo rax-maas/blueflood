@@ -37,6 +37,15 @@ public class ElasticIO extends AbstractElasticIO {
         this.elasticsearchRestHelper = ElasticsearchRestHelper.getInstance();
     }
 
+    /**
+     * Creates an instance of this class, specifying its dependencies because Dependency Injection! I apologize for
+     * deviating from the conventions of this project, but I need a way to inject a test instance of the rest helper
+     * here for the integration test, and I can't use PowerMockito because the test is already using another @Runner.
+     */
+    public ElasticIO(ElasticsearchRestHelper elasticsearchRestHelper) {
+        this.elasticsearchRestHelper = elasticsearchRestHelper;
+    }
+
     public void insertDiscovery(IMetric metric) throws IOException {
         List<IMetric> batch = new ArrayList<>();
         batch.add(metric);

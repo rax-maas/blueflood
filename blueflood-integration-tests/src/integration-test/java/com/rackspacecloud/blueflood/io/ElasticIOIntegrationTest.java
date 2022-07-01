@@ -21,6 +21,7 @@ import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.types.Token;
+import com.rackspacecloud.blueflood.utils.ElasticsearchTestServer;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
@@ -46,19 +47,28 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
 
-@Ignore("it requires a running Elasticsearch, which isn't started by the Maven build")
 @RunWith( JUnitParamsRunner.class )
 public class ElasticIOIntegrationTest extends BaseElasticTest {
 
     protected ElasticIO elasticIO;
     protected ElasticTokensIO elasticTokensIO;
+    private static ElasticsearchTestServer elasticsearchTestServer;
+
+    /**
+     * Starts an embedded Elasticsearch that these tests can run against.
+     */
+    @BeforeClass
+    public static void startElasticsearch() {
+        elasticsearchTestServer = new ElasticsearchTestServer();
+        elasticsearchTestServer.start();
+    }
 
     @Before
     public void setup() throws Exception {
-        helper = ElasticsearchRestHelper.getInstance();
+        helper = ElasticsearchRestHelper.getConfigurableInstance();
         tearDown();
 
-        elasticIO = new ElasticIO();
+        elasticIO = new ElasticIO(helper);
 
         elasticIO.insertDiscovery(createTestMetrics(TENANT_A));
         elasticIO.insertDiscovery(createTestMetrics(TENANT_B));
@@ -107,6 +117,11 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
 
         for (String typeToEmpty : typesToEmpty)
             deleteAllDocuments(typeToEmpty);
+    }
+
+    @AfterClass
+    public static void stopElasticsearch() {
+        elasticsearchTestServer.stop();
     }
 
     private void deleteAllDocuments(String typeToEmpty) throws URISyntaxException, IOException {
@@ -326,7 +341,12 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
         }
 
         helper.refreshIndex(ES_DUP);
-        elasticIO.setINDEX_NAME_READ("metric_metadata_read");
+        // Historically, this line was here, but I don't know why. In init-es.sh, "metric_metadata_read" is an alias for
+        // "metric_metadata". Why? I have no clue. Maybe something related to Elasticsearch clustering and creating read
+        // slaves?. This is the only place that seems to use that name. The ElasticsearchTestServer doesn't create this
+        // alias, so it fails here. I'm not sure how to create the alias in that class.
+        //
+        // elasticIO.setINDEX_NAME_READ("metric_metadata_read");
         results = elasticIO.search(TENANT_A, testLocator.getMetricName());
         // Should just be one result
         assertEquals(results.size(), 1);
@@ -434,6 +454,26 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
 
         List<MetricName> results = getDiscoveryIO(type).getMetricNames(tenantId, query);
 
+        // Note: 1 Jul 2022 - While adding this test class back into the integration test suite by adding embedded
+        // Elasticsearch back to it, I observed this and some other test cases here failing to retrieve the correct
+        // number of items using "elasticTokensIO". On inspection, it was returning *all* metrics matching the query,
+        // rather than only the next level down. In other words, where it was supposed to return only
+        // "one.two.three15.fourA", it actually returned:
+        //
+        // - "one.two.three15.fourA"
+        // - "one.two.three15.fourA.five0"
+        // - "one.two.three15.fourA.five1"
+        // - "one.two.three15.fourA.five2"
+        //
+        // Given that I only ever see it on the "elasticTokensIO" and not on the "elasticIO", it could be a bug in the
+        // former. They have separate implementations of the method under test.
+        //
+        // It's also possible that it's somehow related to some Elasticsearch behavior I don't know about, like indexing
+        // delays or something. This possibility may be strengthened by the fact that the actual "number of results"
+        // returned here isn't always the same. If this particular test case were to return all results, as I mentioned
+        // above, the total count should be 360. Sometimes it returns less.
+        //
+        // The same behavior occurs using the tlrx test library and when running Elasticsearch externally with Docker.
         assertEquals("Invalid total number of results", NUM_PARENT_ELEMENTS * CHILD_ELEMENTS.size(), results.size());
         for (MetricName metricName : results) {
             Assert.assertFalse("isCompleteName value", metricName.isCompleteName());;
