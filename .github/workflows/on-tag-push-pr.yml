@@ -1,7 +1,7 @@
 name: "Create PR on release"
 
 on:
-  push:
+  create:
     branches:
     - release/*
 
