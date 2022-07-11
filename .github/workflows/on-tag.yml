@@ -45,6 +45,7 @@ jobs:
           cd /home/runner/work/blueflood/blueflood
           git status
           git push origin release/${RELEASE_VERSION}
+          git push origin ${RELEASE_VERSION}
 #          git add -- pom.xml blueflood-core/pom.xml blueflood-elasticsearch/pom.xml blueflood-http/pom.xml blueflood-cloudfiles/pom.xml blueflood-rollupTools/pom.xml blueflood-integration-tests/pom.xml blueflood-all/pom.xml
 #          git commit -m "Changing pom versions"
 #          git push release/${RELEASE_VERSION}
