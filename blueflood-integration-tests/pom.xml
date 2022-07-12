@@ -53,11 +53,13 @@
       <optional>true</optional>
     </dependency>
 
+    <!-- Allows for starting Elasticsearch for tests on demand. See ElasticsearchTestServer. -->
     <dependency>
-      <groupId>pl.pragmatists</groupId>
-      <artifactId>JUnitParams</artifactId>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>elasticsearch</artifactId>
+      <version>1.17.2</version>
+      <scope>test</scope>
     </dependency>
-
   </dependencies>
 
   <build>

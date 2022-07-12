@@ -36,7 +36,24 @@ public class ElasticsearchRestHelper {
     private int MAX_CALL_COUNT = 10;
     private int MAX_RESULT_LIMIT = Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_DISCOVERY_RESULT_SIZE);
 
+    /**
+     * Gets an instance of the ES rest helper for use in main source.
+     * @return
+     */
     public static ElasticsearchRestHelper getInstance() {
+        // TODO: To match the rest of the project, this should be a static singleton. There seems to be an HTTP
+        // connection pool in use here, which is pointless if an instance of this isn't shared by many consumers. On the
+        // other hand, making this a singleton could affect performance dramatically if the pool hasn't already been
+        // tuned to support the workload, so don't change it without some testing.
+        return new ElasticsearchRestHelper();
+    }
+
+    /**
+     * Gets a fresh instance instead of the static singleton. For use in tests so that a test can change the app
+     * configuration and then get a new instance based on that configuration.
+     */
+    @VisibleForTesting
+    public static ElasticsearchRestHelper getConfigurableInstance() {
         return new ElasticsearchRestHelper();
     }
 

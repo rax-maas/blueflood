@@ -21,6 +21,7 @@ import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.types.Token;
+import com.rackspacecloud.blueflood.utils.ElasticsearchTestServer;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
@@ -32,10 +33,7 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.nio.entity.NStringEntity;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
@@ -47,6 +45,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.assertEquals;
 
 @RunWith( JUnitParamsRunner.class )
@@ -54,13 +54,23 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
 
     protected ElasticIO elasticIO;
     protected ElasticTokensIO elasticTokensIO;
+    private static ElasticsearchTestServer elasticsearchTestServer;
+
+    /**
+     * Starts an embedded Elasticsearch that these tests can run against.
+     */
+    @BeforeClass
+    public static void startElasticsearch() {
+        elasticsearchTestServer = new ElasticsearchTestServer();
+        elasticsearchTestServer.start();
+    }
 
     @Before
     public void setup() throws Exception {
-        helper = ElasticsearchRestHelper.getInstance();
+        helper = ElasticsearchRestHelper.getConfigurableInstance();
         tearDown();
 
-        elasticIO = new ElasticIO();
+        elasticIO = new ElasticIO(helper);
 
         elasticIO.insertDiscovery(createTestMetrics(TENANT_A));
         elasticIO.insertDiscovery(createTestMetrics(TENANT_B));
@@ -109,6 +119,11 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
 
         for (String typeToEmpty : typesToEmpty)
             deleteAllDocuments(typeToEmpty);
+    }
+
+    @AfterClass
+    public static void stopElasticsearch() {
+        elasticsearchTestServer.stop();
     }
 
     private void deleteAllDocuments(String typeToEmpty) throws URISyntaxException, IOException {
@@ -217,8 +232,8 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
         queries.add(query2);
         results = elasticIO.search(tenantId, queries);
         assertEquals(results.size(), 2); //we searched for 2 unique metrics
-        results.contains(new SearchResult(TENANT_A, query1, UNIT));
-        results.contains(new SearchResult(TENANT_A, query2, UNIT));
+        assertThat(results, hasItem(new SearchResult(TENANT_A, query1, UNIT)));
+        assertThat(results, hasItem(new SearchResult(TENANT_A, query2, UNIT)));
     }
 
     @Test
@@ -248,6 +263,8 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
         assertEquals(results.size(), 2);
     }
 
+    @Test
+    @Parameters({"ratanasv, horse length", "someotherguy, horse length", "someothergal, horse length"})
     public void testWildcard(String tenantId, String unit) throws Exception {
         SearchResult entry;
         List<SearchResult> results;
@@ -256,7 +273,7 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
         assertEquals(locators.size(), results.size());
         for (Locator locator : locators) {
             entry =  new SearchResult(tenantId, locator.getMetricName(), unit);
-            Assert.assertTrue((results.contains(entry)));
+            assertThat(results, hasItem(entry));
         }
 
         results = elasticIO.search(tenantId, "*.fourA.*");
@@ -264,7 +281,7 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
         for (int x = 0; x < NUM_PARENT_ELEMENTS; x++) {
             for (int z = 0; z < NUM_GRANDCHILD_ELEMENTS; z++) {
                 entry = createExpectedResult(tenantId, x, "A", z, unit);
-                Assert.assertTrue(results.contains(entry));
+                assertThat(results, hasItem(entry));
             }
         }
 
@@ -273,7 +290,7 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
         for (int x = 10; x < 20; x++) {
             for (String y : CHILD_ELEMENTS) {
                 entry = createExpectedResult(tenantId, x, y, 2, unit);
-                Assert.assertTrue(results.contains(entry));
+                assertThat(results, hasItem(entry));
             }
         }
     }
@@ -282,8 +299,8 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
     public void testGlobMatching() throws Exception {
         List<SearchResult> results = elasticIO.search(TENANT_A, "one.two.{three00,three01}.fourA.five0");
         assertEquals(results.size(), 2);
-        results.contains(new SearchResult(TENANT_A, "one.two.three00.fourA.five0", UNIT));
-        results.contains(new SearchResult(TENANT_A, "one.two.three01.fourA.five0", UNIT));
+        assertThat(results, hasItem(new SearchResult(TENANT_A, "one.two.three00.fourA.five0", UNIT)));
+        assertThat(results, hasItem(new SearchResult(TENANT_A, "one.two.three01.fourA.five0", UNIT)));
     }
 
     @Test
@@ -319,16 +336,16 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
 
         // Insert metric into the new index
         elasticIO.setINDEX_NAME_WRITE(ES_DUP);
-        List<IMetric> metricList = new ArrayList();
-        metricList.add(new Metric(createTestLocator(TENANT_A, 0, "A", 0), 987654321L, 0, new TimeValue(1, TimeUnit.DAYS), UNIT));
-
-        // Calling insertDiscovery with single metric in loop rather than metrics collection to improve on code coverage.
-        for(IMetric metric : metricList){
-            elasticIO.insertDiscovery(metric);
-        }
+        Metric metric = new Metric(createTestLocator(TENANT_A, 0, "A", 0), 987654321L, 0, new TimeValue(1, TimeUnit.DAYS), UNIT);
+        elasticIO.insertDiscovery(metric);
 
         helper.refreshIndex(ES_DUP);
-        elasticIO.setINDEX_NAME_READ("metric_metadata_read");
+        // Historically, this line was here, but I don't know why. In init-es.sh, "metric_metadata_read" is an alias for
+        // "metric_metadata". Why? I have no clue. Maybe something related to Elasticsearch clustering and creating read
+        // slaves?. This is the only place that seems to use that name. The ElasticsearchTestServer doesn't create this
+        // alias, so it fails here. I'm not sure how to create the alias in that class.
+        //
+        // elasticIO.setINDEX_NAME_READ("metric_metadata_read");
         results = elasticIO.search(TENANT_A, testLocator.getMetricName());
         // Should just be one result
         assertEquals(results.size(), 1);
@@ -371,13 +388,9 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
 
         List<MetricName> results = getDiscoveryIO(type).getMetricNames(tenantId, query);
 
-        Set<String> expectedResults = new HashSet<String>() {{
-            add("one|false");
-            add("foo|false");
-        }};
-
         assertEquals("Invalid total number of results", 2, results.size());
-        verifyResults(results, expectedResults);
+        assertThat(results, hasItem(new MetricName("one", false)));
+        assertThat(results, hasItem(new MetricName("foo", false)));
     }
 
     @Test
@@ -405,13 +418,10 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
 
         List<MetricName> results = getDiscoveryIO(type).getMetricNames(tenantId, query);
 
-        Set<String> expectedResults = new HashSet<String>() {{
-            add("one.two|false");
-            add("foo.bar|false");
-        }};
-
+        // On failure, see note in testGetMetricNamesWithWildCardPrefixAtTheEnd()
         assertEquals("Invalid total number of results", 2, results.size());
-        verifyResults(results, expectedResults);
+        assertThat(results, hasItem(new MetricName("one.two", false)));
+        assertThat(results, hasItem(new MetricName("foo.bar", false)));
     }
 
     @Test
@@ -430,12 +440,60 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
 
     @Test
     @Parameters({"elasticIO", "elasticTokensIO"})
+    public void testGetIncompleteMetricNamesWithGlobPatternAtTheEnd(String type) throws Exception {
+        String tenantId = TENANT_A;
+        String query = "one.two.three00.four*";
+
+        List<MetricName> results = getDiscoveryIO(type).getMetricNames(tenantId, query);
+
+        assertEquals("Invalid total number of results", 3, results.size());
+        assertThat(results, hasItem(new MetricName("one.two.three00.fourA", false)));
+        assertThat(results, hasItem(new MetricName("one.two.three00.fourB", false)));
+        assertThat(results, hasItem(new MetricName("one.two.three00.fourC", false)));
+    }
+
+    @Test
+    @Parameters({"elasticIO", "elasticTokensIO"})
+    public void testGetCompleteMetricNamesWithGlobPatternAtTheEnd(String type) throws Exception {
+        String tenantId = TENANT_A;
+        String query = "one.two.three00.fourA.five*";
+
+        List<MetricName> results = getDiscoveryIO(type).getMetricNames(tenantId, query);
+
+        assertEquals("Invalid total number of results", 3, results.size());
+        assertThat(results, hasItem(new MetricName("one.two.three00.fourA.five0", true)));
+        assertThat(results, hasItem(new MetricName("one.two.three00.fourA.five1", true)));
+        assertThat(results, hasItem(new MetricName("one.two.three00.fourA.five2", true)));
+    }
+
+    @Test
+    @Parameters({"elasticIO", "elasticTokensIO"})
     public void testGetMetricNamesWithWildCardPrefixAtTheEnd(String type) throws Exception {
         String tenantId = TENANT_A;
         String query = "one.two.three*.*";
 
         List<MetricName> results = getDiscoveryIO(type).getMetricNames(tenantId, query);
 
+        // Note: 1 Jul 2022 - While adding this test class back into the integration test suite by adding embedded
+        // Elasticsearch back to it, I observed this and some other test cases here failing to retrieve the correct
+        // number of items using "elasticTokensIO". On inspection, it was returning *all* metrics matching the query,
+        // rather than only the next level down. In other words, where it was supposed to return only
+        // "one.two.three15.fourA", it actually returned:
+        //
+        // - "one.two.three15.fourA"
+        // - "one.two.three15.fourA.five0"
+        // - "one.two.three15.fourA.five1"
+        // - "one.two.three15.fourA.five2"
+        //
+        // Given that I only ever see it on the "elasticTokensIO" and not on the "elasticIO", it could be a bug in the
+        // former. They have separate implementations of the method under test.
+        //
+        // It's also possible that it's somehow related to some Elasticsearch behavior I don't know about, like indexing
+        // delays or something. This possibility may be strengthened by the fact that the actual "number of results"
+        // returned here isn't always the same. If this particular test case were to return all results, as I mentioned
+        // above, the total count should be 360. Sometimes it returns less.
+        //
+        // The same behavior occurs using the tlrx test library and when running Elasticsearch externally with Docker.
         assertEquals("Invalid total number of results", NUM_PARENT_ELEMENTS * CHILD_ELEMENTS.size(), results.size());
         for (MetricName metricName : results) {
             Assert.assertFalse("isCompleteName value", metricName.isCompleteName());;
@@ -454,15 +512,12 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
 
         List<MetricName> results = getDiscoveryIO(type).getMetricNames(tenantId, query);
 
-        Set<String> expectedResults = new HashSet<String>() {{
-            add("one.two.three00.fourA|false");
-            add("one.two.three00.fourB|false");
-            add("one.two.three00.fourC|false");
-            add("one.foo.three00.bar|false");
-        }};
-
+        // On failure, see note in testGetMetricNamesWithWildCardPrefixAtTheEnd()
         assertEquals("Invalid total number of results", CHILD_ELEMENTS.size() + 1, results.size());
-        verifyResults(results, expectedResults);
+        assertThat(results, hasItem(new MetricName("one.two.three00.fourA", false)));
+        assertThat(results, hasItem(new MetricName("one.two.three00.fourB", false)));
+        assertThat(results, hasItem(new MetricName("one.two.three00.fourC", false)));
+        assertThat(results, hasItem(new MetricName("one.foo.three00.bar", false)));
     }
 
     @Test
@@ -491,12 +546,8 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
 
         List<MetricName> results = getDiscoveryIO(type).getMetricNames(tenantId, query);
 
-        Set<String> expectedResults = new HashSet<String>() {{
-            add("one.foo.three00.bar.baz|true");
-        }};
-
-        assertEquals("Invalid total number of results", expectedResults.size(), results.size());
-        verifyResults(results, expectedResults);
+        assertEquals("Invalid total number of results", 1, results.size());
+        assertThat(results, hasItem(new MetricName("one.foo.three00.bar.baz", true)));
     }
 
     @Test
