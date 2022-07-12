@@ -271,7 +271,7 @@
   </parent>
 
   <scm>
-    <connection>scm:https://github.com/rohitsngh27/blueflood</connection>
+    <connection>scm:https://github.com/rohitsngh27/blueflood.git</connection>
     <developerConnection>scm:git:https://github.com/rohitsngh27/blueflood</developerConnection>
     <url>https://github.com/rohitsngh27/blueflood</url>
   </scm>
