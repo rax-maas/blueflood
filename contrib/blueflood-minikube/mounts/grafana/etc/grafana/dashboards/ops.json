@@ -1,0 +1,3114 @@
+{
+  "annotations": {
+    "enable": true,
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": [],
+          "type": "dashboard"
+        },
+        "type": "dashboard"
+      },
+      {
+        "enable": true,
+        "iconColor": "#C0C6BE",
+        "iconSize": 13,
+        "lineColor": "rgba(194, 13, 13, 0.59)",
+        "name": "Blueflood Ingest Restarts",
+        "showLine": true,
+        "target": "aliasByNode(drawAsInfinite(blueflood-minikube.com.rackspacecloud.blueflood.service.RollupService.Restart), 0, 3,9)",
+        "type": "graphite metric"
+      },
+      {
+        "enable": true,
+        "iconColor": "#C0C6BE",
+        "iconSize": 13,
+        "lineColor": "rgba(118, 255, 96, 0.59)",
+        "name": "Blueflood Rollup Restarts",
+        "showLine": true,
+        "target": "aliasByNode(drawAsInfinite(blueflood-minikube.com.rackspacecloud.blueflood.service.RollupService.Restart), 0, 3,9)",
+        "type": "graphite metric"
+      },
+      {
+        "enable": true,
+        "iconColor": "#C0C6BE",
+        "iconSize": 13,
+        "lineColor": "rgba(101, 96, 255, 0.59)",
+        "name": "Blueflood Query Restarts",
+        "showLine": true,
+        "target": "aliasByNode(drawAsInfinite(blueflood-minikube.com.rackspacecloud.blueflood.service.RollupService.Restart), 0, 3,9)",
+        "type": "graphite metric"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "gnetId": null,
+  "graphTooltip": 1,
+  "id": 3,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "collapsed": false,
+      "datasource": "Graphite",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 51,
+      "panels": [],
+      "title": "Ingestion Rates",
+      "type": "row"
+    },
+    {
+      "aliasColors": {},
+      "annotate": {
+        "enable": false
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "Graphite",
+      "fill": 6,
+      "fillGradient": 0,
+      "grid": {
+        "max": null,
+        "min": 0
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 1
+      },
+      "hiddenSeries": false,
+      "id": 10,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 2,
+      "links": [],
+      "nullPointMode": "null as zero",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "8.2.6",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "resolution": 100,
+      "scale": 1,
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": true,
+      "steppedLine": false,
+      "targets": [
+        {
+          "refId": "A",
+          "target": "aliasByNode(groupByNode(maximumAbove(nonNegativeDerivative(blueflood-minikube.com.rackspacecloud.blueflood.io.Instrumentation.Full-Resolution-*Metrics-Written.count), -1), 0, 'sumSeries'), 0)"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Raw Metrics/Minute",
+      "tooltip": {
+        "query_as_alias": true,
+        "shared": false,
+        "sort": 0,
+        "value_type": "cumulative"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      },
+      "zerofill": true
+    },
+    {
+      "aliasColors": {},
+      "annotate": {
+        "enable": false
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "Graphite",
+      "editable": true,
+      "fill": 6,
+      "fillGradient": 0,
+      "grid": {
+        "max": null,
+        "min": 0
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 1
+      },
+      "hiddenSeries": false,
+      "id": 13,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 2,
+      "loadingEditor": false,
+      "nullPointMode": "null as zero",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "8.2.6",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "resolution": 100,
+      "scale": 1,
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": true,
+      "steppedLine": false,
+      "targets": [
+        {
+          "refId": "A",
+          "target": "aliasByNode(maximumAbove(nonNegativeDerivative(blueflood-minikube.com.rackspacecloud.blueflood.http.DefaultHandler.HTTP-response-sending-timer.count), -1), 0)"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "http ingest rate",
+      "tooltip": {
+        "query_as_alias": true,
+        "shared": false,
+        "sort": 0,
+        "value_type": "cumulative"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      },
+      "zerofill": true
+    },
+    {
+      "collapsed": false,
+      "datasource": "Graphite",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 9
+      },
+      "id": 52,
+      "panels": [],
+      "title": "Delay Metrics Rates",
+      "type": "row"
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "Graphite",
+      "editable": true,
+      "error": false,
+      "fill": 6,
+      "fillGradient": 0,
+      "grid": {},
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 10
+      },
+      "hiddenSeries": false,
+      "id": 40,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "connected",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "8.2.6",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": true,
+      "steppedLine": false,
+      "targets": [
+        {
+          "refId": "A",
+          "target": "aliasByNode(maximumAbove(nonNegativeDerivative(blueflood-minikube.com.rackspacecloud.blueflood.io.Instrumentation.Metrics-with-short-delay-received.count), -1), 0)"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Short delay metrics/minute",
+      "tooltip": {
+        "shared": false,
+        "sort": 0,
+        "value_type": "cumulative"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "Graphite",
+      "editable": true,
+      "error": false,
+      "fill": 6,
+      "fillGradient": 0,
+      "grid": {},
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 10
+      },
+      "hiddenSeries": false,
+      "id": 41,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "connected",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "8.2.6",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": true,
+      "steppedLine": false,
+      "targets": [
+        {
+          "refId": "A",
+          "target": "aliasByNode(maximumAbove(nonNegativeDerivative(blueflood-minikube.com.rackspacecloud.blueflood.io.Instrumentation.Metrics-with-long-delay-received.count), -1), 0)"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Long delay metrics/minute",
+      "tooltip": {
+        "shared": false,
+        "sort": 0,
+        "value_type": "cumulative"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "collapsed": false,
+      "datasource": "Graphite",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 17
+      },
+      "id": 53,
+      "panels": [],
+      "title": "Ingestion Latency",
+      "type": "row"
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "Graphite",
+      "editable": true,
+      "error": false,
+      "fill": 0,
+      "fillGradient": 0,
+      "grid": {},
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 18
+      },
+      "hiddenSeries": false,
+      "id": 12,
+      "legend": {
+        "alignAsTable": false,
+        "avg": false,
+        "current": false,
+        "hideEmpty": false,
+        "max": false,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "connected",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "8.2.6",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "refId": "A",
+          "target": "aliasByNode(averageSeries(averageSeriesWithWildcards(blueflood-minikube.com.rackspacecloud.blueflood.inputs.handlers.HttpMetricsIngestionHandler.*.p999, 10)), -1)"
+        },
+        {
+          "hide": false,
+          "refId": "B",
+          "target": "aliasByNode(averageSeries(averageSeriesWithWildcards(blueflood-minikube.com.rackspacecloud.blueflood.inputs.handlers.HttpMetricsIngestionHandler.*.p99, 10)), -1)"
+        },
+        {
+          "hide": false,
+          "refId": "C",
+          "target": "aliasByNode(averageSeries(averageSeriesWithWildcards(blueflood-minikube.com.rackspacecloud.blueflood.inputs.handlers.HttpMetricsIngestionHandler.*.p95, 10)), -1)"
+        },
+        {
+          "hide": false,
+          "refId": "D",
+          "target": "aliasByNode(averageSeries(averageSeriesWithWildcards(blueflood-minikube.com.rackspacecloud.blueflood.inputs.handlers.HttpMetricsIngestionHandler.*.mean, 10)), -1)"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Ingest Latency averages",
+      "tooltip": {
+        "shared": false,
+        "sort": 0,
+        "value_type": "cumulative"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "ms",
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "annotate": {
+        "enable": false
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "Graphite",
+      "fill": 0,
+      "fillGradient": 0,
+      "grid": {
+        "max": null,
+        "min": 0
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 18
+      },
+      "hiddenSeries": false,
+      "id": 11,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "connected",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "8.2.6",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "resolution": 100,
+      "scale": 1,
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "refId": "A",
+          "target": "aliasByNode(maximumAbove(blueflood-minikube.com.rackspacecloud.blueflood.inputs.processors.BatchWriter.Write-Duration.{mean,p95,p999},-1),0,-1)"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Write duration (Ingestion) in ms",
+      "tooltip": {
+        "query_as_alias": true,
+        "shared": false,
+        "sort": 0,
+        "value_type": "cumulative"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "ms",
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      },
+      "zerofill": true
+    },
+    {
+      "collapsed": false,
+      "datasource": "Graphite",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 26
+      },
+      "id": 54,
+      "panels": [],
+      "title": "Rollup Rate and Queued",
+      "type": "row"
+    },
+    {
+      "aliasColors": {},
+      "annotate": {
+        "enable": false
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "Graphite",
+      "fill": 4,
+      "fillGradient": 0,
+      "grid": {
+        "max": null,
+        "min": 0
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 27
+      },
+      "hiddenSeries": false,
+      "id": 1,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null as zero",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "8.2.6",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "resolution": 100,
+      "scale": 1,
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": true,
+      "steppedLine": false,
+      "targets": [
+        {
+          "refId": "A",
+          "target": "aliasByNode(maximumAbove(nonNegativeDerivative(blueflood-minikube.com.rackspacecloud.blueflood.service.RollupService.Rollup-Execution-Timer.count), -1), 0)"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Rollups_per_minute",
+      "tooltip": {
+        "query_as_alias": true,
+        "shared": false,
+        "sort": 0,
+        "value_type": "cumulative"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      },
+      "zerofill": true
+    },
+    {
+      "aliasColors": {},
+      "annotate": {
+        "enable": false
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "Graphite",
+      "fill": 6,
+      "fillGradient": 0,
+      "grid": {
+        "max": null,
+        "min": 0
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 27
+      },
+      "hiddenSeries": false,
+      "id": 4,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 2,
+      "nullPointMode": "connected",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "8.2.6",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "resolution": 100,
+      "scale": 1,
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": true,
+      "steppedLine": false,
+      "targets": [
+        {
+          "refId": "A",
+          "target": "aliasByNode(maximumAbove(blueflood-minikube.com.rackspacecloud.blueflood.service.RollupService.Queued-Rollup-Count, -1), 0)"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Queued Rollups by Nodes",
+      "tooltip": {
+        "query_as_alias": true,
+        "shared": false,
+        "sort": 0,
+        "value_type": "cumulative"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      },
+      "zerofill": true
+    },
+    {
+      "collapsed": false,
+      "datasource": "Graphite",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 35
+      },
+      "id": 55,
+      "panels": [],
+      "title": "Rollup execution",
+      "type": "row"
+    },
+    {
+      "aliasColors": {},
+      "annotate": {
+        "enable": false
+      },
+      "bars": false,
+      "datasource": "Graphite",
+      "fill": 0,
+      "grid": {
+        "max": null,
+        "min": 0
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 36
+      },
+      "id": 3,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "connected",
+      "percentage": false,
+      "pluginVersion": "8.2.6",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "resolution": 100,
+      "scale": 1,
+      "seriesOverrides": [],
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "refId": "A",
+          "target": "aliasByNode(maximumAbove(blueflood-minikube.com.rackspacecloud.blueflood.service.RollupService.Rollup-Wait-Histogram.p95, -1), 0)"
+        }
+      ],
+      "thresholds": [],
+      "title": "Rollup Wait time p95",
+      "tooltip": {
+        "query_as_alias": true,
+        "shared": false,
+        "value_type": "cumulative"
+      },
+      "type": "graph",
+      "xaxis": {
+        "show": true
+      },
+      "yaxes": [
+        {
+          "format": "ms",
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        }
+      ],
+      "zerofill": true
+    },
+    {
+      "aliasColors": {},
+      "annotate": {
+        "enable": false
+      },
+      "bars": false,
+      "datasource": "Graphite",
+      "fill": 0,
+      "grid": {
+        "max": null,
+        "min": 0
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 36
+      },
+      "id": 2,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "connected",
+      "percentage": false,
+      "pluginVersion": "8.2.6",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "resolution": 100,
+      "scale": 1,
+      "seriesOverrides": [],
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "refId": "A",
+          "target": "aliasByNode(maximumAbove(blueflood-minikube.com.rackspacecloud.blueflood.service.RollupService.Rollup-Execution-Timer.{mean,p95,p99},-1),0,-1)"
+        }
+      ],
+      "thresholds": [],
+      "title": "Rollup execution timer",
+      "tooltip": {
+        "query_as_alias": true,
+        "shared": false,
+        "value_type": "cumulative"
+      },
+      "type": "graph",
+      "xaxis": {
+        "show": true
+      },
+      "yaxes": [
+        {
+          "format": "ms",
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        }
+      ],
+      "zerofill": true
+    },
+    {
+      "collapsed": false,
+      "datasource": "Graphite",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 44
+      },
+      "id": 56,
+      "panels": [],
+      "title": "Rollup Slots",
+      "type": "row"
+    },
+    {
+      "aliasColors": {},
+      "annotate": {
+        "enable": false
+      },
+      "bars": false,
+      "datasource": "Graphite",
+      "fill": 0,
+      "grid": {
+        "max": null,
+        "min": 0
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 45
+      },
+      "id": 9,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "connected",
+      "percentage": false,
+      "pluginVersion": "8.2.6",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "resolution": 100,
+      "scale": 1,
+      "seriesOverrides": [],
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "refId": "A",
+          "target": "aliasByNode(nonNegativeDerivative(blueflood-minikube.com.rackspacecloud.blueflood.service.RollupService.5m-Re-rolling-up-because-of-delayed-metrics.count), 0, 3)"
+        }
+      ],
+      "thresholds": [],
+      "title": "Re-roll slot due to delayed metrics",
+      "tooltip": {
+        "query_as_alias": true,
+        "shared": false,
+        "value_type": "cumulative"
+      },
+      "type": "graph",
+      "xaxis": {
+        "show": true
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        }
+      ],
+      "zerofill": true
+    },
+    {
+      "aliasColors": {},
+      "annotate": {
+        "enable": false
+      },
+      "bars": false,
+      "datasource": "Graphite",
+      "fill": 0,
+      "grid": {
+        "max": null,
+        "min": 0
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 45
+      },
+      "id": 6,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "connected",
+      "percentage": false,
+      "pluginVersion": "8.2.6",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "resolution": 100,
+      "scale": 1,
+      "seriesOverrides": [],
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "refId": "A",
+          "target": "aliasByNode(maximumAbove(blueflood-minikube.com.rackspacecloud.blueflood.service.RollupService.Scheduled-Slot-Check,-1),0)"
+        }
+      ],
+      "thresholds": [],
+      "title": "Scheduled-Slot-Check",
+      "tooltip": {
+        "query_as_alias": true,
+        "shared": false,
+        "value_type": "cumulative"
+      },
+      "type": "graph",
+      "xaxis": {
+        "show": true
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        }
+      ],
+      "zerofill": true
+    },
+    {
+      "collapsed": false,
+      "datasource": "Graphite",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 53
+      },
+      "id": 57,
+      "panels": [],
+      "title": "Repose Status codes",
+      "type": "row"
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "datasource": "Graphite",
+      "editable": true,
+      "error": false,
+      "fill": 0,
+      "grid": {},
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 54
+      },
+      "id": 42,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "connected",
+      "percentage": false,
+      "pluginVersion": "8.2.6",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "refId": "A",
+          "target": "aliasByNode(nonNegativeDerivative(*.iad.prod.bf.k1k.me-org.openrepose.core.ResponseCode.Repose.5XX.count), 0)"
+        }
+      ],
+      "thresholds": [],
+      "title": "Repose 5xx responses",
+      "tooltip": {
+        "shared": false,
+        "value_type": "cumulative"
+      },
+      "type": "graph",
+      "xaxis": {
+        "show": true
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ]
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "datasource": "Graphite",
+      "editable": true,
+      "error": false,
+      "fill": 0,
+      "grid": {},
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 54
+      },
+      "id": 43,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "connected",
+      "percentage": false,
+      "pluginVersion": "8.2.6",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "refId": "A",
+          "target": "aliasByNode(nonNegativeDerivative(*.iad.prod.bf.k1k.me-org.openrepose.core.ResponseCode.localhost:*.5XX.count), 0)"
+        }
+      ],
+      "thresholds": [],
+      "title": "Blueflood 5xx reponses",
+      "tooltip": {
+        "shared": false,
+        "value_type": "cumulative"
+      },
+      "type": "graph",
+      "xaxis": {
+        "show": true
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "datasource": "Graphite",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 61
+      },
+      "id": 58,
+      "panels": [],
+      "title": "Query rate and search duration",
+      "type": "row"
+    },
+    {
+      "aliasColors": {},
+      "annotate": {
+        "enable": false
+      },
+      "bars": false,
+      "datasource": "Graphite",
+      "fill": 2,
+      "grid": {
+        "max": null,
+        "min": 0
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 62
+      },
+      "id": 22,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "connected",
+      "percentage": false,
+      "pluginVersion": "8.2.6",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "resolution": 100,
+      "scale": 1,
+      "seriesOverrides": [],
+      "stack": true,
+      "steppedLine": false,
+      "targets": [
+        {
+          "refId": "A",
+          "target": "aliasByNode(maximumAbove(nonNegativeDerivative(blueflood-minikube.com.rackspacecloud.blueflood.outputs.handlers.RollupHandler.Get-metrics-from-db.count),-1),0)"
+        }
+      ],
+      "thresholds": [],
+      "title": "Queries per minute",
+      "tooltip": {
+        "query_as_alias": true,
+        "shared": false,
+        "value_type": "cumulative"
+      },
+      "type": "graph",
+      "xaxis": {
+        "show": true
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        }
+      ],
+      "zerofill": true
+    },
+    {
+      "aliasColors": {},
+      "annotate": {
+        "enable": false
+      },
+      "bars": false,
+      "datasource": "Graphite",
+      "editable": true,
+      "fill": 0,
+      "grid": {
+        "max": null,
+        "min": 0
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 62
+      },
+      "id": 23,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "loadingEditor": false,
+      "nullPointMode": "connected",
+      "percentage": false,
+      "pluginVersion": "8.2.6",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "resolution": 100,
+      "scale": 1,
+      "seriesOverrides": [
+        {
+          "alias": "rate",
+          "yaxis": 2
+        }
+      ],
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "refId": "A",
+          "target": "alias(sumSeries(maximumAbove(nonNegativeDerivative(blueflood-minikube.com.rackspacecloud.blueflood.io.ElasticIO.Search-Duration.count),-1)),'rate')"
+        },
+        {
+          "refId": "B",
+          "target": "aliasByNode(averageSeriesWithWildcards(blueflood-minikube.com.rackspacecloud.blueflood.io.ElasticIO.Search-Duration.{p999,p95,mean},0),-1)"
+        }
+      ],
+      "thresholds": [],
+      "title": "ElasticIO Query Search Duration",
+      "tooltip": {
+        "query_as_alias": true,
+        "shared": false,
+        "value_type": "cumulative"
+      },
+      "type": "graph",
+      "xaxis": {
+        "show": true
+      },
+      "yaxes": [
+        {
+          "format": "ms",
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        }
+      ],
+      "zerofill": true
+    },
+    {
+      "collapsed": false,
+      "datasource": "Graphite",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 70
+      },
+      "id": 59,
+      "panels": [],
+      "title": "ElasticIO Indexing",
+      "type": "row"
+    },
+    {
+      "aliasColors": {},
+      "annotate": {
+        "enable": false
+      },
+      "bars": false,
+      "datasource": "Graphite",
+      "editable": true,
+      "fill": 0,
+      "grid": {
+        "max": null,
+        "min": 0
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 71
+      },
+      "id": 14,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "loadingEditor": false,
+      "nullPointMode": "connected",
+      "percentage": false,
+      "pluginVersion": "8.2.6",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "resolution": 100,
+      "scale": 1,
+      "seriesOverrides": [
+        {
+          "alias": "app00.*.blueflood.ingest.com.rackspacecloud.blueflood.io.ElasticIO.DiscoveryWriter-Write-Errors.m1_rate",
+          "yaxis": 2
+        }
+      ],
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "refId": "A",
+          "target": "aliasByNode(averageSeriesWithWildcards(maximumAbove(blueflood-minikube.com.rackspacecloud.blueflood.io.ElasticIO.Write-Duration.{p999,p95,mean},-1),0),-1)"
+        }
+      ],
+      "thresholds": [],
+      "title": "ES DiscoveryWriter Duration",
+      "tooltip": {
+        "query_as_alias": true,
+        "shared": false,
+        "value_type": "cumulative"
+      },
+      "type": "graph",
+      "xaxis": {
+        "show": true
+      },
+      "yaxes": [
+        {
+          "format": "ms",
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        }
+      ],
+      "zerofill": true
+    },
+    {
+      "aliasColors": {},
+      "annotate": {
+        "enable": false
+      },
+      "bars": false,
+      "datasource": "Graphite",
+      "editable": true,
+      "fill": 3,
+      "grid": {
+        "max": null,
+        "min": 0
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 71
+      },
+      "id": 15,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 2,
+      "loadingEditor": false,
+      "nullPointMode": "null as zero",
+      "percentage": false,
+      "pluginVersion": "8.2.6",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "resolution": 100,
+      "scale": 1,
+      "seriesOverrides": [
+        {
+          "alias": "app00.*.blueflood.ingest.com.rackspacecloud.blueflood.io.ElasticIO.DiscoveryWriter-Write-Errors.m1_rate",
+          "yaxis": 2
+        }
+      ],
+      "stack": true,
+      "steppedLine": false,
+      "targets": [
+        {
+          "refId": "A",
+          "target": "aliasByNode(maximumAbove(nonNegativeDerivative(blueflood-minikube.com.rackspacecloud.blueflood.io.ElasticIO.Write-Duration.count),-1),0)"
+        }
+      ],
+      "thresholds": [],
+      "title": "ES DiscoveryWriter Rate",
+      "tooltip": {
+        "query_as_alias": true,
+        "shared": false,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "show": true
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        }
+      ],
+      "zerofill": true
+    },
+    {
+      "collapsed": false,
+      "datasource": "Graphite",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 79
+      },
+      "id": 60,
+      "panels": [],
+      "title": "ElasticTokensIO Indexing",
+      "type": "row"
+    },
+    {
+      "aliasColors": {},
+      "annotate": {
+        "enable": false
+      },
+      "bars": false,
+      "datasource": "Graphite",
+      "editable": true,
+      "fill": 0,
+      "grid": {
+        "max": null,
+        "min": 0
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 80
+      },
+      "id": 46,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "loadingEditor": false,
+      "nullPointMode": "connected",
+      "percentage": false,
+      "pluginVersion": "8.2.6",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "resolution": 100,
+      "scale": 1,
+      "seriesOverrides": [
+        {
+          "alias": "app00.*.blueflood.ingest.com.rackspacecloud.blueflood.io.ElasticIO.DiscoveryWriter-Write-Errors.m1_rate",
+          "yaxis": 2
+        }
+      ],
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "refId": "A",
+          "target": "aliasByNode(averageSeriesWithWildcards(maximumAbove(blueflood-minikube.com.rackspacecloud.blueflood.io.ElasticTokensIO.Write-Duration.{p999,p95,mean}, -1), 0), -1)"
+        }
+      ],
+      "thresholds": [],
+      "title": "ES TokenDiscoveryWriter Duration",
+      "tooltip": {
+        "query_as_alias": true,
+        "shared": false,
+        "value_type": "cumulative"
+      },
+      "type": "graph",
+      "xaxis": {
+        "show": true
+      },
+      "yaxes": [
+        {
+          "format": "ms",
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        }
+      ],
+      "zerofill": true
+    },
+    {
+      "aliasColors": {},
+      "annotate": {
+        "enable": false
+      },
+      "bars": false,
+      "datasource": "Graphite",
+      "editable": true,
+      "fill": 3,
+      "grid": {
+        "max": null,
+        "min": 0
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 80
+      },
+      "id": 47,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 2,
+      "links": [],
+      "loadingEditor": false,
+      "nullPointMode": "null as zero",
+      "percentage": false,
+      "pluginVersion": "8.2.6",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "resolution": 100,
+      "scale": 1,
+      "seriesOverrides": [
+        {
+          "alias": "app00.*.blueflood.ingest.com.rackspacecloud.blueflood.io.ElasticIO.DiscoveryWriter-Write-Errors.m1_rate",
+          "yaxis": 2
+        }
+      ],
+      "stack": true,
+      "steppedLine": false,
+      "targets": [
+        {
+          "refId": "A",
+          "target": "aliasByNode(maximumAbove(nonNegativeDerivative(blueflood-minikube.com.rackspacecloud.blueflood.io.ElasticTokensIO.Write-Duration.count), -1), 0)"
+        }
+      ],
+      "thresholds": [],
+      "title": "ES TokenDiscoveryWriter Rate",
+      "tooltip": {
+        "query_as_alias": true,
+        "shared": false,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "show": true
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        }
+      ],
+      "zerofill": true
+    },
+    {
+      "collapsed": false,
+      "datasource": "Graphite",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 87
+      },
+      "id": 61,
+      "panels": [],
+      "title": "Cache Counts",
+      "type": "row"
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "datasource": "Graphite",
+      "editable": true,
+      "error": false,
+      "fill": 0,
+      "grid": {},
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 0,
+        "y": 88
+      },
+      "id": 48,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "connected",
+      "percentage": false,
+      "pluginVersion": "8.2.6",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "refId": "A",
+          "target": "aliasByNode(blueflood-minikube.com.rackspacecloud.blueflood.cache.LocatorCache.Current-Locators-Count, 0)"
+        }
+      ],
+      "thresholds": [],
+      "title": "LocatorCache locator count",
+      "tooltip": {
+        "shared": false,
+        "value_type": "cumulative"
+      },
+      "type": "graph",
+      "xaxis": {
+        "show": true
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ]
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "datasource": "Graphite",
+      "editable": true,
+      "error": false,
+      "fill": 0,
+      "grid": {},
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 8,
+        "y": 88
+      },
+      "id": 50,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "connected",
+      "percentage": false,
+      "pluginVersion": "8.2.6",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "refId": "A",
+          "target": "aliasByNode(blueflood-minikube.com.rackspacecloud.blueflood.cache.LocatorCache.Current-Delayed-Locators-Count, 0)"
+        }
+      ],
+      "thresholds": [],
+      "title": "LocatorCache delayed locator count",
+      "tooltip": {
+        "shared": false,
+        "value_type": "cumulative"
+      },
+      "type": "graph",
+      "xaxis": {
+        "show": true
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ]
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "datasource": "Graphite",
+      "editable": true,
+      "error": false,
+      "fill": 0,
+      "grid": {},
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 16,
+        "y": 88
+      },
+      "id": 49,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "connected",
+      "percentage": false,
+      "pluginVersion": "8.2.6",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "refId": "A",
+          "target": "aliasByNode(blueflood-minikube.com.rackspacecloud.blueflood.cache.TokenCache.Current-Tokens-Count, 0)"
+        }
+      ],
+      "thresholds": [],
+      "title": "TokenCache token count",
+      "tooltip": {
+        "shared": false,
+        "value_type": "cumulative"
+      },
+      "type": "graph",
+      "xaxis": {
+        "show": true
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "datasource": "Graphite",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 95
+      },
+      "id": 62,
+      "panels": [],
+      "title": "Blueflood Operations",
+      "type": "row"
+    },
+    {
+      "aliasColors": {},
+      "annotate": {
+        "enable": false
+      },
+      "bars": false,
+      "datasource": "Graphite",
+      "fill": 0,
+      "grid": {
+        "max": null,
+        "min": 0
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 96
+      },
+      "id": 28,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "connected",
+      "percentage": false,
+      "pluginVersion": "8.2.6",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "resolution": 100,
+      "scale": 1,
+      "seriesOverrides": [],
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "refId": "A",
+          "target": "alias(sumSeries(nonNegativeDerivative(blueflood-minikube.com.rackspacecloud.blueflood.io.InstrumentedConnectionPoolMonitor.Operation-Result-Success.count)), 'success')"
+        },
+        {
+          "refId": "B",
+          "target": "alias(sumSeries(nonNegativeDerivative(blueflood-minikube.com.rackspacecloud.blueflood.io.InstrumentedConnectionPoolMonitor.Operation-Result-Failure.count)), 'fail')"
+        }
+      ],
+      "thresholds": [],
+      "title": "Blueflood Ops/min overall",
+      "tooltip": {
+        "query_as_alias": true,
+        "shared": false,
+        "value_type": "cumulative"
+      },
+      "type": "graph",
+      "xaxis": {
+        "show": true
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        }
+      ],
+      "zerofill": true
+    },
+    {
+      "aliasColors": {},
+      "annotate": {
+        "enable": false
+      },
+      "bars": false,
+      "datasource": "Graphite",
+      "fill": 4,
+      "grid": {
+        "max": null,
+        "min": 0
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 96
+      },
+      "id": 29,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null as zero",
+      "percentage": false,
+      "pluginVersion": "8.2.6",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "resolution": 100,
+      "scale": 1,
+      "seriesOverrides": [],
+      "stack": true,
+      "steppedLine": false,
+      "targets": [
+        {
+          "refId": "A",
+          "target": "aliasByNode(maximumAbove(nonNegativeDerivative(blueflood-minikube.com.rackspacecloud.blueflood.io.InstrumentedConnectionPoolMonitor.Connection-Borrowed.count), -1), 0, 3)"
+        }
+      ],
+      "thresholds": [],
+      "title": "Blueflood Ops/min (by node)",
+      "tooltip": {
+        "query_as_alias": true,
+        "shared": false,
+        "value_type": "cumulative"
+      },
+      "type": "graph",
+      "xaxis": {
+        "show": true
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        }
+      ],
+      "zerofill": true
+    },
+    {
+      "collapsed": false,
+      "datasource": "Graphite",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 104
+      },
+      "id": 63,
+      "panels": [],
+      "title": "Cassandra requests",
+      "type": "row"
+    },
+    {
+      "aliasColors": {},
+      "annotate": {
+        "enable": false
+      },
+      "bars": false,
+      "datasource": "Graphite",
+      "editable": true,
+      "fill": 0,
+      "grid": {
+        "max": null,
+        "min": 0
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 105
+      },
+      "id": 30,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "loadingEditor": false,
+      "nullPointMode": "connected",
+      "percentage": false,
+      "pluginVersion": "8.2.6",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "resolution": 100,
+      "scale": 1,
+      "seriesOverrides": [],
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "refId": "A",
+          "target": "groupByNode(nonNegativeDerivative(*.*.cassandra.org.apache.cassandra.metrics.ColumnFamily.DATA.*.ReadLatency.count),9,'sum')"
+        }
+      ],
+      "thresholds": [],
+      "title": "Cassandra reads/minute by CF",
+      "tooltip": {
+        "query_as_alias": true,
+        "shared": false,
+        "value_type": "cumulative"
+      },
+      "type": "graph",
+      "xaxis": {
+        "show": true
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        }
+      ],
+      "zerofill": true
+    },
+    {
+      "aliasColors": {},
+      "annotate": {
+        "enable": false
+      },
+      "bars": false,
+      "datasource": "Graphite",
+      "editable": true,
+      "fill": 0,
+      "grid": {
+        "max": null,
+        "min": 0
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 105
+      },
+      "id": 31,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "loadingEditor": false,
+      "nullPointMode": "connected",
+      "percentage": false,
+      "pluginVersion": "8.2.6",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "resolution": 100,
+      "scale": 1,
+      "seriesOverrides": [],
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "refId": "A",
+          "target": "groupByNode(nonNegativeDerivative(*.*.cassandra.org.apache.cassandra.metrics.ColumnFamily.DATA.*.WriteLatency.count),9,'sum')"
+        }
+      ],
+      "thresholds": [],
+      "title": "Cassandra writes/minute by CF",
+      "tooltip": {
+        "query_as_alias": true,
+        "shared": false,
+        "value_type": "cumulative"
+      },
+      "type": "graph",
+      "xaxis": {
+        "show": true
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        }
+      ],
+      "zerofill": true
+    },
+    {
+      "collapsed": false,
+      "datasource": "Graphite",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 113
+      },
+      "id": 64,
+      "panels": [],
+      "title": "Cassandra Connection Errors",
+      "type": "row"
+    },
+    {
+      "aliasColors": {},
+      "annotate": {
+        "enable": false
+      },
+      "bars": false,
+      "datasource": "Graphite",
+      "fill": 0,
+      "grid": {
+        "max": null,
+        "min": 0
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 114
+      },
+      "id": 32,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "connected",
+      "percentage": false,
+      "pluginVersion": "8.2.6",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "resolution": 100,
+      "scale": 1,
+      "seriesOverrides": [],
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "refId": "A",
+          "target": "aliasByNode(blueflood-minikube.com.rackspacecloud.blueflood.io.Instrumentation.All-Pools-Exhausted.m1_rate, 0, 3)"
+        }
+      ],
+      "thresholds": [],
+      "title": "All Pools Exhausted (Cassandra connections)",
+      "tooltip": {
+        "query_as_alias": true,
+        "shared": false,
+        "value_type": "cumulative"
+      },
+      "type": "graph",
+      "xaxis": {
+        "show": true
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        }
+      ],
+      "zerofill": true
+    },
+    {
+      "aliasColors": {},
+      "annotate": {
+        "enable": false
+      },
+      "bars": false,
+      "datasource": "Graphite",
+      "fill": 0,
+      "grid": {
+        "max": null,
+        "min": 0
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 114
+      },
+      "id": 33,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "connected",
+      "percentage": false,
+      "pluginVersion": "8.2.6",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "resolution": 100,
+      "scale": 1,
+      "seriesOverrides": [],
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "refId": "A",
+          "target": "aliasByNode(blueflood-minikube.com.rackspacecloud.blueflood.io.InstrumentedConnectionPoolMonitor.Exceptions-Pool-Exhausted.m1_rate,0,3)"
+        }
+      ],
+      "thresholds": [],
+      "title": "Exceptions-Pool-Exhausted",
+      "tooltip": {
+        "query_as_alias": true,
+        "shared": false,
+        "value_type": "cumulative"
+      },
+      "type": "graph",
+      "xaxis": {
+        "show": true
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        }
+      ],
+      "zerofill": true
+    },
+    {
+      "collapsed": false,
+      "datasource": "Graphite",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 122
+      },
+      "id": 65,
+      "panels": [],
+      "title": "Cass read and write errors",
+      "type": "row"
+    },
+    {
+      "aliasColors": {},
+      "annotate": {
+        "enable": false
+      },
+      "bars": false,
+      "datasource": "Graphite",
+      "fill": 6,
+      "grid": {
+        "max": null,
+        "min": 0
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 123
+      },
+      "id": 39,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 2,
+      "links": [],
+      "nullPointMode": "null as zero",
+      "percentage": false,
+      "pluginVersion": "8.2.6",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "resolution": 100,
+      "scale": 1,
+      "seriesOverrides": [],
+      "stack": true,
+      "steppedLine": false,
+      "targets": [
+        {
+          "refId": "A",
+          "target": "aliasByNode(sumSeriesWithWildcards(nonNegativeDerivative(blueflood-minikube.com.rackspacecloud.blueflood.io.Instrumentation.writes.*Error*.count), 10), 0)"
+        }
+      ],
+      "thresholds": [],
+      "title": "cassandra write errors/minute",
+      "tooltip": {
+        "query_as_alias": true,
+        "shared": false,
+        "value_type": "cumulative"
+      },
+      "type": "graph",
+      "xaxis": {
+        "show": true
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        }
+      ],
+      "zerofill": true
+    },
+    {
+      "aliasColors": {},
+      "annotate": {
+        "enable": false
+      },
+      "bars": false,
+      "datasource": "Graphite",
+      "fill": 6,
+      "grid": {
+        "max": null,
+        "min": 0
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 123
+      },
+      "id": 38,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 2,
+      "links": [],
+      "nullPointMode": "null as zero",
+      "percentage": false,
+      "pluginVersion": "8.2.6",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "resolution": 100,
+      "scale": 1,
+      "seriesOverrides": [],
+      "stack": true,
+      "steppedLine": false,
+      "targets": [
+        {
+          "refId": "A",
+          "target": "aliasByNode(sumSeriesWithWildcards(nonNegativeDerivative(blueflood-minikube.com.rackspacecloud.blueflood.io.Instrumentation.reads.*Error*.count), 10), 0)"
+        }
+      ],
+      "thresholds": [],
+      "title": "cassandra read errors/minute",
+      "tooltip": {
+        "query_as_alias": true,
+        "shared": false,
+        "value_type": "cumulative"
+      },
+      "type": "graph",
+      "xaxis": {
+        "show": true
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        }
+      ],
+      "zerofill": true
+    },
+    {
+      "collapsed": false,
+      "datasource": "Graphite",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 130
+      },
+      "id": 66,
+      "panels": [],
+      "title": "Metrics full latencies",
+      "type": "row"
+    },
+    {
+      "aliasColors": {},
+      "annotate": {
+        "enable": false
+      },
+      "bars": false,
+      "datasource": "Graphite",
+      "fill": 0,
+      "grid": {
+        "max": null,
+        "min": 0
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 131
+      },
+      "id": 35,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "connected",
+      "percentage": false,
+      "pluginVersion": "8.2.6",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "resolution": 100,
+      "scale": 1,
+      "seriesOverrides": [],
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "hide": true,
+          "refId": "A",
+          "target": "groupByNode(maximumAbove(blueflood-minikube.com.rackspacecloud.blueflood.io.Instrumentation.reads.metrics_full.{p999,p99,p95,mean}, -1), -1, 'maxSeries')"
+        },
+        {
+          "refId": "B",
+          "target": "averageSeriesWithWildcards(groupByNode(blueflood-minikube.com.rackspacecloud.blueflood.io.Instrumentation.reads.metrics_full.{p999,p99,p95,mean}, -1, 'avg'), 3)"
+        }
+      ],
+      "thresholds": [],
+      "title": "Metrics_full read latencies",
+      "tooltip": {
+        "query_as_alias": true,
+        "shared": false,
+        "value_type": "cumulative"
+      },
+      "type": "graph",
+      "xaxis": {
+        "show": true
+      },
+      "yaxes": [
+        {
+          "format": "ms",
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        }
+      ],
+      "zerofill": true
+    },
+    {
+      "aliasColors": {},
+      "annotate": {
+        "enable": false
+      },
+      "bars": false,
+      "datasource": "Graphite",
+      "fill": 0,
+      "grid": {
+        "max": null,
+        "min": 0
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 131
+      },
+      "id": 36,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "connected",
+      "percentage": false,
+      "pluginVersion": "8.2.6",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "resolution": 100,
+      "scale": 1,
+      "seriesOverrides": [],
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "refId": "A",
+          "target": "groupByNode(maximumAbove(blueflood-minikube.com.rackspacecloud.blueflood.io.Instrumentation.writes.metrics_full.{p999,p99,p95,mean}, -1), -1, 'maxSeries')"
+        }
+      ],
+      "thresholds": [],
+      "title": "metrics_full writes mean",
+      "tooltip": {
+        "query_as_alias": true,
+        "shared": false,
+        "value_type": "cumulative"
+      },
+      "type": "graph",
+      "xaxis": {
+        "show": true
+      },
+      "yaxes": [
+        {
+          "format": "ms",
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "max": null,
+          "min": 0,
+          "show": true
+        }
+      ],
+      "zerofill": true
+    },
+    {
+      "collapsed": false,
+      "datasource": "Graphite",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 139
+      },
+      "id": 67,
+      "panels": [],
+      "title": "Repose Responses",
+      "type": "row"
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "datasource": "Graphite",
+      "editable": true,
+      "error": false,
+      "fill": 0,
+      "grid": {},
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 140
+      },
+      "id": 44,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "connected",
+      "percentage": false,
+      "pluginVersion": "8.2.6",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "hide": false,
+          "refId": "A",
+          "target": "aliasByNode(nonNegativeDerivative(*.iad.prod.bf.k1k.me-org.openrepose.core.ResponseCode.Repose.2XX.count), 0, 10)"
+        }
+      ],
+      "thresholds": [],
+      "title": "Repose 2xx responses",
+      "tooltip": {
+        "shared": false,
+        "value_type": "cumulative"
+      },
+      "type": "graph",
+      "xaxis": {
+        "show": true
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ]
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "datasource": "Graphite",
+      "editable": true,
+      "error": false,
+      "fill": 0,
+      "grid": {},
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 140
+      },
+      "id": 45,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "connected",
+      "percentage": false,
+      "pluginVersion": "8.2.6",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "hide": false,
+          "refId": "A",
+          "target": "aliasByNode(nonNegativeDerivative(*.iad.prod.bf.k1k.me-org.openrepose.core.ResponseCode.Repose.4XX.count), 0, 10)"
+        }
+      ],
+      "thresholds": [],
+      "title": "Repose 4xx responses",
+      "tooltip": {
+        "shared": false,
+        "value_type": "cumulative"
+      },
+      "type": "graph",
+      "xaxis": {
+        "show": true
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ]
+    }
+  ],
+  "refresh": false,
+  "schemaVersion": 32,
+  "style": "dark",
+  "tags": [],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-12h",
+    "now": true,
+    "to": "now"
+  },
+  "timepicker": {
+    "collapse": false,
+    "enable": true,
+    "notice": false,
+    "now": true,
+    "refresh_intervals": [
+      "30s",
+      "1m",
+      "5m",
+      "15m",
+      "30m",
+      "1h",
+      "2h",
+      "1d"
+    ],
+    "status": "Stable",
+    "time_options": [
+      "30m",
+      "1h",
+      "2h",
+      "3h",
+      "4h",
+      "6h",
+      "12h",
+      "24h",
+      "2d",
+      "3d",
+      "4d",
+      "5d",
+      "7d",
+      "14d",
+      "30d"
+    ],
+    "type": "timepicker"
+  },
+  "timezone": "browser",
+  "title": "Blueflood Ops",
+  "uid": "9yMoheenz",
+  "version": 1
+}
