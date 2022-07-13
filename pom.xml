@@ -25,7 +25,7 @@
   <artifactId>blueflood</artifactId>
   <name>Blueflood</name>
   <packaging>pom</packaging>
-  <version>2.7.5-SNAPSHOT</version>
+  <version>2.7.5</version>
   <modules>
     <module>blueflood-core</module>
     <module>blueflood-elasticsearch</module>
