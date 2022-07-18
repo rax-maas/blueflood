@@ -260,10 +260,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-release-plugin</artifactId>
-        <configuration>
-          <goals>install</goals>
-          <arguments>-Darguments</arguments>
-        </configuration>
+        <version>3.0.0-M6</version>
       </plugin>
 
     </plugins>
