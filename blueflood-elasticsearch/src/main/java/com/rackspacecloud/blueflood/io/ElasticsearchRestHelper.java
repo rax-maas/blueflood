@@ -9,6 +9,7 @@ import com.rackspacecloud.blueflood.utils.GlobPattern;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpHeaders;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.*;
 import org.apache.http.entity.ContentType;
@@ -35,6 +36,7 @@ public class ElasticsearchRestHelper {
     private int numberOfElasticsearchEndpoints;
     private int MAX_CALL_COUNT = 10;
     private int MAX_RESULT_LIMIT = Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_DISCOVERY_RESULT_SIZE);
+    private static final Header defaultHttpHeaders[] = new BasicHeader[]{new BasicHeader("Accept", "application/json"), new BasicHeader("Content-Type", "application/json")};
 
     /**
      * Gets an instance of the ES rest helper for use in main source.
@@ -107,7 +109,7 @@ public class ElasticsearchRestHelper {
             logger.info("Using url [{}]", url);
 
             HttpPost httpPost = new HttpPost(url);
-            httpPost.setHeaders(getHeaders());
+            httpPost.setHeaders(defaultHttpHeaders);
 
             CloseableHttpResponse response = null;
 
@@ -228,7 +230,7 @@ public class ElasticsearchRestHelper {
 
             logger.debug("Using url [{}]", url);
             HttpPost httpPost = new HttpPost(url);
-            httpPost.setHeaders(getHeaders());
+            httpPost.setHeaders(defaultHttpHeaders);
             HttpEntity httpEntity = new NStringEntity(queryDslString, ContentType.APPLICATION_JSON);
             httpPost.setEntity(httpEntity);
 
@@ -516,7 +518,7 @@ public class ElasticsearchRestHelper {
             String url = callQ.remove();
             logger.debug("Using url [{}]", url);
             HttpPost httpPost = new HttpPost(url);
-            httpPost.setHeaders(getHeaders());
+            httpPost.setHeaders(defaultHttpHeaders);
             httpPost.setEntity(entity);
 
             CloseableHttpResponse response = null;
@@ -583,19 +585,6 @@ public class ElasticsearchRestHelper {
     private String getBoolQueryString(String mustValueString, String shouldValueString){
         return String.format("{\"query\":{\"bool\":{\"must\":%s,\"should\":%s,\"minimum_should_match\": 1}}}",
                 mustValueString, shouldValueString);
-    }
-
-    private Header[] getHeaders(){
-        Map<String, String> headersMap = new HashMap<>();
-        headersMap.put("Accept", "application/json");
-        headersMap.put("Content-Type", "application/json");
-
-        Header[] headers = new Header[headersMap.size()];
-        int i = 0;
-        for(String key : headersMap.keySet()){
-            headers[i++] = new BasicHeader(key, headersMap.get(key));
-        }
-        return headers;
     }
 
     @VisibleForTesting
