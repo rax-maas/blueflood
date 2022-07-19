@@ -47,6 +47,7 @@ jobs:
           git status
           git add -- pom.xml blueflood-core/pom.xml blueflood-elasticsearch/pom.xml blueflood-http/pom.xml blueflood-cloudfiles/pom.xml blueflood-rollupTools/pom.xml blueflood-integration-tests/pom.xml blueflood-all/pom.xml
           git commit -m "Changing pom versions"
+          git remote -v
           git push release/${RELEASE_VERSION}
           git tag blueflood-${RELEASE_VERSION}
           git push blueflood-${RELEASE_VERSION}
