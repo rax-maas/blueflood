@@ -20,7 +20,7 @@ jobs:
           ref: rohit/test-cli
       - uses: actions/setup-java@v2
         with:
-          distribution: 'adopt'
+          distribution: 'adopt-openj9'
           java-version: ${{ matrix.java-version }}
           cache: 'maven'
       - name: Configure Git user
