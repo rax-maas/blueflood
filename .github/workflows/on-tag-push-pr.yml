@@ -1,17 +1,35 @@
 name: "Create PR on release"
-
 on:
-  create:
+  push:
     branches:
-    - release/*
+      - feature/*
 
 jobs:
-  pull-request:
+  create-pull-request:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: pull-request
-      uses: repo-sync/pull-request@v2
-      with:
-        destination_branch: "master"
-        github_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Check out repository code
+        uses: actions/checkout@v2
+      - name: pull-request
+        uses: repo-sync/pull-request@v2
+        with:
+          destination_branch: "master"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          pr_label: "feature, automated pr"
+          pr_title: "[Example] Simple demo"
+
+# on:
+#   create:
+#     branches:
+#     - release/*
+
+# jobs:
+#   pull-request:
+#     runs-on: ubuntu-latest
+#     steps:
+#     - uses: actions/checkout@v2
+#     - name: pull-request
+#       uses: repo-sync/pull-request@v2
+#       with:
+#         destination_branch: "master"
+#         github_token: ${{ secrets.GITHUB_TOKEN }}
