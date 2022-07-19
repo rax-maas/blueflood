@@ -49,7 +49,7 @@ jobs:
           git commit -m "Changing pom versions"
           git remote -v
           git push origin release/${RELEASE_VERSION}
-          git tag blueflood-${RELEASE_VERSION}
+          git tag blueflood-${RELEASE_VERSION} HEAD
           git push origin blueflood-${RELEASE_VERSION}
           mvn --batch-mode release:update-versions -DreleaseVersion=2.8.2
           git status
