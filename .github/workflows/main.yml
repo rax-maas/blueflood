@@ -41,7 +41,7 @@ jobs:
         run: |
           pwd
           git checkout -b release/${RELEASE_VERSION}
-          mvn -B verify --no-transfer-progress -Dmaven.wagon.httpconnectionManager.ttlSeconds=60 -DskipTests=true
+          mvn -B verify --no-transfer-progress -Dmaven.wagon.httpconnectionManager.ttlSeconds=60 -DskipTests=true -Dmaven.test.skip=true -P skip-unit-tests -P skip-integration-tests
           mvn --batch-mode versions:set -DnewVersion=${RELEASE_VERSION}
           cd /home/runner/work/blueflood/blueflood
           git status
