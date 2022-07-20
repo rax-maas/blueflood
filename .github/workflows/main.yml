@@ -52,7 +52,7 @@ jobs:
           git tag blueflood-${RELEASE_VERSION}
           git push origin blueflood-${RELEASE_VERSION}
           git show blueflood-${RELEASE_VERSION}
-          mvn --batch-mode release:update-versions -DreleaseVersion=2.8.2
+          mvn --batch-mode release:update-versions -DreleaseVersion=${RELEASE_VERSION}
           git status
           git add -- pom.xml blueflood-core/pom.xml blueflood-elasticsearch/pom.xml blueflood-http/pom.xml blueflood-cloudfiles/pom.xml blueflood-rollupTools/pom.xml blueflood-integration-tests/pom.xml blueflood-all/pom.xml
           git commit -m "Updating snapshot versions in pom"
