@@ -57,6 +57,7 @@ jobs:
           git add -- pom.xml blueflood-core/pom.xml blueflood-elasticsearch/pom.xml blueflood-http/pom.xml blueflood-cloudfiles/pom.xml blueflood-rollupTools/pom.xml blueflood-integration-tests/pom.xml blueflood-all/pom.xml
           git commit -m "Updating snapshot versions in pom"
           git push origin release/${RELEASE_VERSION}
+          git show blueflood-${RELEASE_VERSION}
 #          mvn -B -X release:prepare -DreleaseVersion=${RELEASE_VERSION} -Dmaven.wagon.httpconnectionManager.ttlSeconds=60 -Darguments="-DskipTests=true -Dmaven.test.skip=true -P skip-unit-tests -P skip-integration-tests -X"
 #          echo "${{ steps.changelog.outputs.changelog }}" > CHANGELOG.md
 #          git add CHANGELOG.md
