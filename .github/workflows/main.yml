@@ -50,6 +50,7 @@ jobs:
           git commit -m "Changing pom versions"
           git push origin release/${RELEASE_VERSION}
           hash=$(git rev-parse HEAD)
+          $hash
           git tag -a blueflood-${RELEASE_VERSION} $hash -m "Automated release of ${RELEASE_VERSION}"
           git push origin blueflood-${RELEASE_VERSION}
           git show blueflood-${RELEASE_VERSION}
