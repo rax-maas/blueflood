@@ -18,6 +18,9 @@ jobs:
       - uses: actions/checkout@v2
         with:
           ref: rohit/test-cli
+          all_commits: true
+          all_tags: true
+          fetch-depth: 0
       - uses: actions/setup-java@v2
         with:
           distribution: 'adopt'
@@ -49,7 +52,7 @@ jobs:
           git add -- pom.xml blueflood-core/pom.xml blueflood-elasticsearch/pom.xml blueflood-http/pom.xml blueflood-cloudfiles/pom.xml blueflood-rollupTools/pom.xml blueflood-integration-tests/pom.xml blueflood-all/pom.xml
           git commit -m "Changing pom versions"
           git push origin release/${RELEASE_VERSION}
-          hash=$(git rev-parse --short HEAD)
+          hash=$(git rev-parse HEAD)
           echo $hash
           git tag -a blueflood-${RELEASE_VERSION} $hash -m "Automated release of ${RELEASE_VERSION}"
           git push origin blueflood-${RELEASE_VERSION}
