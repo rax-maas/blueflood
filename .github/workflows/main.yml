@@ -49,8 +49,8 @@ jobs:
           git add -- pom.xml blueflood-core/pom.xml blueflood-elasticsearch/pom.xml blueflood-http/pom.xml blueflood-cloudfiles/pom.xml blueflood-rollupTools/pom.xml blueflood-integration-tests/pom.xml blueflood-all/pom.xml
           git commit -m "Changing pom versions"
           git push origin release/${RELEASE_VERSION}
-          hash=$(git rev-parse HEAD)
-          $hash
+          hash=$(git rev-parse --short HEAD)
+          echo $hash
           git tag -a blueflood-${RELEASE_VERSION} $hash -m "Automated release of ${RELEASE_VERSION}"
           git push origin blueflood-${RELEASE_VERSION}
           git show blueflood-${RELEASE_VERSION}
