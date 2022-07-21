@@ -50,7 +50,7 @@ jobs:
           git commit -m "Changing pom versions"
           git push origin release/${RELEASE_VERSION}
           hash=$(git show HEAD --pretty=format:%H)
-          git tag blueflood-${RELEASE_VERSION} $hash -m "Automated release of ${RELEASE_VERSION}"
+          git tag -a blueflood-${RELEASE_VERSION} $hash -m "Automated release of ${RELEASE_VERSION}"
           git push origin blueflood-${RELEASE_VERSION}
           git show blueflood-${RELEASE_VERSION}
           mvn --batch-mode release:update-versions -DreleaseVersion=${RELEASE_VERSION}
