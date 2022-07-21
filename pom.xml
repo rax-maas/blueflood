@@ -308,7 +308,7 @@
   </licenses>
 
   <scm>
-    <connection>scm:https://github.com/rohitsngh27/blueflood.git</connection>
+    <connection>scm:https://github.com/rohitsngh27/blueflood</connection>
     <developerConnection>scm:git:https://github.com/rohitsngh27/blueflood</developerConnection>
     <url>https://github.com/rohitsngh27/blueflood</url>
     <tag>HEAD</tag>
