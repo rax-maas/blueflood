@@ -1,24 +1,43 @@
-name: "Create PR on release"
+name: Pull Request on Branch Push
 on:
   push:
-    branches:
-      - feature/*
-
+    branches-ignore:
+      - staging
+      - launchpad
+      - production
 jobs:
-  create-pull-request:
+  auto-pull-request:
+    name: PullRequestAction
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repository code
-        uses: actions/checkout@v2
-        with:
-          ref: rohit/test-cli
-      - name: pull-request
-        uses: repo-sync/pull-request@v2
-        with:
-          destination_branch: "master"
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          pr_label: "feature, automated pr"
-          pr_title: "Updated pom versions to next developement version"
+      - name: pull-request-action
+        uses: vsoch/pull-request-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH_PREFIX: "release/"
+          PULL_REQUEST_BRANCH: "master"
+
+# name: "Create PR on release"
+# on:
+#   push:
+#     branches:
+#       - feature/*
+
+# jobs:
+#   create-pull-request:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Check out repository code
+#         uses: actions/checkout@v2
+#         with:
+#           ref: rohit/test-cli
+#       - name: pull-request
+#         uses: repo-sync/pull-request@v2
+#         with:
+#           destination_branch: "master"
+#           github_token: ${{ secrets.GITHUB_TOKEN }}
+#           pr_label: "feature, automated pr"
+#           pr_title: "Updated pom versions to next developement version"
 
 # on:
 #   create:
