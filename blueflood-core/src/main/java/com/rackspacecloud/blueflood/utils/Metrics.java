@@ -110,7 +110,7 @@ public class Metrics {
                     .prefixedWith(config.getStringProperty(CoreConfig.GRAPHITE_PREFIX))
                     .build(graphite);
 
-            reporter.start(30l, TimeUnit.SECONDS);
+            reporter.start(config.getIntegerProperty(CoreConfig.GRAPHITE_REPORT_PERIOD_SECONDS), TimeUnit.SECONDS);
         } else {
             reporter = null;
         }

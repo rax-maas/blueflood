@@ -1,11 +1,13 @@
 package com.rackspacecloud.blueflood.io;
 
+import com.codahale.metrics.Histogram;
 import com.google.common.annotations.VisibleForTesting;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.service.ElasticIOConfig;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.GlobPattern;
+import com.rackspacecloud.blueflood.utils.Metrics;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -19,6 +21,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.nio.entity.NStringEntity;
+import org.apache.http.pool.PoolStats;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.*;
 
+import static com.rackspacecloud.blueflood.utils.Metrics.counter;
 import static java.util.stream.Collectors.joining;
 
 public class ElasticsearchRestHelper {
@@ -41,6 +45,10 @@ public class ElasticsearchRestHelper {
             new BasicHeader("Accept", "application/json"),
             new BasicHeader("Content-Type", "application/json")
     };
+
+    private Histogram availablePoolSize = Metrics.histogram(getClass(), "Available Connections");
+    private Histogram pendingPoolSize = Metrics.histogram(getClass(), "Pending Connections");
+    private Histogram leasedPoolSize = Metrics.histogram(getClass(), "Leased Connections");
 
     /**
      * Gets an instance of the ES rest helper for use in main source.
@@ -464,8 +472,10 @@ public class ElasticsearchRestHelper {
         HttpGet httpGet = new HttpGet(url);
         CloseableHttpResponse response = null;
         try {
+            this.publishPoolStats();
             response = closeableHttpClient.execute(httpGet);
         } catch (IOException e) {
+            counter(getClass(), "refreshIndex Error").inc();
             logger.error("Refresh for index {} failed with status code: {} and exception message: {}",
                     indexName, response.getStatusLine().getStatusCode(), e.getMessage());
         }
@@ -499,6 +509,7 @@ public class ElasticsearchRestHelper {
             CloseableHttpResponse response = null;
 
             try {
+                this.publishPoolStats();
                 response = closeableHttpClient.execute(httpPost);
                 responseCode = response.getStatusLine().getStatusCode();
                 HttpEntity entity = response.getEntity();
@@ -506,6 +517,7 @@ public class ElasticsearchRestHelper {
                 EntityUtils.consume(entity);
                 return new ExecuteResponse(str, responseCode);
             } catch (Exception e) {
+                counter(getClass(), String.format("%s Error", methodName)).inc();
                 if (response == null) {
                     logger.error("{} failed with message: {}", methodName, e.getMessage());
                     url = String.format(urlFormat, getNextBaseUrl());
@@ -532,5 +544,12 @@ public class ElasticsearchRestHelper {
             this.response = response;
             this.statusCode = statusCode;
         }
+    }
+
+    private void publishPoolStats() {
+        PoolStats poolStats = this.pool.getTotalStats();
+        this.availablePoolSize.update(poolStats.getAvailable());
+        this.pendingPoolSize.update(poolStats.getPending());
+        this.leasedPoolSize.update(poolStats.getLeased());
     }
 }
