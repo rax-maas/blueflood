@@ -1,6 +1,6 @@
 name: "Create PR on release"
 on:
-  create:
+  push:
     branches:
       - feature/*
 
