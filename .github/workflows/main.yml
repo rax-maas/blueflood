@@ -47,7 +47,7 @@ jobs:
       - name: pull-request
         uses: repo-sync/pull-request@v2
         with:
-          source_branch: release/${RELEASE_VERSION}
+          source_branch: "release/${{ github.event.inputs.version }}"
           github_token: ${{ secrets.GITHUB_TOKEN }}
 #          echo "${{ steps.changelog.outputs.changelog }}" > CHANGELOG.md
 #          git add CHANGELOG.md
