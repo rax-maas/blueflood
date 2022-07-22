@@ -2,7 +2,7 @@ name: "Create PR on release"
 on:
   push:
     branches:
-      - feature/*
+      - release/*
 
 jobs:
   create-pull-request:
