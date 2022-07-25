@@ -40,6 +40,9 @@ Important build profiles to know about:
 Blueflood's main artifact is an ['uber jar'](http://stackoverflow.com/questions/11947037/what-is-an-uber-jar), produced
 by the [`blueflood-all` module](blueflood-all/pom.xml).
 
+After compiling, you can also build a Docker image with `mvn docker:build`. See
+[blueflood-docker](contrib/blueflood-docker) for the Docker-related files.
+
 ### Running
 
 You can easily build a ready-to-run Blueflood jar from source:
