@@ -552,4 +552,19 @@ public class ElasticsearchRestHelper {
         this.pendingPoolSize.update(poolStats.getPending());
         this.leasedPoolSize.update(poolStats.getLeased());
     }
+
+    @VisibleForTesting
+    public Histogram getAvailablePoolSize() {
+        return availablePoolSize;
+    }
+
+    @VisibleForTesting
+    public Histogram getPendingPoolSize() {
+        return pendingPoolSize;
+    }
+
+    @VisibleForTesting
+    public Histogram getLeasedPoolSize() {
+        return leasedPoolSize;
+    }
 }
