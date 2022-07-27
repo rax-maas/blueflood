@@ -1,13 +1,13 @@
 package com.rackspacecloud.blueflood.io;
 
-import com.codahale.metrics.Histogram;
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Gauge;
 import com.google.common.annotations.VisibleForTesting;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.service.ElasticIOConfig;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.GlobPattern;
-import com.rackspacecloud.blueflood.utils.Metrics;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -21,7 +21,6 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.nio.entity.NStringEntity;
-import org.apache.http.pool.PoolStats;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +29,7 @@ import java.io.IOException;
 import java.util.*;
 
 import static com.rackspacecloud.blueflood.utils.Metrics.counter;
+import static com.rackspacecloud.blueflood.utils.Metrics.registerGauge;
 import static java.util.stream.Collectors.joining;
 
 public class ElasticsearchRestHelper {
@@ -45,10 +45,13 @@ public class ElasticsearchRestHelper {
             new BasicHeader("Accept", "application/json"),
             new BasicHeader("Content-Type", "application/json")
     };
-
-    private Histogram availablePoolSize = Metrics.histogram(getClass(), "Available Connections");
-    private Histogram pendingPoolSize = Metrics.histogram(getClass(), "Pending Connections");
-    private Histogram leasedPoolSize = Metrics.histogram(getClass(), "Leased Connections");
+    private Map<String,Counter> errorCounters = new HashMap<String, Counter>() {{
+       put("refreshIndex", counter(getClass(), "refreshIndex Error"));
+       put("fetchEvents", counter(getClass(), "fetchEvents Error"));
+       put("fetchTokenDocuments", counter(getClass(), "fetchTokenDocuments Error"));
+       put("fetchDocuments", counter(getClass(), "fetchDocuments Error"));
+       put("index", counter(getClass(), "index Error"));
+    }};
 
     /**
      * Gets an instance of the ES rest helper for use in main source.
@@ -83,6 +86,17 @@ public class ElasticsearchRestHelper {
         pool.setDefaultMaxPerRoute(maxThreadsPerRoute);
         pool.setMaxTotal(endpoints.length * maxThreadsPerRoute);
         this.closeableHttpClient = HttpClients.custom().setConnectionManager(pool).build();
+        this.initPoolSizeMetrics();
+    }
+
+    private void initPoolSizeMetrics() {
+        try {
+            registerGauge(ElasticsearchRestHelper.class, () -> pool.getTotalStats().getAvailable(), "Available Connections");
+            registerGauge(ElasticsearchRestHelper.class, () -> pool.getTotalStats().getPending(), "Pending Connections");
+            registerGauge(ElasticsearchRestHelper.class, () -> pool.getTotalStats().getLeased(), "Leased Connections");
+        } catch (Exception ex) {
+            logger.error("Error in registering HTTP Pool connection metrics", ex);
+        }
     }
 
     private String getNextBaseUrl(){
@@ -472,10 +486,9 @@ public class ElasticsearchRestHelper {
         HttpGet httpGet = new HttpGet(url);
         CloseableHttpResponse response = null;
         try {
-            this.publishPoolStats();
             response = closeableHttpClient.execute(httpGet);
         } catch (IOException e) {
-            counter(getClass(), "refreshIndex Error").inc();
+            incrementErrorCounter("refreshIndex");
             logger.error("Refresh for index {} failed with status code: {} and exception message: {}",
                     indexName, response.getStatusLine().getStatusCode(), e.getMessage());
         }
@@ -509,7 +522,6 @@ public class ElasticsearchRestHelper {
             CloseableHttpResponse response = null;
 
             try {
-                this.publishPoolStats();
                 response = closeableHttpClient.execute(httpPost);
                 responseCode = response.getStatusLine().getStatusCode();
                 HttpEntity entity = response.getEntity();
@@ -517,7 +529,7 @@ public class ElasticsearchRestHelper {
                 EntityUtils.consume(entity);
                 return new ExecuteResponse(str, responseCode);
             } catch (Exception e) {
-                counter(getClass(), String.format("%s Error", methodName)).inc();
+                incrementErrorCounter(methodName);
                 if (response == null) {
                     logger.error("{} failed with message: {}", methodName, e.getMessage());
                     url = String.format(urlFormat, getNextBaseUrl());
@@ -536,6 +548,17 @@ public class ElasticsearchRestHelper {
         return new ExecuteResponse("", responseCode);
     }
 
+    private void incrementErrorCounter(String methodName) {
+        Counter counter = errorCounters.get(methodName);
+        if(counter != null) {
+            counter.inc();
+        } else {
+            // Forgot to declare the metric? Register on demand
+            counter(getClass(), String.format("%s Error", methodName)).inc();
+        }
+    }
+
+
     private static class ExecuteResponse {
         private String response;
         private int statusCode;
@@ -546,25 +569,8 @@ public class ElasticsearchRestHelper {
         }
     }
 
-    private void publishPoolStats() {
-        PoolStats poolStats = this.pool.getTotalStats();
-        this.availablePoolSize.update(poolStats.getAvailable());
-        this.pendingPoolSize.update(poolStats.getPending());
-        this.leasedPoolSize.update(poolStats.getLeased());
-    }
-
     @VisibleForTesting
-    public Histogram getAvailablePoolSize() {
-        return availablePoolSize;
-    }
-
-    @VisibleForTesting
-    public Histogram getPendingPoolSize() {
-        return pendingPoolSize;
-    }
-
-    @VisibleForTesting
-    public Histogram getLeasedPoolSize() {
-        return leasedPoolSize;
+    public Map<String,Counter> getErrorCounters() {
+        return errorCounters;
     }
 }

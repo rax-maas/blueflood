@@ -1,5 +1,6 @@
 package com.rackspacecloud.blueflood.io;
 
+import com.codahale.metrics.Counter;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import org.apache.http.StatusLine;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -16,9 +17,10 @@ import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Set;
 
-import static com.rackspacecloud.blueflood.utils.Metrics.counter;
-import static org.junit.Assert.assertEquals;
+import static com.codahale.metrics.MetricRegistry.name;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.powermock.api.mockito.PowerMockito.*;
 
@@ -42,42 +44,31 @@ public class ElasticsearchRestHelperTest {
     when(mockBuilder.setConnectionManager(any())).thenReturn(mockBuilder);
     when(mockBuilder.build()).thenReturn(mockHttpClient);
     when(mockHttpResponse.getStatusLine()).thenReturn(statusLine);
-
     resetMetricRegistry();
-    helper = ElasticsearchRestHelper.getInstance();
-    assertEquals(3, Metrics.getRegistry().getHistograms().size());
-    // No histograms recorded yet prior to test run
-    assertConnectionCounts(0);
   }
 
   @Test
-  public void testElasticsearchGet_recordsPoolSizeMetrics() throws Exception {
-    when(mockHttpClient.execute(any())).thenReturn(mockHttpResponse);
-    helper.refreshIndex("foo");
-    assertConnectionCounts(1);
-  }
-
-  @Test
-  public void testElasticsearchPost_recordsPoolSizeMetrics() throws IOException {
-    when(mockHttpClient.execute(any())).thenReturn(mockHttpResponse);
-    helper.fetchEvents("fooTenant", new HashMap<>());
-    assertConnectionCounts(1);
+  public void testConstructor_registersHttpConnectionStatsGauges() {
+    // when
+    helper = ElasticsearchRestHelper.getConfigurableInstance();
+    // then
+    Set<String> registeredGauges = Metrics.getRegistry().getGauges().keySet();
+    assertTrue(registeredGauges.contains(name(ElasticsearchRestHelper.class, "Available Connections")));
+    assertTrue(registeredGauges.contains(name(ElasticsearchRestHelper.class, "Pending Connections")));
+    assertTrue(registeredGauges.contains(name(ElasticsearchRestHelper.class, "Leased Connections")));
   }
 
   @Test
   public void testElasticsearchPostErrors_incrementsErrorCounter() throws IOException {
     // Ensure Error counter is 0 prior to failures simulation
-    Assert.assertEquals(0, counter(ElasticsearchRestHelper.class, "fetchEvents Error").getCount());
+    helper = ElasticsearchRestHelper.getConfigurableInstance();
+    Counter fetchEventsErrorCounter = helper.getErrorCounters().get("fetchEvents");
+    Assert.assertEquals(0, fetchEventsErrorCounter.getCount());
     when(mockHttpClient.execute(any())).thenThrow(new IOException("test exception"));
     helper.fetchEvents("fooErrorTenant", new HashMap<>());
-    Assert.assertTrue(counter(ElasticsearchRestHelper.class, "fetchEvents Error").getCount() > 0);
+    assertTrue(fetchEventsErrorCounter.getCount() > 0);
   }
 
-  private void assertConnectionCounts(int expectedCount) {
-    assertEquals(expectedCount, helper.getAvailablePoolSize().getCount());
-    assertEquals(expectedCount, helper.getLeasedPoolSize().getCount());
-    assertEquals(expectedCount, helper.getPendingPoolSize().getCount());
-  }
 
   private void resetMetricRegistry() {
     for (String metricName : Metrics.getRegistry().getMetrics().keySet()) {
