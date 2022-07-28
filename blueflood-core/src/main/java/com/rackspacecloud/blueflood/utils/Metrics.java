@@ -161,10 +161,7 @@ public class Metrics {
     }
 
     public static void registerGauge(Class kls, Gauge gauge, String ...names) {
-        // MetricRegistry does not offer getOrAdd wrapper for Gauge
         String name = MetricRegistry.name(kls, names);
-        if(!getRegistry().getGauges().containsKey(name)) {
-            getRegistry().register(name, gauge);
-        }
+        getRegistry().register(name, gauge);
     }
 }

@@ -50,7 +50,7 @@ public class ElasticsearchRestHelperTest {
   @Test
   public void testConstructor_registersHttpConnectionStatsGauges() {
     // when
-    helper = ElasticsearchRestHelper.getConfigurableInstance();
+    helper = ElasticsearchRestHelper.getInstance();
     // then
     Set<String> registeredGauges = Metrics.getRegistry().getGauges().keySet();
     assertTrue(registeredGauges.contains(name(ElasticsearchRestHelper.class, "Available Connections")));
@@ -61,7 +61,7 @@ public class ElasticsearchRestHelperTest {
   @Test
   public void testElasticsearchPostErrors_incrementsErrorCounter() throws IOException {
     // Ensure Error counter is 0 prior to failures simulation
-    helper = ElasticsearchRestHelper.getConfigurableInstance();
+    helper = ElasticsearchRestHelper.getInstance();
     Counter fetchEventsErrorCounter = helper.getErrorCounters().get("fetchEvents");
     Assert.assertEquals(0, fetchEventsErrorCounter.getCount());
     when(mockHttpClient.execute(any())).thenThrow(new IOException("test exception"));

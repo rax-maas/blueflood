@@ -67,7 +67,7 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
 
     @Before
     public void setup() throws Exception {
-        helper = ElasticsearchRestHelper.getConfigurableInstance();
+        helper = ElasticsearchRestHelper.getInstance();
         tearDown();
 
         elasticIO = new ElasticIO(helper);
