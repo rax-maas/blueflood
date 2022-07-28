@@ -7,7 +7,6 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -20,7 +19,10 @@ import java.util.HashMap;
 import java.util.Set;
 
 import static com.codahale.metrics.MetricRegistry.name;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.Matchers.any;
 import static org.powermock.api.mockito.PowerMockito.*;
 
@@ -53,9 +55,9 @@ public class ElasticsearchRestHelperTest {
     helper = ElasticsearchRestHelper.getInstance();
     // then
     Set<String> registeredGauges = Metrics.getRegistry().getGauges().keySet();
-    assertTrue(registeredGauges.contains(name(ElasticsearchRestHelper.class, "Available Connections")));
-    assertTrue(registeredGauges.contains(name(ElasticsearchRestHelper.class, "Pending Connections")));
-    assertTrue(registeredGauges.contains(name(ElasticsearchRestHelper.class, "Leased Connections")));
+    assertThat(registeredGauges, hasItem(name(ElasticsearchRestHelper.class, "Available Connections")));
+    assertThat(registeredGauges, hasItem(name(ElasticsearchRestHelper.class, "Pending Connections")));
+    assertThat(registeredGauges, hasItem(name(ElasticsearchRestHelper.class, "Leased Connections")));
   }
 
   @Test
@@ -63,10 +65,10 @@ public class ElasticsearchRestHelperTest {
     // Ensure Error counter is 0 prior to failures simulation
     helper = ElasticsearchRestHelper.getInstance();
     Counter fetchEventsErrorCounter = helper.getErrorCounters().get("fetchEvents");
-    Assert.assertEquals(0, fetchEventsErrorCounter.getCount());
+    assertThat(fetchEventsErrorCounter.getCount(), equalTo(0L));
     when(mockHttpClient.execute(any())).thenThrow(new IOException("test exception"));
     helper.fetchEvents("fooErrorTenant", new HashMap<>());
-    assertTrue(fetchEventsErrorCounter.getCount() > 0);
+    assertThat(fetchEventsErrorCounter.getCount(), greaterThan(0L));
   }
 
 
