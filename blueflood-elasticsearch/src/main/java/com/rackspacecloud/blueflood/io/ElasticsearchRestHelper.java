@@ -1,5 +1,6 @@
 package com.rackspacecloud.blueflood.io;
 
+import com.codahale.metrics.Counter;
 import com.google.common.annotations.VisibleForTesting;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
@@ -26,6 +27,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.*;
 
+import static com.rackspacecloud.blueflood.utils.Metrics.counter;
+import static com.rackspacecloud.blueflood.utils.Metrics.registerGauge;
 import static java.util.stream.Collectors.joining;
 
 public class ElasticsearchRestHelper {
@@ -41,26 +44,22 @@ public class ElasticsearchRestHelper {
             new BasicHeader("Accept", "application/json"),
             new BasicHeader("Content-Type", "application/json")
     };
+    private Map<String,Counter> errorCounters = new HashMap<String, Counter>() {{
+       put("refreshIndex", counter(getClass(), "refreshIndex Error"));
+       put("fetchEvents", counter(getClass(), "fetchEvents Error"));
+       put("fetchTokenDocuments", counter(getClass(), "fetchTokenDocuments Error"));
+       put("fetchDocuments", counter(getClass(), "fetchDocuments Error"));
+       put("index", counter(getClass(), "index Error"));
+    }};
+
+    private static final ElasticsearchRestHelper INSTANCE = new ElasticsearchRestHelper();
 
     /**
      * Gets an instance of the ES rest helper for use in main source.
      * @return
      */
     public static ElasticsearchRestHelper getInstance() {
-        // TODO: To match the rest of the project, this should be a static singleton. There seems to be an HTTP
-        // connection pool in use here, which is pointless if an instance of this isn't shared by many consumers. On the
-        // other hand, making this a singleton could affect performance dramatically if the pool hasn't already been
-        // tuned to support the workload, so don't change it without some testing.
-        return new ElasticsearchRestHelper();
-    }
-
-    /**
-     * Gets a fresh instance instead of the static singleton. For use in tests so that a test can change the app
-     * configuration and then get a new instance based on that configuration.
-     */
-    @VisibleForTesting
-    public static ElasticsearchRestHelper getConfigurableInstance() {
-        return new ElasticsearchRestHelper();
+        return INSTANCE;
     }
 
     private ElasticsearchRestHelper(){
@@ -75,6 +74,17 @@ public class ElasticsearchRestHelper {
         pool.setDefaultMaxPerRoute(maxThreadsPerRoute);
         pool.setMaxTotal(endpoints.length * maxThreadsPerRoute);
         this.closeableHttpClient = HttpClients.custom().setConnectionManager(pool).build();
+        this.initPoolSizeMetrics();
+    }
+
+    private void initPoolSizeMetrics() {
+        try {
+            registerGauge(ElasticsearchRestHelper.class, () -> pool.getTotalStats().getAvailable(), "Available Connections");
+            registerGauge(ElasticsearchRestHelper.class, () -> pool.getTotalStats().getPending(), "Pending Connections");
+            registerGauge(ElasticsearchRestHelper.class, () -> pool.getTotalStats().getLeased(), "Leased Connections");
+        } catch (Exception ex) {
+            logger.error("Error in registering HTTP Pool connection metrics", ex);
+        }
     }
 
     private String getNextBaseUrl(){
@@ -466,6 +476,7 @@ public class ElasticsearchRestHelper {
         try {
             response = closeableHttpClient.execute(httpGet);
         } catch (IOException e) {
+            incrementErrorCounter("refreshIndex");
             logger.error("Refresh for index {} failed with status code: {} and exception message: {}",
                     indexName, response.getStatusLine().getStatusCode(), e.getMessage());
         }
@@ -506,6 +517,7 @@ public class ElasticsearchRestHelper {
                 EntityUtils.consume(entity);
                 return new ExecuteResponse(str, responseCode);
             } catch (Exception e) {
+                incrementErrorCounter(methodName);
                 if (response == null) {
                     logger.error("{} failed with message: {}", methodName, e.getMessage());
                     url = String.format(urlFormat, getNextBaseUrl());
@@ -524,6 +536,17 @@ public class ElasticsearchRestHelper {
         return new ExecuteResponse("", responseCode);
     }
 
+    private void incrementErrorCounter(String methodName) {
+        Counter counter = errorCounters.get(methodName);
+        if(counter != null) {
+            counter.inc();
+        } else {
+            // Forgot to declare the metric? Register on demand
+            counter(getClass(), String.format("%s Error", methodName)).inc();
+        }
+    }
+
+
     private static class ExecuteResponse {
         private String response;
         private int statusCode;
@@ -532,5 +555,10 @@ public class ElasticsearchRestHelper {
             this.response = response;
             this.statusCode = statusCode;
         }
+    }
+
+    @VisibleForTesting
+    public Map<String,Counter> getErrorCounters() {
+        return errorCounters;
     }
 }
