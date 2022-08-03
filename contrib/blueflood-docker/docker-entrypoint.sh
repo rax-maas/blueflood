@@ -22,14 +22,13 @@ trap "exit" INT
 while [[ $CASSCOUNTER -lt 180 ]];  #Wait for 180 seconds for cassandra to get ready.
 do
         let CASSCOUNTER=CASSCOUNTER+2
-	nc -z $CASSANDRA_HOST 9160 > /dev/null
-	if [ $? == 0 ]
+	if nc -z $CASSANDRA_HOST 9042 > /dev/null || nc -z $CASSANDRA_HOST 9160 > /dev/null
 		then
                 echo "Connected to Cassandra at $CASSANDRA_HOST"
 		break
 	elif [[ $CASSCOUNTER == 180 ]]
                 then
-                echo "Error connecting to Cassandra"
+                echo "Error connecting to Cassandra at $CASSANDRA_HOST"
                 exit 1
         else
 		echo "Waiting for Cassandra..."
@@ -40,7 +39,7 @@ done
 export CASSANDRA_HOSTS="$CASSANDRA_HOST:9160"
 export CASSANDRA_BINXPORT_HOSTS="$CASSANDRA_HOST:9042"
 
-if [ $ROLLUP_KEYSPACE != "DATA" ]
+if [ -n "$ROLLUP_KEYSPACE" ] && [ "$ROLLUP_KEYSPACE" != "DATA" ]
 then
     sed -i "s/\"DATA\"/\"$ROLLUP_KEYSPACE\"/g" blueflood.cdl
 fi
@@ -60,7 +59,7 @@ do
                 break
         elif [[ $ESCOUNTER == 120 ]]
                 then
-                echo "Error connecting to Elasticsearch"
+                echo "Error connecting to Elasticsearch at $ELASTICSEARCH_HOST"
                 exit 2
         else
                 echo "Waiting for ElasticSearch..."
@@ -91,7 +90,13 @@ log4j.logger.org.apache.http.headers=INFO
 log4j.rootLogger=INFO, console
 EOL
 
-exec /usr/bin/java \
+dbg=""
+suspend="n"
+[ "$DEBUG_JAVA_SUSPEND" = true ] && suspend="y"
+[ "$DEBUG_JAVA" = true ] && dbg="-agentlib:jdwp=transport=dt_socket,server=y,suspend=$suspend,address=5005"
+
+exec java \
+        $dbg \
         -Dblueflood.config=file:./blueflood.conf \
         -Dlog4j.configuration=file:./blueflood-log4j.properties \
         -Xms$MIN_HEAP_SIZE \

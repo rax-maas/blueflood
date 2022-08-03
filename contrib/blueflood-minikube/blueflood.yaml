@@ -1,0 +1,216 @@
+# A basic Blueflood environment in Kubernetes, suitable for deployment to minikube. There's just one pod for each
+# dependency, including Blueflood, and a service for each pod so that the pod is reachable from other pods and from the
+# host. Thus, for example, there's both a pod and a service named "cassandra". Every service is type NodePort so that
+# you can easily reach them from the host.
+#
+# See the README for more usage info.
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cassandra
+  labels:
+    app: cassandra
+spec:
+  containers:
+    - name: cassandra
+      image: cassandra:2.1
+      env:
+        # Tells newer versions of Cassandra to start the Thrift server on port 9160, used by the Astyanax driver.
+        # Thrift is removed in Cassandra 4.0. We'll have to move to the Datastax driver before then.
+        - name: CASSANDRA_START_RPC
+          value: 'true'
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cassandra
+spec:
+  type: NodePort
+  ports:
+    - name: cqlsh
+      port: 9042
+      protocol: TCP
+    - name: thrift
+      port: 9160
+      protocol: TCP
+  selector:
+    app: cassandra
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: elasticsearch
+  labels:
+    app: elasticsearch
+spec:
+  containers:
+    - name: elasticsearch
+      image: elasticsearch:1.7
+      args:
+        - '--cluster.name=blueflood'
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: elasticsearch
+spec:
+  type: NodePort
+  ports:
+    - name: http
+      port: 9200
+      protocol: TCP
+    - name: binary
+      port: 9300
+      protocol: TCP
+  selector:
+    app: elasticsearch
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: graphite
+  labels:
+    app: graphite
+spec:
+  initContainers:
+    - name: await-source-mount
+      image: busybox
+      command: ['sh', '-c', 'date; echo "Checking source mount..."; [ -f /blueflood/opt/graphite/conf/carbon.conf ] && { echo "Blueflood source detected, moving on!"; } || { echo "You need to mount the blueflood source! See README.md"; exit 1; }']
+      volumeMounts:
+        - name: blueflood-source
+          mountPath: /blueflood
+          subPath: contrib/blueflood-minikube/mounts/graphite
+  containers:
+    - name: graphite
+      image: graphiteapp/graphite-statsd:1.1.7-11
+      # Graphite config is stored in this project so that you can control it.
+      volumeMounts:
+        - name: blueflood-source
+          mountPath: /opt/graphite/conf
+          subPath: contrib/blueflood-minikube/mounts/graphite/opt/graphite/conf
+  volumes:
+    - name: blueflood-source
+      hostPath:
+        path: /blueflood
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: graphite
+spec:
+  type: NodePort
+  ports:
+    - name: http
+      port: 80
+      protocol: TCP
+    - name: plaintext
+      port: 2003
+      protocol: TCP
+    - name: pickle
+      port: 2004
+      protocol: TCP
+  selector:
+    app: graphite
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: grafana
+  labels:
+    app: grafana
+spec:
+  initContainers:
+    - name: await-source-mount
+      image: busybox
+      command: ['sh', '-c', 'date; echo "Checking source mount..."; [ -f /blueflood/etc/grafana/grafana.ini ] && { echo "Blueflood source detected, moving on!"; } || { echo "You need to mount the blueflood source! See README.md"; exit 1; }']
+      volumeMounts:
+        - name: blueflood-source
+          mountPath: /blueflood
+          subPath: contrib/blueflood-minikube/mounts/grafana
+  containers:
+    - name: grafana
+      image: grafana/grafana:8.2.6
+      # Grafana config is stored in this project so that you can control it.
+      volumeMounts:
+        - name: blueflood-source
+          mountPath: /etc/grafana
+          subPath: contrib/blueflood-minikube/mounts/grafana/etc/grafana
+  volumes:
+    - name: blueflood-source
+      hostPath:
+        path: /blueflood
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+spec:
+  type: NodePort
+  ports:
+    - name: http
+      port: 3000
+      protocol: TCP
+  selector:
+    app: grafana
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: blueflood
+  labels:
+    app: blueflood
+spec:
+  # The Blueflood image has Cassandra and Elasticsearch init built into its entrypoint script, so we don't have to worry
+  # about that here. If necessary, we could use init containers to initialize them.
+  containers:
+    - name: blueflood
+      image: rackerlabs/blueflood
+      env:
+        - name: CASSANDRA_HOST
+          value: cassandra
+        - name: ELASTICSEARCH_HOST
+          value: elasticsearch
+        - name: GRAPHITE_HOST
+          value: graphite
+        # The default port value should work, but something's setting it to "tcp://<ip>:2003"
+        - name: GRAPHITE_PORT
+          value: '2003'
+        # This prefix is prepended to all metrics emitted from Blueflood to Graphite.
+        - name: GRAPHITE_PREFIX
+          value: blueflood-minikube
+        - name: CASSANDRA_DRIVER
+          value: astyanax # or datastax
+        # For completeness, turn on the "token search improvement" feature. The /v2.0/{tenantId}/metric_name/search
+        # endpoint relies on it.
+        - name: ENABLE_TOKEN_SEARCH_IMPROVEMENTS
+          value: 'true'
+        - name: TOKEN_DISCOVERY_MODULES
+          value: com.rackspacecloud.blueflood.io.ElasticTokensIO
+        # Set to 'true' to enable remote debugging of the Blueflood process. Use 'minikube service blueflood --url' to
+        # find the IP and port to connect to.
+        - name: DEBUG_JAVA
+          value: 'false'
+        # Set to 'true' to have the Blueflood JVM wait for a debugger to attach before starting.
+        - name: DEBUG_JAVA_SUSPEND
+          value: 'false'
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blueflood
+spec:
+  type: NodePort
+  ports:
+    - name: java-debug
+      port: 5005
+      protocol: TCP
+    - name: ingest
+      port: 19000
+      protocol: TCP
+    - name: query
+      port: 20000
+      protocol: TCP
+  selector:
+    app: blueflood

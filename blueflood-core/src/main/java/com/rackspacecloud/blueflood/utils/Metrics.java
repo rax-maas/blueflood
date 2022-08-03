@@ -110,7 +110,7 @@ public class Metrics {
                     .prefixedWith(config.getStringProperty(CoreConfig.GRAPHITE_PREFIX))
                     .build(graphite);
 
-            reporter.start(30l, TimeUnit.SECONDS);
+            reporter.start(config.getIntegerProperty(CoreConfig.GRAPHITE_REPORT_PERIOD_SECONDS), TimeUnit.SECONDS);
         } else {
             reporter = null;
         }
@@ -158,5 +158,10 @@ public class Metrics {
 
     public static Counter counter(Class kls, String... names) {
         return getRegistry().counter(MetricRegistry.name(kls, names));
+    }
+
+    public static void registerGauge(Class kls, Gauge gauge, String ...names) {
+        String name = MetricRegistry.name(kls, names);
+        getRegistry().register(name, gauge);
     }
 }

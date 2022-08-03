@@ -33,7 +33,7 @@ if [ $ES_USERNAME ] && [ $ES_PASSWD ]; then
 fi
 
 # Using this in the checkfile function allows us to run this script from any directory
-ABSOLUTE_PATH=$(cd `dirname "${BASH_SOURCE[0]}"` && pwd)
+ABSOLUTE_PATH=$(cd `dirname "$0"` && pwd)
 function checkFile
 {
   echo checking $1.

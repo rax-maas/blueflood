@@ -1,13 +1,18 @@
-FROM java:8
+FROM eclipse-temurin:8
 
 MAINTAINER gaurav.bajaj@rackspace.com
+MAINTAINER ryan.stewart@rackspace.com
 
-RUN apt-get update
-RUN apt-get install -y netcat
-RUN apt-get install -y git
-RUN apt-get install -y python python-dev python-pip python-virtualenv && \
+RUN apt-get update && apt-get install -y \
+    git \
+    netcat \
+    python3 \
+    python3-dev \
+    python3-pip \
+    python3-virtualenv && \
     rm -rf /var/lib/apt/lists/*
-RUN pip install cqlsh==4.1.1
+
+RUN pip install cqlsh==6.0.0
 
 COPY ES-Setup /ES-Setup
 COPY load.cdl /blueflood.cdl

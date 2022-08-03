@@ -125,6 +125,7 @@ public enum CoreConfig implements ConfigDefaults {
     GRAPHITE_HOST(""),
     GRAPHITE_PORT("2003"),
     GRAPHITE_PREFIX("unconfiguredNode.metrics."),
+    GRAPHITE_REPORT_PERIOD_SECONDS("30"),
 
     INGEST_MODE("true"),
     ROLLUP_MODE("true"),
