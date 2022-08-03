@@ -22,7 +22,6 @@
 
   <modelVersion>4.0.0</modelVersion>
 
-
   <groupId>com.rackspacecloud</groupId>
   <artifactId>blueflood</artifactId>
   <name>Blueflood</name>
@@ -218,7 +217,7 @@
           <!-- This is only necessary because the failsafe plugin's test naming conventions are overridden. -->
           <excludes>
             <exclude>**/*Integration*.java</exclude>
-          </excludes>             
+          </excludes>
         </configuration>
       </plugin>
 
@@ -310,9 +309,9 @@
   </licenses>
 
   <scm>
-    <connection>scm:https://github.com/rohitsngh27/blueflood</connection>
-    <developerConnection>scm:git:https://github.com/rohitsngh27/blueflood</developerConnection>
-    <url>https://github.com/rohitsngh27/blueflood</url>
+    <connection>scm:git@github.com:rackerlabs/blueflood.git</connection>
+    <developerConnection>scm:git:git@github.com:rackerlabs/blueflood.git</developerConnection>
+    <url>git@github.com:rackerlabs/blueflood.git</url>
   </scm>
 
   <developers>

@@ -47,7 +47,7 @@ public class HttpEventsQueryHandlerIntegrationTest extends HttpIntegrationTestBa
         createAndInsertTestEvents(tenantId, 5);
     }
 
-//    @Test
+    @Test
     public void testHttpEventsQueryHandler_HappyCase() throws Exception {
         parameterMap = new HashMap<String, String>();
         parameterMap.put(Event.fromParameterName, String.valueOf(baseMillis - 86400000));
