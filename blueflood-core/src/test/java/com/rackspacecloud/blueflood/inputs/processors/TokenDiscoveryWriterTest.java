@@ -169,6 +169,11 @@ public class TokenDiscoveryWriterTest {
         List<Token> actualTokensA = captor.getValue();
         assertEquals("Unexpected number of tokens", 5, actualTokensA.size());
         assertTrue(actualTokensA.containsAll(expectedTokens) && expectedTokens.containsAll(actualTokensA));
+
+        // Processing the same tokens twice in a row shouldn't produce another insertDiscovery call because the locator
+        // cache and token cache are used to remember that these things have already been processed.
+        tokenWriter.processTokens(batch).get();
+        verify(discovererA, times(1)).insertDiscovery(captor.capture());
     }
 
 }
