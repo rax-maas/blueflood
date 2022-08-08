@@ -23,11 +23,20 @@ import static java.util.stream.Collectors.toSet;
 
 /**
  * A separate discovery writer for tokens. This class is modelled after {@link DiscoveryWriter}
+ *
+ * TODO: Probably remove this class.
+ *       It seems to me that rather than being "modelled after" DiscoveryWriter, this class is rather a blatant copy of
+ *       it made by someone that didn't understand that this token writing is another form of discovery that should just
+ *       be added into DiscoveryWriter. I'd suggest removing the ENABLE_TOKEN_SEARCH_IMPROVEMENTS property and just
+ *       letting the presence or absence of the two discovery modules determine which things get indexed. Also, consider
+ *       removing the TokenCache and just letting the LocatorCache guard token indexing.
  */
 public class TokenDiscoveryWriter extends FunctionWithThreadPool<List<List<IMetric>>, Void> {
 
     private final List<TokenDiscoveryIO> tokenDiscoveryIOs = new ArrayList<>();
     private final Map<Class<? extends TokenDiscoveryIO>, Meter> writeErrorMeters = new HashMap<>();
+    private static final Meter tokensWritten =
+            Metrics.meter(TokenDiscoveryWriter.class, "Tokens Written to Discovery");
     private static final Logger log = LoggerFactory.getLogger(TokenDiscoveryWriter.class);
 
     public TokenDiscoveryWriter(ThreadPoolExecutor executor) {
@@ -119,6 +128,7 @@ public class TokenDiscoveryWriter extends FunctionWithThreadPool<List<List<IMetr
             tokens.addAll(getUniqueTokens(locators));
 
             if (tokens.size() > 0) {
+                tokensWritten.mark(tokens.size());
                 for (TokenDiscoveryIO io : tokenDiscoveryIOs) {
                     try {
                         io.insertDiscovery(tokens);
