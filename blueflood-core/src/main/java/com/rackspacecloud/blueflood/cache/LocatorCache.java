@@ -38,7 +38,11 @@ public class LocatorCache {
     // written per slot. Simply, if a locator has been seen for a slot, don't bother.
     private final Cache<String, Boolean> insertedDelayedLocators;
 
-    private final static LocatorCache instance = new LocatorCache(10, TimeUnit.MINUTES, 3, TimeUnit.DAYS);
+    private final static LocatorCache instance = new LocatorCache(
+            Configuration.getInstance().getIntegerProperty(CoreConfig.LOCATOR_CACHE_TTL_MINUTES),
+            TimeUnit.MINUTES,
+            Configuration.getInstance().getIntegerProperty(CoreConfig.LOCATOR_CACHE_DELAYED_TTL_SECONDS),
+            TimeUnit.SECONDS);
 
     public enum Layer { BATCH, DISCOVERY, TOKEN_DISCOVERY }
 
@@ -54,30 +58,39 @@ public class LocatorCache {
         return instance;
     }
 
-    protected LocatorCache(long expireAfterAccessDuration, TimeUnit expireAfterAccessTimeUnit,
-                           long expireAfterWriteDuration, TimeUnit expireAfterWriteTimeUnit) {
+    protected LocatorCache(long entryTtl, TimeUnit entryTtlTimeUnit,
+                           long delayedEntryTtl, TimeUnit delayedEntryTtlTimeUnit) {
         int concurrency = Configuration.getInstance().getIntegerProperty(CoreConfig.LOCATOR_CACHE_CONCURRENCY);
+        // Note: DO NOT use expireAfterWrite at the same time as expireAfterAccess. The latter expires entries that are
+        // written and never touched again on its own. If you combine them, the entries WILL expire after the
+        // expireAfterWrite duration, even if they're constantly being accessed.
         insertedLocators =
                 CacheBuilder.newBuilder()
-                        .expireAfterAccess(expireAfterAccessDuration, expireAfterAccessTimeUnit)
-                        .expireAfterWrite(expireAfterWriteDuration, expireAfterWriteTimeUnit)
+                        .expireAfterAccess(entryTtl, entryTtlTimeUnit)
                         .concurrencyLevel(concurrency)
                         .build();
 
+        // The settings for the delayed locator cache used to be shared with the normal locator cache, but I suspect
+        // that can cause problems when you set longer durations for the other cache. If the delayed locator cache
+        // holds entries for too long, it would prevent us from updating cassandra with legitimate delayed locators,
+        // and therefore the data won't get rolled up when it should. Under normal circumstances, delayed locators
+        // should be a fairly rare occurrence. They'll mostly happen during some kind of outage, when a backlog of
+        // data builds up in upstream systems. Then they'll be tightly clustered as the backlog is processed, so a
+        // relatively short TTL should work fine here.
+        //
+        // Instead of worrying about this, shouldn't delayed locators be handled the same way as normal ones, via
+        // the ShardStateManager? I'm not clear enough on delayed rollups to give a definitive answer there.
         insertedDelayedLocators =
                 CacheBuilder.newBuilder()
-                        .expireAfterAccess(expireAfterAccessDuration, expireAfterAccessTimeUnit)
-                        .expireAfterWrite(expireAfterWriteDuration, expireAfterWriteTimeUnit)
+                        .expireAfterAccess(delayedEntryTtl, delayedEntryTtlTimeUnit)
                         .concurrencyLevel(concurrency)
                         .build();
     }
 
     @VisibleForTesting
-    public static LocatorCache getInstance(long expireAfterAccessDuration, TimeUnit expireAfterAccessTimeUnit,
-                                           long expireAfterWriteDuration, TimeUnit expireAfterWriteTimeUnit) {
-
-        return new LocatorCache(expireAfterAccessDuration, expireAfterAccessTimeUnit,
-                                expireAfterWriteDuration, expireAfterWriteTimeUnit);
+    public static LocatorCache getInstance(long entryTtl, TimeUnit entryTtlTimeUnit,
+                                           long delayedEntryTtl, TimeUnit delayedEntryTtlTimeUnit) {
+        return new LocatorCache(entryTtl, entryTtlTimeUnit, delayedEntryTtl, delayedEntryTtlTimeUnit);
     }
 
     public long getCurrentLocatorCount() {
