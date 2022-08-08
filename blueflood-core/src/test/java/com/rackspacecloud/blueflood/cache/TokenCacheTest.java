@@ -29,7 +29,7 @@ public class TokenCacheTest {
     @Rule
     public RepeatingRule repeatedly = new RepeatingRule();
 
-    private final TokenCache cache = TokenCache.getInstance(60, SECONDS, 60, SECONDS);
+    private final TokenCache cache = TokenCache.getInstance(60, SECONDS);
 
     @Before
     public void setUp() {
@@ -76,8 +76,7 @@ public class TokenCacheTest {
             tokens.addAll(Token.getTokens(locator));
         }
         // And a cache with a fairly short timeout
-        TokenCache cache = TokenCache.getInstance(
-                100, MILLISECONDS, 100, MILLISECONDS);
+        TokenCache cache = TokenCache.getInstance(100, MILLISECONDS);
         // When I insert all the tokens into the cache
         tokens.forEach(cache::setTokenCurrent);
         // Then the cache reflects all of the entries

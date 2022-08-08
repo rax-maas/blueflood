@@ -5,6 +5,8 @@ import com.codahale.metrics.MetricRegistry;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.Token;
 import com.rackspacecloud.blueflood.utils.Metrics;
 
@@ -16,8 +18,9 @@ public class TokenCache {
     // Simply, if a token has been seen within the last 10 minutes, don't bother.
     private final Cache<String, Boolean> insertedTokens;
 
-    private static TokenCache instance = new TokenCache(10, TimeUnit.MINUTES,
-                                                        3, TimeUnit.DAYS);
+    private static TokenCache instance = new TokenCache(
+            Configuration.getInstance().getIntegerProperty(CoreConfig.TOKEN_CACHE_TTL_MINUTES),
+            TimeUnit.MINUTES);
 
 
     static {
@@ -29,23 +32,17 @@ public class TokenCache {
         return instance;
     }
 
-    protected TokenCache(long expireAfterAccessDuration, TimeUnit expireAfterAccessTimeUnit,
-                         long expireAfterWriteDuration, TimeUnit expireAfterWriteTimeUnit) {
-
+    protected TokenCache(long entryTtl, TimeUnit entryTtlTimeUnit) {
         insertedTokens =
                 CacheBuilder.newBuilder()
-                        .expireAfterAccess(expireAfterAccessDuration, expireAfterAccessTimeUnit)
-                        .expireAfterWrite(expireAfterWriteDuration, expireAfterWriteTimeUnit)
+                        .expireAfterAccess(entryTtl, entryTtlTimeUnit)
                         .concurrencyLevel(16)
                         .build();
     }
 
     @VisibleForTesting
-    public static TokenCache getInstance(long expireAfterAccessDuration, TimeUnit expireAfterAccessTimeUnit,
-                                           long expireAfterWriteDuration, TimeUnit expireAfterWriteTimeUnit) {
-
-        return new TokenCache(expireAfterAccessDuration, expireAfterAccessTimeUnit,
-                                expireAfterWriteDuration, expireAfterWriteTimeUnit);
+    public static TokenCache getInstance(long entryTtl, TimeUnit entryTtlTimeUnit) {
+        return new TokenCache(entryTtl, entryTtlTimeUnit);
     }
 
     public long getCurrentLocatorCount() {

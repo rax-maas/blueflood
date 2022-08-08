@@ -135,11 +135,29 @@ public enum CoreConfig implements ConfigDefaults {
 
     METRIC_BATCH_SIZE("100"),
 
-    // The metrics batch writer uses a cache to determine if it's updated various marker "layers" with a metric
-    // recently. This setting tunes write concurrency of the cache.
-    // IMPORTANT: All threads writing to the database contend for access to this cache. Setting the concurrency too low
-    // will impact metric writing throughput.
+    // The locator cache is a local, in-memory cache that keeps track of locators that have been inserted into Cassandra
+    // and Elasticsearch for various tracking purposes, like marking a delayed locator dirty for rollup or indexing a
+    // locator and tokens for later querying. The cache is used to avoid unnecessary writes to these remote systems.
+
+    // This setting tunes the concurrency of the locator cache. All threads writing to the database contend for access
+    // to this cache. Setting the concurrency too low will impact metric writing throughput.
     LOCATOR_CACHE_CONCURRENCY("16"),
+    // Sets the length of time a locator is kept in the cache after it's written or last accessed. Any given locator
+    // will typically be seen at regular intervals in a production setting, but load balancing can spread occurrences of
+    // a locator across multiple Blueflood nodes. This setting should account for the combination of both. For instance,
+    // if data points for a locator arrive every minute and there are six Blueflood nodes, setting this any lower than 7
+    // is virtually guaranteed to expire cache entries too early. In reality, it's probably necessary to set it
+    // significantly higher due to other factors affecting the distribution of locators around nodes.
+    LOCATOR_CACHE_TTL_MINUTES("60"),
+    // Sets the length of time a delayed locator is kept in the cache. This guards against excessive writes to the
+    // "delayed locator" column family in cassandra. Note that both the locator and the slot are taken into account
+    // here, so a single locator could account for multiple entries in this portion of the cache.
+    LOCATOR_CACHE_DELAYED_TTL_SECONDS("30"),
+
+    // The token cache is similar in use to the locator cache, described previously. When
+    // ENABLE_TOKEN_SEARCH_IMPROVEMENTS is turned on, both the locator cache and the token cache are used to avoid
+    // unnecessary writes to Elasticsearch. The token cache specifically caches the non-leaf tokens of a locator.
+    TOKEN_CACHE_TTL_MINUTES("60"),
 
     CASSANDRA_REQUEST_TIMEOUT("10000"),
     // set <= 0 to not retry

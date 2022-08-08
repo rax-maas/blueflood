@@ -6,6 +6,7 @@ import com.rackspacecloud.blueflood.types.Locator;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -20,13 +21,10 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.*;
 
-import static com.google.code.tempusfugit.temporal.Duration.millis;
-import static com.google.code.tempusfugit.temporal.Timeout.timeout;
-import static com.google.code.tempusfugit.temporal.WaitFor.waitOrTimeout;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
 
 public class LocatorCacheTest {
 
@@ -201,7 +199,7 @@ public class LocatorCacheTest {
     }
 
     @Test
-    public void expiresStuff() throws InterruptedException, TimeoutException {
+    public void expiresStuff() throws Exception {
         // Given several random locators
         Random r = new Random();
         List<Locator> locators = new ArrayList<>();
@@ -222,11 +220,26 @@ public class LocatorCacheTest {
             assertThat(cache.isDelayedLocatorForASlotCurrent(1, locator), is(true));
         });
         // And after the timeout, all of them are no longer cached
-        waitOrTimeout(
-                () -> locators.stream().noneMatch(cache::isLocatorCurrentInBatchLayer),
-                timeout(millis(200)));
-        locators.forEach(locator ->
-                assertThat(cache.isDelayedLocatorForASlotCurrent(1, locator), is(false)));
+        Thread.sleep(101);
+        locators.forEach(locator -> {
+            assertThat(cache.isLocatorCurrentInBatchLayer(locator), is(false));
+            assertThat(cache.isDelayedLocatorForASlotCurrent(1, locator), is(false));
+        });
+    }
+
+    @Test
+    public void expiresStuffThatsNeverTouched() throws Exception {
+        LocatorCache cache = LocatorCache.getInstance(100, MILLISECONDS,100, MILLISECONDS);
+        Locator locator = Locator.createLocatorFromDbKey("never.touched");
+        cache.setLocatorCurrentInBatchLayer(locator);
+        cache.setLocatorCurrentInDiscoveryLayer(locator);
+        cache.setLocatorCurrentInTokenDiscoveryLayer(locator);
+        cache.setDelayedLocatorForASlotCurrent(1, locator);
+        Thread.sleep(101);
+        assertThat(cache.isLocatorCurrentInBatchLayer(locator), is(false));
+        assertThat(cache.isLocatorCurrentInDiscoveryLayer(locator), is(false));
+        assertThat(cache.isLocatorCurrentInTokenDiscoveryLayer(locator), is(false));
+        assertThat(cache.isDelayedLocatorForASlotCurrent(1, locator), is(false));
     }
 
     private static class Record {
@@ -310,7 +323,7 @@ public class LocatorCacheTest {
         Path path = Paths.get("src/main/java/com/rackspacecloud/blueflood/cache/LocatorCache.java");
         for (String line : Files.readAllLines(path)) {
             if (line.contains("synchronized")) {
-                fail("Found 'synchronized' in line:\n" + line);
+                Assert.fail("Found 'synchronized' in line:\n" + line);
             }
         }
     }
