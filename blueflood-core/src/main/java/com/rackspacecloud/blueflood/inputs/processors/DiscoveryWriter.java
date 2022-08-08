@@ -39,6 +39,8 @@ public class DiscoveryWriter extends FunctionWithThreadPool<List<List<IMetric>>,
 
     private final List<DiscoveryIO> discoveryIOs = new ArrayList<DiscoveryIO>();
     private final Map<Class<? extends DiscoveryIO>, Meter> writeErrorMeters = new HashMap<Class<? extends DiscoveryIO>, Meter>();
+    private static final Meter locatorsWritten =
+            Metrics.meter(DiscoveryWriter.class, "Locators Written to Discovery");
     private static final Logger log = LoggerFactory.getLogger(DiscoveryWriter.class);
     private final boolean canIndex;
 
@@ -113,6 +115,7 @@ public class DiscoveryWriter extends FunctionWithThreadPool<List<List<IMetric>>,
                 // filter out the metrics that are current.
                 final List<IMetric> willIndex = DiscoveryWriter.condense(input);
 
+                locatorsWritten.mark(willIndex.size());
                 for (DiscoveryIO io : discoveryIOs) {
                     try {
                         io.insertDiscovery(willIndex);
