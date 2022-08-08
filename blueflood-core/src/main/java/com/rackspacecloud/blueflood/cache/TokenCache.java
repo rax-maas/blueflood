@@ -56,19 +56,19 @@ public class TokenCache {
      * Checks if token is recently inserted
      *
      */
-    public synchronized boolean isTokenCurrent(Token token) {
+    public boolean isTokenCurrent(Token token) {
         return insertedTokens.getIfPresent(token.getId()) != null;
     }
 
     /**
      * Marks the token as recently inserted
      */
-    public synchronized void setTokenCurrent(Token token) {
+    public void setTokenCurrent(Token token) {
         insertedTokens.put(token.getId(), Boolean.TRUE);
     }
 
     @VisibleForTesting
-    public synchronized void resetCache() {
+    public void resetCache() {
         insertedTokens.invalidateAll();
     }
 
