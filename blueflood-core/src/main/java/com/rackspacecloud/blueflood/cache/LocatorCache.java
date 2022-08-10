@@ -22,7 +22,6 @@ import java.util.stream.Collectors;
  *
  *  {@link com.rackspacecloud.blueflood.inputs.processors.BatchWriter} This writes to cassandra
  *  {@link com.rackspacecloud.blueflood.inputs.processors.DiscoveryWriter} This supports metric discovery (/metric/search)
- *  {@link com.rackspacecloud.blueflood.inputs.processors.TokenDiscoveryWriter} This support metric tokens discovery (metric_name/search)
  *
  * Each writer maintains its own marker in the cache to indicate whether a locator is current. This
  * is useful in cases, where persisting a locator with one writer is successful but not with other writers.
@@ -116,8 +115,10 @@ public class LocatorCache {
     }
 
     /**
-     * Checks if Locator is recently inserted in the token discovery layer
+     * Checks if Locator is recently inserted in the token discovery layer.
+     * Token discovery is no longer a thing. This is no longer used and will be removed.
      */
+    @Deprecated
     public boolean isLocatorCurrentInTokenDiscoveryLayer(Locator loc) {
         return isLocatorCurrentInLayer(loc, Layer.TOKEN_DISCOVERY);
     }
@@ -149,7 +150,9 @@ public class LocatorCache {
 
     /**
      * Marks the Locator as recently inserted in the token discovery layer
+     * Token discovery is no longer a thing. This is no longer used and will be removed.
      */
+    @Deprecated
     public void setLocatorCurrentInTokenDiscoveryLayer(Locator loc) {
         setLocatorCurrentInLayer(loc, Layer.TOKEN_DISCOVERY);
     }

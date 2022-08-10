@@ -29,9 +29,9 @@ public class HttpMetricNamesHandler implements HttpRequestHandler {
     public HttpMetricNamesHandler() {
         log.info("Token search improvements enabled: " + EXP_TOKEN_SEARCH_IMPROVEMENTS);
         if (EXP_TOKEN_SEARCH_IMPROVEMENTS) {
-            discoveryHandle = (TokenDiscoveryIO) ModuleLoader.getInstance(TokenDiscoveryIO.class, CoreConfig.TOKEN_DISCOVERY_MODULES);
+            discoveryHandle = ModuleLoader.getInstance(MetricNameSearchIO.class, CoreConfig.TOKEN_DISCOVERY_MODULES);
         } else {
-            discoveryHandle = (DiscoveryIO) ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES);
+            discoveryHandle = ModuleLoader.getInstance(MetricNameSearchIO.class, CoreConfig.DISCOVERY_MODULES);
         }
     }
 

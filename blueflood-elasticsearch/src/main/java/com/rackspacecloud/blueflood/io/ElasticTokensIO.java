@@ -5,26 +5,29 @@ import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
+import com.rackspacecloud.blueflood.cache.TokenCache;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.ElasticIOConfig;
+import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Token;
 import com.rackspacecloud.blueflood.utils.GlobPattern;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import org.apache.commons.lang.StringUtils;
-import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.joining;
 
 /**
- * {@link TokenDiscoveryIO} implementation using elasticsearch
+ * {@link DiscoveryIO} implementation that indexes tokens to Elasticsearch.
  */
-public class ElasticTokensIO implements TokenDiscoveryIO {
+public class ElasticTokensIO implements DiscoveryIO {
 
     public static final String ES_DOCUMENT_TYPE = "tokens";
 
@@ -45,15 +48,46 @@ public class ElasticTokensIO implements TokenDiscoveryIO {
         this.elasticsearchRestHelper = ElasticsearchRestHelper.getInstance();
     }
 
-    @Override
+    public void setElasticsearchRestHelper(ElasticsearchRestHelper elasticsearchRestHelper) {
+        this.elasticsearchRestHelper = elasticsearchRestHelper;
+    }
+
+    @VisibleForTesting
     public void insertDiscovery(Token token) throws IOException {
         List<Token> batch = new ArrayList<>();
         batch.add(token);
         insertDiscovery(batch);
     }
 
-    @Override
-    public void insertDiscovery(List<Token> tokens) throws IOException {
+    /**
+     * A hacky de-generified implementation of two semi-compatible methods from the interfaces implemented here. One
+     * interface expects a list of metrics and the other a list of tokens. This is from an unfortunate copy/paste
+     * incident in the dark past. The {@link com.rackspacecloud.blueflood.inputs.processors.DiscoveryWriter} calls this
+     * to create discovery data for metrics as they're ingested. Originally, it was a bad copy of that class that called
+     * this and passed a list of tokens. Now this lives behind DiscoveryWriter as a discovery module, as appropriate,
+     * and it receives a list of metrics, as it should. Tests still exist that send it a list of tokens. Once those
+     * tests are fixed, this method can change to its correct signature of accepting a list of metrics.
+     */
+    public void insertDiscovery(List things) throws IOException {
+        if (things.isEmpty()) {
+            return;
+        }
+        if (things.get(0) instanceof Token) {
+            insertTokens(things);
+        } else if (things.get(0) instanceof IMetric) {
+            insertMetrics(things);
+        } else {
+            throw new IllegalArgumentException("Unknown type of thing to insert: " + things.get(0).getClass().getName());
+        }
+    }
+
+    public void insertMetrics(List<IMetric> metrics) throws IOException {
+        insertTokens(Token.getUniqueTokens(metrics.stream().map(IMetric::getLocator))
+                .filter(token -> !TokenCache.getInstance().isTokenCurrent(token))
+                .collect(Collectors.toList()));
+    }
+
+    public void insertTokens(List<Token> tokens) throws IOException {
         batchHistogram.update(tokens.size());
         tokenCount.mark(tokens.size());
         if (tokens.size() == 0) return;
@@ -61,6 +95,12 @@ public class ElasticTokensIO implements TokenDiscoveryIO {
         Timer.Context ctx = writeTimer.time();
         try {
             elasticsearchRestHelper.indexTokens(tokens);
+            // Update token cache to reduce future writes
+            tokens.stream()
+                    // Don't cache leaf nodes. Those are the complete locators which are already covered by the
+                    // LocatorCache in DiscoveryWriter. Caching them again here will just use up extra memory.
+                    .filter(token -> !token.isLeaf())
+                    .forEach(token -> TokenCache.getInstance().setTokenCurrent(token));
         } finally {
             ctx.stop();
         }
@@ -153,5 +193,20 @@ public class ElasticTokensIO implements TokenDiscoveryIO {
 
     protected String[] getIndexesToSearch() {
         return new String[] {ELASTICSEARCH_TOKEN_INDEX_NAME_READ};
+    }
+
+    @Override
+    public void insertDiscovery(IMetric metric) throws Exception {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public List<SearchResult> search(String tenant, String query) throws Exception {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public List<SearchResult> search(String tenant, List<String> queries) throws Exception {
+        throw new UnsupportedOperationException("Not implemented");
     }
 }

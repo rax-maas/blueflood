@@ -30,6 +30,7 @@ import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.utils.Metrics;
+import com.rackspacecloud.blueflood.utils.ModuleLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,26 +97,19 @@ public class DiscoveryWriter extends FunctionWithThreadPool<List<List<IMetric>>,
     }
 
     public void registerIOModules() {
-        List<String> modules = Configuration.getInstance().getListProperty(CoreConfig.DISCOVERY_MODULES);
-
-        ClassLoader classLoader = DiscoveryIO.class.getClassLoader();
-        for (String module : modules) {
-            log.info("Loading metric discovery module " + module);
-            try {
-                Class discoveryClass = classLoader.loadClass(module);
-                DiscoveryIO discoveryIOModule = (DiscoveryIO) discoveryClass.newInstance();
-                log.info("Registering metric discovery module " + module);
-                registerIO(discoveryIOModule);
-            } catch (InstantiationException e) {
-                log.error("Unable to create instance of metric discovery class for: " + module, e);
-            } catch (IllegalAccessException e) {
-                log.error("Error starting metric discovery module: " + module, e);
-            } catch (ClassNotFoundException e) {
-                log.error("Unable to locate metric discovery module: " + module, e);
-            } catch (RuntimeException e) {
-                log.error("Error starting metric discovery module: " + module, e);
-            } catch (Throwable e) {
-                log.error("Error starting metric discovery module: " + module, e);
+        // TODO: These should really both just be set as DISCOVERY_MODULES. Then it's up to the user whether to use
+        //       token discovery or not. This will do for now, since the query handlers require at most one module to be
+        //       set in each of these. In the future, use the ModuleLoader with qualifiers to satisfy the query handler
+        //       needs, and allow multiple DISCOVERY_MODULES to be set and used here. TOKEN_DISCOVERY_MODULES should be
+        //       considered deprecated.
+        DiscoveryIO discoveryIO = ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES);
+        if (discoveryIO != null) {
+            registerIO(discoveryIO);
+        }
+        if (Configuration.getInstance().getBooleanProperty(CoreConfig.ENABLE_TOKEN_SEARCH_IMPROVEMENTS)) {
+            discoveryIO = ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.TOKEN_DISCOVERY_MODULES);
+            if (discoveryIO != null) {
+                registerIO(discoveryIO);
             }
         }
     }
