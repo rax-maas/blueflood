@@ -30,7 +30,7 @@ public class UserDefinedEventHandler extends ChannelDuplexHandler {
             IdleStateEvent e = (IdleStateEvent) evt;
             if (e.state() == IdleState.READER_IDLE) {
 
-                log.info("Connection is closed as there is no inbound traffic for " +
+                log.debug("Connection is closed as there is no inbound traffic for " +
                         HTTP_CONNECTION_READ_IDLE_TIME_SECONDS + " seconds. Connection: [" + ctx.channel().toString() + "]");
                 ctx.close();
             }
