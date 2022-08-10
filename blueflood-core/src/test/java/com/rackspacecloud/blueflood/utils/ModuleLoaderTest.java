@@ -2,6 +2,8 @@ package com.rackspacecloud.blueflood.utils;
 
 import com.rackspacecloud.blueflood.io.DiscoveryIO;
 import com.rackspacecloud.blueflood.io.DummyDiscoveryIO;
+import com.rackspacecloud.blueflood.io.DummyDiscoveryIO6;
+import com.rackspacecloud.blueflood.io.EventsIO;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import org.junit.After;
@@ -83,6 +85,110 @@ public class ModuleLoaderTest {
 
         // then
         // an exception is thrown
+    }
+
+    @Test
+    public void butMultipleClassesWithQualifiersWorksFine() {
+        // given multiple discovery modules, where one has a qualifier
+        Configuration.getInstance().setProperty(
+                CoreConfig.DISCOVERY_MODULES,
+                "com.rackspacecloud.blueflood.io.DummyDiscoveryIO,com.rackspacecloud.blueflood.io.DummyDiscoveryIO6");
+
+        // when I call the unqualified version of the method
+        DiscoveryIO loadedModule = ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES);
+
+        // then I get the unqualified module
+        Assert.assertEquals(DummyDiscoveryIO.class, loadedModule.getClass());
+
+        // when I call the qualified version of the method using the default qualifier
+        loadedModule = ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES, ModuleLoader.DEFAULT_QUALIFIER);
+
+        // then I also get the unqualified module
+        Assert.assertEquals(DummyDiscoveryIO.class, loadedModule.getClass());
+
+        // when I request a module by qualifier
+        loadedModule = ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES, "im-qualified");
+
+        // then I get that module
+        Assert.assertEquals(DummyDiscoveryIO6.class, loadedModule.getClass());
+    }
+
+    @Test
+    public void askingForModuleWithoutGivingQualifierYieldsSingleExistingModule() {
+        // given one discovery module that has a qualifier
+        Configuration.getInstance().setProperty(
+                CoreConfig.DISCOVERY_MODULES,
+                "com.rackspacecloud.blueflood.io.DummyDiscoveryIO6");
+
+        // when I call the unqualified version of the method
+        DiscoveryIO loadedModule = ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES);
+
+        // then I get the module since it's the only one registered
+        Assert.assertEquals(DummyDiscoveryIO6.class, loadedModule.getClass());
+    }
+
+    @Test
+    public void askingForQualifiedModuleWithWrongQualifierYieldsNull() {
+        // given one discovery module that has a qualifier
+        Configuration.getInstance().setProperty(
+                CoreConfig.DISCOVERY_MODULES,
+                "com.rackspacecloud.blueflood.io.DummyDiscoveryIO6");
+
+        // when I call ask for a different qualifier
+        DiscoveryIO loadedModule = ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES, "wrong-qualifier");
+
+        // then I get nothing back
+        Assert.assertNull(loadedModule);
+    }
+
+    @Test
+    public void askingForUnqualifiedModuleWithDefaultQualifierWorks() {
+        // given one discovery module without a qualifier
+        Configuration.getInstance().setProperty(
+                CoreConfig.DISCOVERY_MODULES,
+                "com.rackspacecloud.blueflood.io.DummyDiscoveryIO");
+
+        // when I request the module using the default qualifier
+        DiscoveryIO loadedModule = ModuleLoader.getInstance(
+                DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES, ModuleLoader.DEFAULT_QUALIFIER);
+        Assert.assertFalse(loadedModule instanceof QualifiedModule);
+
+        // then I get the module
+        Assert.assertEquals(DummyDiscoveryIO.class, loadedModule.getClass());
+    }
+
+    @Test
+    public void givingIncompatibleInterfaceYieldsNull() {
+        // given a correct, existing module is configured
+        Configuration.getInstance().setProperty(
+                CoreConfig.DISCOVERY_MODULES,
+                "com.rackspacecloud.blueflood.io.DummyDiscoveryIO");
+
+        // when I ask for the module by the wrong type
+        Object loadedModule = ModuleLoader.getInstance(EventsIO.class, CoreConfig.DISCOVERY_MODULES);
+
+        // then I get nothing back
+        Assert.assertNull(loadedModule);
+    }
+
+    @Test
+    public void givingIncompatibleInterfaceAfterCacheHasPopulatedStillYieldsNull() {
+        // given a correct, existing module is configured
+        Configuration.getInstance().setProperty(
+                CoreConfig.DISCOVERY_MODULES,
+                "com.rackspacecloud.blueflood.io.DummyDiscoveryIO");
+
+        // when I ask for the module by the correct type
+        Object loadedModule = ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES);
+
+        // then I get the module
+        Assert.assertEquals(DummyDiscoveryIO.class, loadedModule.getClass());
+
+        // when I ask for the module again with the wrong type
+        loadedModule = ModuleLoader.getInstance(EventsIO.class, CoreConfig.DISCOVERY_MODULES);
+
+        // then I get nothing back
+        Assert.assertNull(loadedModule);
     }
 
     @Test
