@@ -39,4 +39,3 @@ jobs:
           title: "Development Build"
           files: |
             blueflood-all/target/blueflood-all-*-jar-with-dependencies.jar
-            
