@@ -1,4 +1,4 @@
-name: "Validate and plan"
+name: "Run tests on pull requests"
 
 on:
   pull_request:
@@ -13,29 +13,16 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-java@v2
         with:
-          distribution: 'adopt'
+          distribution: 'temurin'
           java-version: ${{ matrix.java-version }}
           cache: 'maven'
-      - name: Configure git user
-        run: |
-          git config user.email "actions@github.com"
-          git config user.name "GitHub Actions"
       - name: Build and test
         run: |
-          mvn clean install -Dmaven.javadoc.skip --quiet
+          mvn clean install
           mvn jacoco:report jacoco:report-integration
-          mvn package -P all-modules
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
         with:
           name: test-reports
           path: |
             */target/site
-      - uses: "marvinpinto/action-automatic-releases@latest"
-        with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: "latest"
-          prerelease: true
-          title: "Development Build"
-          files: |
-            blueflood-all/target/blueflood-all-*-jar-with-dependencies.jar
