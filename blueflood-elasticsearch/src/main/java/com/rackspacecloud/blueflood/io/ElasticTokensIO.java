@@ -1,6 +1,7 @@
 package com.rackspacecloud.blueflood.io;
 
 import com.codahale.metrics.Histogram;
+import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,6 +29,7 @@ public class ElasticTokensIO implements TokenDiscoveryIO {
     public static final String ES_DOCUMENT_TYPE = "tokens";
 
     protected final Histogram batchHistogram = Metrics.histogram(getClass(), "Batch Sizes");
+    protected final Meter tokenCount = Metrics.meter(getClass(), "Tokens Written");
     protected final Timer writeTimer = Metrics.timer(getClass(), "Write Duration");
 
     protected final Timer esMetricNamesQueryTimer = Metrics.timer(getClass(), "ES Metric Names Query Duration");
@@ -53,6 +55,7 @@ public class ElasticTokensIO implements TokenDiscoveryIO {
     @Override
     public void insertDiscovery(List<Token> tokens) throws IOException {
         batchHistogram.update(tokens.size());
+        tokenCount.mark(tokens.size());
         if (tokens.size() == 0) return;
 
         Timer.Context ctx = writeTimer.time();
