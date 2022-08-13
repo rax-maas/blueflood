@@ -22,14 +22,20 @@ import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.io.DiscoveryIO;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Locator;
+import com.rackspacecloud.blueflood.types.Metric;
+import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.*;
 
 
@@ -222,5 +228,173 @@ public class DiscoveryWriterTest {
 
         // verify that all metrics are inserted in the discovery layer, even while the first one was current in the batch layer
         verify(discovererA).insertDiscovery(flatTestData);
+    }
+
+    @Test
+    public void testProcessorThrottlesNewMetricsDiscoveryGlobally() throws Exception {
+        // Given a DiscoveryWriter that throttles new locators to one per minute
+        DiscoveryWriter writer = new DiscoveryWriter(new ThreadPoolBuilder()
+                .withName("Metric Discovery Writing")
+                .withCorePoolSize(10)
+                .withMaxPoolSize(10)
+                .withUnboundedQueue()
+                .withRejectedHandler(new ThreadPoolExecutor.AbortPolicy())
+                .build());
+        DiscoveryIO discoveryIO = mock(DiscoveryIO.class);
+        writer.registerIO(discoveryIO);
+        writer.setMaxNewLocatorsPerMinute(1);
+
+        // When I process some new metrics
+        Locator locator1 = Locator.createLocatorFromPathComponents("t1", "foo");
+        Locator locator2 = Locator.createLocatorFromPathComponents("t2", "foo");
+        List<IMetric> metrics = new ArrayList<>();
+        metrics.add(randomMetric(locator1));
+        metrics.add(randomMetric(locator2));
+        writer.processMetrics(Collections.singletonList(metrics)).get();
+
+        // Then all the metrics should be sent to the discovery IO - throttling doesn't kick in mid-batch
+        assertDiscoveryReceivedMetrics(discoveryIO, 1, metrics);
+
+        // When I process more new metrics from both old and new tenants
+        Locator locator3 = Locator.createLocatorFromPathComponents("t1", "bar");
+        Locator locator4 = Locator.createLocatorFromPathComponents("t3", "foo");
+        List<IMetric> oldTenantMetrics = new ArrayList<>();
+        oldTenantMetrics.add(randomMetric(locator3));
+        oldTenantMetrics.add(randomMetric(locator3));
+        List<IMetric> newTenantMetrics = new ArrayList<>();
+        newTenantMetrics.add(randomMetric(locator4));
+        newTenantMetrics.add(randomMetric(locator4));
+        writer.processMetrics(Arrays.asList(oldTenantMetrics, newTenantMetrics)).get();
+
+        // Then the global throttling prevents any new locators from being sent to the discovery IO
+        verify(discoveryIO, times(1)).insertDiscovery(anyList());
+    }
+
+    @Test
+    public void testProcessorThrottlesNewMetricDiscoveryPerTenant() throws Exception {
+        // Given a DiscoveryWriter that throttles new locators to one per minute per tenant
+        DiscoveryWriter writer = new DiscoveryWriter(new ThreadPoolBuilder()
+                .withName("Metric Discovery Writing")
+                .withCorePoolSize(10)
+                .withMaxPoolSize(10)
+                .withUnboundedQueue()
+                .withRejectedHandler(new ThreadPoolExecutor.AbortPolicy())
+                .build());
+        DiscoveryIO discoveryIO = mock(DiscoveryIO.class);
+        writer.registerIO(discoveryIO);
+        writer.setMaxNewLocatorsPerMinutePerTenant(1);
+
+        // When I process some new metrics from a couple of tenants
+        Locator locator1 = Locator.createLocatorFromPathComponents("t1", "foo");
+        Locator locator2 = Locator.createLocatorFromPathComponents("t1", "bar");
+        Locator locator3 = Locator.createLocatorFromPathComponents("t2", "foo");
+        Locator[] locators = new Locator[]{locator1, locator2, locator3};
+        List<IMetric> firstMetrics = new ArrayList<>();
+        for (int i = 0; i < 6; i++) {
+            firstMetrics.add(randomMetric(locators[i % 3]));
+        }
+        writer.processMetrics(Collections.singletonList(firstMetrics)).get();
+
+        // Then all the metrics should be sent to the discovery IO - throttling doesn't kick in mid-batch
+        assertDiscoveryReceivedMetrics(discoveryIO, 1, firstMetrics);
+
+        // When I process more new metrics from both old and new tenants
+        Locator locator4 = Locator.createLocatorFromPathComponents("t2", "bar");
+        Locator locator5 = Locator.createLocatorFromPathComponents("t3", "foo");
+        Locator locator6 = Locator.createLocatorFromPathComponents("t4", "foo");
+        List<IMetric> oldTenantMetrics = new ArrayList<>();
+        oldTenantMetrics.add(randomMetric(locator4));
+        oldTenantMetrics.add(randomMetric(locator4));
+        List<IMetric> newTenantMetrics = new ArrayList<>();
+        newTenantMetrics.add(randomMetric(locator5));
+        newTenantMetrics.add(randomMetric(locator5));
+        newTenantMetrics.add(randomMetric(locator6));
+        newTenantMetrics.add(randomMetric(locator6));
+        writer.processMetrics(Arrays.asList(oldTenantMetrics, newTenantMetrics)).get();
+
+        // Then throttling prevents new metrics from old tenants, so only new tenant metrics are sent to the discovery
+        // IO
+        assertDiscoveryReceivedMetrics(discoveryIO, 2, newTenantMetrics);
+    }
+
+    @Test
+    public void testProcessorThrottlesNewMetricDiscoveryPerTenantAndGlobally() throws Exception {
+        // Given a DiscoveryWriter that throttles new locators to one per minute per tenant and to four globally
+        DiscoveryWriter writer = new DiscoveryWriter(new ThreadPoolBuilder()
+                .withName("Metric Discovery Writing")
+                .withCorePoolSize(10)
+                .withMaxPoolSize(10)
+                .withUnboundedQueue()
+                .withRejectedHandler(new ThreadPoolExecutor.AbortPolicy())
+                .build());
+        DiscoveryIO discoveryIO = mock(DiscoveryIO.class);
+        writer.registerIO(discoveryIO);
+        writer.setMaxNewLocatorsPerMinute(4);
+        writer.setMaxNewLocatorsPerMinutePerTenant(1);
+
+        // When I process some new metrics from a couple of tenants
+        Locator locator1 = Locator.createLocatorFromPathComponents("t1", "foo");
+        Locator locator2 = Locator.createLocatorFromPathComponents("t1", "bar");
+        Locator locator3 = Locator.createLocatorFromPathComponents("t2", "foo");
+        Locator[] locators = new Locator[]{locator1, locator2, locator3};
+        List<IMetric> firstMetrics = new ArrayList<>();
+        for (int i = 0; i < 6; i++) {
+            firstMetrics.add(randomMetric(locators[i % 3]));
+        }
+        writer.processMetrics(Collections.singletonList(firstMetrics)).get();
+
+        // Then all the metrics should be sent to the discovery IO - throttling doesn't kick in mid-batch
+        // (running count: three locators from two tenants)
+        assertDiscoveryReceivedMetrics(discoveryIO, 1, firstMetrics);
+
+        // When I process more metrics from a mix of old and new tenants
+        Locator locator4 = Locator.createLocatorFromPathComponents("t2", "bar");
+        Locator locator5 = Locator.createLocatorFromPathComponents("t3", "foo");
+        Locator locator6 = Locator.createLocatorFromPathComponents("t4", "foo");
+        List<IMetric> oldTenantMetrics = new ArrayList<>();
+        oldTenantMetrics.add(randomMetric(locator4));
+        oldTenantMetrics.add(randomMetric(locator4));
+        List<IMetric> newTenantMetrics = new ArrayList<>();
+        newTenantMetrics.add(randomMetric(locator5));
+        newTenantMetrics.add(randomMetric(locator5));
+        newTenantMetrics.add(randomMetric(locator6));
+        newTenantMetrics.add(randomMetric(locator6));
+        writer.processMetrics(Arrays.asList(oldTenantMetrics, newTenantMetrics)).get();
+
+        // Then per-tenant throttling prevents new metrics from old tenants; new tenant metrics all go through
+        // (running count: five locators from four tenants)
+        assertDiscoveryReceivedMetrics(discoveryIO, 2, newTenantMetrics);
+
+        // When I try to send any more metrics
+        List<IMetric> moreMetrics = new ArrayList<>();
+        moreMetrics.add(randomMetric(locator1));
+        moreMetrics.add(randomMetric(locator2));
+        moreMetrics.add(randomMetric(locator3));
+        moreMetrics.add(randomMetric(locator4));
+        moreMetrics.add(randomMetric(locator5));
+        moreMetrics.add(randomMetric(locator6));
+        moreMetrics.add(randomMetric(Locator.createLocatorFromPathComponents("t5", "foo")));
+        writer.processMetrics(Collections.singletonList(moreMetrics)).get();
+
+        // Then the discovery IO was only called the two times because the global throttle has been exceeded
+        // Tenant five is out of luck!
+        verify(discoveryIO, times(2)).insertDiscovery(anyList());
+    }
+
+    /**
+     * Verifies that a DiscoveryIO has been called a given number of times and that the last call was with a given list
+     * of metrics.
+     */
+    private void assertDiscoveryReceivedMetrics(DiscoveryIO discoveryIO, int callNumber, List<IMetric> expected) throws Exception {
+        ArgumentCaptor<List> metricsCaptor = ArgumentCaptor.forClass(List.class);
+        verify(discoveryIO, times(callNumber)).insertDiscovery(metricsCaptor.capture());
+        List<IMetric> insertedMetrics = metricsCaptor.getAllValues().get(callNumber - 1);
+        assertThat(insertedMetrics.size(), is(expected.size()));
+        assertThat(expected, equalTo(insertedMetrics));
+    }
+
+    private final Random random = new Random();
+    private IMetric randomMetric(Locator locator) {
+        return new Metric(locator, random.nextInt(1000), random.nextInt(1000), new TimeValue(10, TimeUnit.SECONDS), "test unit");
     }
 }

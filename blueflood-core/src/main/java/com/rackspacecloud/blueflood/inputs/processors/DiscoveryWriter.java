@@ -17,6 +17,10 @@
 package com.rackspacecloud.blueflood.inputs.processors;
 
 import com.codahale.metrics.Meter;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.rackspacecloud.blueflood.cache.LocatorCache;
 import com.rackspacecloud.blueflood.concurrent.FunctionWithThreadPool;
@@ -24,16 +28,17 @@ import com.rackspacecloud.blueflood.io.DiscoveryIO;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.IMetric;
+import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class DiscoveryWriter extends FunctionWithThreadPool<List<List<IMetric>>, Void> {
 
@@ -42,12 +47,45 @@ public class DiscoveryWriter extends FunctionWithThreadPool<List<List<IMetric>>,
     private static final Meter locatorsWritten =
             Metrics.meter(DiscoveryWriter.class, "Locators Written to Discovery");
     private static final Logger log = LoggerFactory.getLogger(DiscoveryWriter.class);
+    private int maxNewLocatorsPerMinute;
+    private int maxNewLocatorsPerMinutePerTenant;
+    private final Cache<Object, Object> newLocatorsThrottle;
+    private final LoadingCache<String, Cache<Locator, Locator>> newLocatorsThrottlePerTenant;
     private final boolean canIndex;
 
     public DiscoveryWriter(ThreadPoolExecutor threadPool) {
         super(threadPool);
         registerIOModules();
         this.canIndex = discoveryIOs.size() > 0;
+        maxNewLocatorsPerMinute = Configuration.getInstance().getIntegerProperty(
+                CoreConfig.DISCOVERY_MAX_NEW_LOCATORS_PER_MINUTE);
+        maxNewLocatorsPerMinutePerTenant = Configuration.getInstance().getIntegerProperty(
+                CoreConfig.DISCOVERY_MAX_NEW_LOCATORS_PER_MINUTE_PER_TENANT);
+        newLocatorsThrottle = CacheBuilder.newBuilder()
+                .concurrencyLevel(16).expireAfterWrite(1, TimeUnit.MINUTES).build();
+        // This throttle is a cache of caches, one per tenant. It's convenient to have it automatically build the nested
+        // cache on demand, rather than having to do it manually.
+        newLocatorsThrottlePerTenant = CacheBuilder.newBuilder()
+                .concurrencyLevel(16)
+                .expireAfterAccess(1, TimeUnit.MINUTES)
+                .build(new CacheLoader<String, Cache<Locator, Locator>>() {
+                           @Override
+                           public Cache<Locator, Locator> load(String key) {
+                               return CacheBuilder.newBuilder()
+                                       .concurrencyLevel(16)
+                                       .expireAfterWrite(1, TimeUnit.MINUTES)
+                                       .build();
+                           }
+                       }
+                );
+    }
+
+    public void setMaxNewLocatorsPerMinute(int maxNewLocatorsPerMinute) {
+        this.maxNewLocatorsPerMinute = maxNewLocatorsPerMinute;
+    }
+
+    public void setMaxNewLocatorsPerMinutePerTenant(int maxNewLocatorsPerMinutePerTenant) {
+        this.maxNewLocatorsPerMinutePerTenant = maxNewLocatorsPerMinutePerTenant;
     }
 
     public void registerIO(DiscoveryIO io) {
@@ -82,7 +120,16 @@ public class DiscoveryWriter extends FunctionWithThreadPool<List<List<IMetric>>,
         }
     }
 
-    private static List<IMetric> condense(List<List<IMetric>> input) {
+    private List<IMetric> condense(List<List<IMetric>> input) throws ExecutionException {
+        newLocatorsThrottle.cleanUp();
+        Set<String> tenants = input.stream()
+                .flatMap(Collection::stream)
+                .map(IMetric::getLocator)
+                .map(Locator::getTenantId)
+                .collect(Collectors.toSet());
+        for (String tenant : tenants) {
+            newLocatorsThrottlePerTenant.get(tenant).cleanUp();
+        }
         List<IMetric> willIndex = new ArrayList<IMetric>();
         for (List<IMetric> list : input) {
             // make mockito happy.
@@ -91,7 +138,11 @@ public class DiscoveryWriter extends FunctionWithThreadPool<List<List<IMetric>>,
             }
 
             for (IMetric m : list) {
-                if (!LocatorCache.getInstance().isLocatorCurrentInDiscoveryLayer(m.getLocator())) {
+                boolean isAlreadySeen = LocatorCache.getInstance().isLocatorCurrentInDiscoveryLayer(m.getLocator());
+                boolean isThrottlingGlobally = newLocatorsThrottle.size() >= maxNewLocatorsPerMinute;
+                Cache<Locator, Locator> tenantThrottle = newLocatorsThrottlePerTenant.get(m.getLocator().getTenantId());
+                boolean isTenantThrottled = tenantThrottle.size() >= maxNewLocatorsPerMinutePerTenant;
+                if (!isAlreadySeen && !isThrottlingGlobally && !isTenantThrottled) {
                     willIndex.add(m);
                 }
             }
@@ -113,23 +164,28 @@ public class DiscoveryWriter extends FunctionWithThreadPool<List<List<IMetric>>,
             public Boolean call() throws Exception {
                 boolean success = true;
                 // filter out the metrics that are current.
-                final List<IMetric> willIndex = DiscoveryWriter.condense(input);
+                final List<IMetric> willIndex = condense(input);
 
-                locatorsWritten.mark(willIndex.size());
-                for (DiscoveryIO io : discoveryIOs) {
-                    try {
-                        io.insertDiscovery(willIndex);
-                    } catch (Exception ex) {
-                        getLogger().error(ex.getMessage(), ex);
-                        writeErrorMeters.get(io.getClass()).mark();
-                        success = false;
+                if (willIndex.size() > 0) {
+                    locatorsWritten.mark(willIndex.size());
+                    for (DiscoveryIO io : discoveryIOs) {
+                        try {
+                            io.insertDiscovery(willIndex);
+                        } catch (Exception ex) {
+                            getLogger().error(ex.getMessage(), ex);
+                            writeErrorMeters.get(io.getClass()).mark();
+                            success = false;
+                        }
                     }
                 }
 
                 if(success) {
                     //when all metrics have been written successfully, mark them as current.
                     for(IMetric indexedMetric: willIndex) {
-                        LocatorCache.getInstance().setLocatorCurrentInDiscoveryLayer(indexedMetric.getLocator());
+                        Locator locator = indexedMetric.getLocator();
+                        LocatorCache.getInstance().setLocatorCurrentInDiscoveryLayer(locator);
+                        newLocatorsThrottle.put(locator, locator);
+                        newLocatorsThrottlePerTenant.get(locator.getTenantId()).put(locator, locator);
                     }
                 }
 
