@@ -1,0 +1,56 @@
+# This config is based on the official example at
+# https://www.elastic.co/guide/en/elasticsearch/reference/7.5/docker.html
+# The newer version in the 8.x documentation is more complex.`
+version: "3.6"
+services:
+  es01:
+    image: elasticsearch:8.3.3
+    container_name: es01
+    environment:
+      - node.name=es01
+      - cluster.name=blueflood
+      - discovery.seed_hosts=es02,es03
+      - cluster.initial_master_nodes=es01,es02,es03
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      # If you want to do a "reindex from remote", set this to the host:port of the remote
+      - reindex.remote.whitelist=localhost:1234,172.17.0.1:1234
+      # Disable all security. Obviously you'd never do this in production.
+      - xpack.security.enabled=false
+    ports:
+      - "9200:9200"
+    networks:
+      - elastic
+  es02:
+    image: elasticsearch:8.3.3
+    container_name: es02
+    environment:
+      - node.name=es02
+      - cluster.name=blueflood
+      - discovery.seed_hosts=es01,es03
+      - cluster.initial_master_nodes=es01,es02,es03
+      # If you want to do a "reindex from remote", set this to the host:port of the remote
+      - reindex.remote.whitelist=localhost:1234,172.17.0.1:1234
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      # Disable all security. Obviously you'd never do this in production.
+      - xpack.security.enabled=false
+    networks:
+      - elastic
+  es03:
+    image: elasticsearch:8.3.3
+    container_name: es03
+    environment:
+      - node.name=es03
+      - cluster.name=blueflood
+      - discovery.seed_hosts=es01,es02
+      - cluster.initial_master_nodes=es01,es02,es03
+      # If you want to do a "reindex from remote", set this to the host:port of the remote
+      - reindex.remote.whitelist=localhost:1234,172.17.0.1:1234
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      # Disable all security. Obviously you'd never do this in production.
+      - xpack.security.enabled=false
+    networks:
+      - elastic
+
+networks:
+  elastic:
+    driver: bridge
