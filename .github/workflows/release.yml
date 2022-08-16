@@ -1,0 +1,46 @@
+name: "Manual Release workflow"
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release version
+        required: true
+
+jobs:
+  tagged-release:
+    runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        java-version: [ 8 ]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: master
+      - uses: actions/setup-java@v2
+        with:
+          distribution: 'temurin'
+          java-version: ${{ matrix.java-version }}
+          cache: 'maven'
+      - name: Configure Git user
+        run: |
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+      - name: Build and deploy
+        run: |
+          pwd
+          git checkout -b release/${{ github.event.inputs.version }}
+          mvn -B release:prepare -DreleaseVersion=${{ github.event.inputs.version }} -Dmaven.wagon.httpconnectionManager.ttlSeconds=60
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create pull request
+        uses: repo-sync/pull-request@v2
+        with:
+          source_branch: "release/${{ github.event.inputs.version }}"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create a new github release
+        uses: ncipollo/release-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          artifacts: /home/runner/work/blueflood/blueflood/blueflood-all/target/blueflood-all-${{ github.event.inputs.version }}-jar-with-dependencies.jar
+          tag: "blueflood-${{ github.event.inputs.version }}"
