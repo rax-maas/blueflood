@@ -130,6 +130,7 @@ public class DiscoveryWriter extends FunctionWithThreadPool<List<List<IMetric>>,
         for (String tenant : tenants) {
             newLocatorsThrottlePerTenant.get(tenant).cleanUp();
         }
+        boolean isThrottlingGlobally = newLocatorsThrottle.size() >= maxNewLocatorsPerMinute;
         List<IMetric> willIndex = new ArrayList<IMetric>();
         for (List<IMetric> list : input) {
             // make mockito happy.
@@ -139,7 +140,6 @@ public class DiscoveryWriter extends FunctionWithThreadPool<List<List<IMetric>>,
 
             for (IMetric m : list) {
                 boolean isAlreadySeen = LocatorCache.getInstance().isLocatorCurrentInDiscoveryLayer(m.getLocator());
-                boolean isThrottlingGlobally = newLocatorsThrottle.size() >= maxNewLocatorsPerMinute;
                 Cache<Locator, Locator> tenantThrottle = newLocatorsThrottlePerTenant.get(m.getLocator().getTenantId());
                 boolean isTenantThrottled = tenantThrottle.size() >= maxNewLocatorsPerMinutePerTenant;
                 if (!isAlreadySeen && !isThrottlingGlobally && !isTenantThrottled) {
