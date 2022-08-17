@@ -205,7 +205,6 @@ public class HttpMetricsIngestionServer {
         private final TypeAndUnitProcessor typeAndUnitProcessor;
         private final RollupTypeCacher rollupTypeCacher;
         private final DiscoveryWriter discoveryWriter;
-        private final TokenDiscoveryWriter tokenDiscoveryWriter;
         private final BatchWriter batchWriter;
         private IncomingMetricMetadataAnalyzer metricMetadataAnalyzer =
             new IncomingMetricMetadataAnalyzer(MetadataCache.getInstance());
@@ -248,16 +247,6 @@ public class HttpMetricsIngestionServer {
                     .build());
             discoveryWriter.withLogger(log);
 
-            tokenDiscoveryWriter =
-                new TokenDiscoveryWriter(
-                    new ThreadPoolBuilder()
-                        .withName("Metric Token Discovery Writing")
-                        .withCorePoolSize(Configuration.getInstance().getIntegerProperty(CoreConfig.TOKEN_DISCOVERY_WRITER_MIN_THREADS))
-                        .withMaxPoolSize(Configuration.getInstance().getIntegerProperty(CoreConfig.TOKEN_DISCOVERY_WRITER_MAX_THREADS))
-                        .withUnboundedQueue()
-                        .build());
-            tokenDiscoveryWriter.withLogger(log);
-
             // RollupRunnable keeps a static one of these. It would be nice if we could register it and share.
             MetadataCache rollupTypeCache = MetadataCache.createLoadingCacheInstance(
                     new TimeValue(48, TimeUnit.HOURS),
@@ -274,10 +263,6 @@ public class HttpMetricsIngestionServer {
             rollupTypeCacher.apply(collection);
             List<List<IMetric>> batches = collection.splitMetricsIntoBatches(BATCH_SIZE);
             discoveryWriter.apply(batches);
-
-            if (EXP_TOKEN_SEARCH_IMPROVEMENTS)
-                tokenDiscoveryWriter.processTokens(batches);
-
             return batchWriter.apply(batches);
         }
     }
