@@ -1,9 +1,8 @@
-# Run unit tests on each master merge for display in a README badge and on each PR as a requirement for merging.
+# Run unit tests on each master merge for display in a README badge.
 name: Unit tests
 on:
   push:
     branches: [master]
-  pull_request:
 jobs:
   test:
     runs-on: ubuntu-latest
