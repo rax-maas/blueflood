@@ -60,7 +60,7 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
     /**
      * Starts an embedded Elasticsearch that these tests can run against.
      */
-    @BeforeClass
+//    @BeforeClass
     public static void startElasticsearch() {
         elasticsearchTestServer = new ElasticsearchTestServer();
         elasticsearchTestServer.start();
@@ -122,7 +122,7 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
             deleteAllDocuments(typeToEmpty);
     }
 
-    @AfterClass
+//    @AfterClass
     public static void stopElasticsearch() {
         elasticsearchTestServer.stop();
     }
