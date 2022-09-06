@@ -4,7 +4,6 @@ MAINTAINER gaurav.bajaj@rackspace.com
 MAINTAINER ryan.stewart@rackspace.com
 
 RUN apt-get update && apt-get install -y \
-    git \
     netcat \
     python3 \
     python3-dev \
