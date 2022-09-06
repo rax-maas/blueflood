@@ -20,6 +20,8 @@ Here's the list of ENV variables and their description.
 | ELASTICSEARCH_HOST | IP address of Elasticsearch node. (Required) | null |
 | DEBUG_JAVA | Whether to enable remote JVM debugging on port 5005 | false |
 | DEBUG_JAVA_SUSPEND | Whether to suspend JVM startup until a debugger attaches to the debug port | false |
+| INIT_CASSANDRA | Whether to run the init script to create the Cassandra schema at startup | true |
+| INIT_ELASTICSEARCH | Whether to run the init script to create the Elasticsearch indexes at startup | true |
 | MAX_ROLLUP_READ_THREADS | Maximum number of read threads participating in rolling up the metrics | 20 |
 | MAX_ROLLUP_WRITE_THREADS | Maximum number of write threads participating in rolling up the metrics | 5 |
 | MAX_CASSANDRA_CONNECTIONS | Maximum number of connections with each Cassandra node | 70 |
