@@ -17,24 +17,29 @@
 package com.rackspacecloud.blueflood.service;
 
 import org.junit.*;
+import org.junit.runner.RunWith;
+import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.mockito.Mockito.when;
+
+// Powermock because we need to test different behaviors of System.getenv(), and there's no System.setenv(). It's then
+// more convenient to also mock System.getProperty(). Expect new tests to use mocks. Old tests use System.setProperty()
+// and rely on having a finally block with a System.clearProperty() for cleanup.
+@RunWith(PowerMockRunner.class)
+@PrepareForTest(Configuration.class)
 public class ConfigurationTest {
 
     @Before
     public void setup() throws IOException {
-        Configuration.getInstance().init();
-    }
-
-    @After
-    public void tearDown() throws IOException {
-
-        // this resets the configuration after each test method invocation
         Configuration.getInstance().init();
     }
 
@@ -234,6 +239,17 @@ public class ConfigurationTest {
         }
     }
 
+    @Test
+    public void testEnvVarsOverrideSystemPropertiesAndConfigurationValues() {
+        Configuration config = Configuration.getInstance();
+        PowerMockito.mockStatic(System.class);
+        String keyName = CoreConfig.MAX_CASSANDRA_CONNECTIONS.toString();
+        assertThat(config.getStringProperty(CoreConfig.MAX_CASSANDRA_CONNECTIONS), equalTo("75"));
+        when(System.getProperty(keyName)).thenReturn("system property");
+        when(System.getenv(keyName)).thenReturn("environment");
+        assertThat(config.getStringProperty(CoreConfig.MAX_CASSANDRA_CONNECTIONS), equalTo("environment"));
+    }
+
     // originals, a.k.a. backup keys
 
     @Test
@@ -395,7 +411,7 @@ public class ConfigurationTest {
     }
 
     @Test
-    public void testWhenSyspropExistsAndTheKeyIsPresentInConfigAndTheBackupKeyIsntPresentThenReturnValueShouldBeSyspropValueAndNoBackupCreated() {
+    public void testWhenSyspropExistsAndTheKeyIsPresentInConfigAndTheBackupKeyIsntPresentThenReturnValueShouldBeSyspropValueAndBackupIsCreated() {
 
         // arrange
         final String keyName = "some-key-name";
@@ -430,6 +446,36 @@ public class ConfigurationTest {
             config.clearProperty(keyName2);
             System.clearProperty(keyName);
         }
+    }
+
+    @Test
+    public void testWhenEnvVarExistsAndTheKeyIsPresentInConfigAndTheBackupKeyIsntPresentThenReturnValueShouldBeEnvVarValueAndBackupIsCreated() {
+        // arrange
+        final String keyName = "some-key-name";
+        final String keyName2 = "original." + keyName;
+        Configuration config = Configuration.getInstance();
+        PowerMockito.mockStatic(System.class);
+
+        // precondition
+        assertThat(config.containsKey(keyName), is(false));
+        assertThat(config.containsKey(keyName2), is(false));
+
+        // act
+        when(System.getenv(keyName)).thenReturn("some value");
+        config.setProperty(keyName, "some other value");
+
+        // assert
+
+        // return value is the env var
+        assertThat(config.getStringProperty(keyName), equalTo("some value"));
+
+        // the key is present and its value has been changed to that of the env var
+        assertThat(config.containsKey(keyName), is(true));
+        assertThat(config.getRawStringProperty(keyName), equalTo("some value"));
+
+        // the backup key has been added and its value is the previously-set value of the (non-backup) key
+        assertThat(config.containsKey(keyName2), is(true));
+        assertThat(config.getRawStringProperty(keyName2), equalTo("some other value"));
     }
 
     @Test

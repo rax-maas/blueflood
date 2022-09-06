@@ -22,6 +22,19 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.*;
 
+/**
+ * Manages configuration for the app: things like database hosts, thread pool sizes, cache TTLs, etc. Every individual
+ * config item is represented by an enum type that implements {@link ConfigDefaults}, like {@link CoreConfig}. Each enum
+ * value is the name of a configuration setting and has a default value. Configuration property names are all uppercase
+ * with words separated by underscores. Default values can be overridden in three ways. In increasing order of
+ * precedence, those are: a config file, system properties, and environment variables. Property value resolution is
+ * lazy. That is, the value for a given property is only resolved when the value is requested, not when an instance of
+ * this class is first created.
+ *
+ * In theory, property values are mutable over time. There are methods to change and clear the values of properties. In
+ * reality, these methods are used only for testing. In a production setting, properties have one value for the lifetime
+ * of the application process.
+ */
 public class Configuration {
     private static final Properties defaultProps = new Properties();
     private static Properties props;
@@ -86,10 +99,27 @@ public class Configuration {
         return getStringProperty(name.toString());
     }
     public String getStringProperty(String name) {
-        if (System.getProperty(name) != null && !props.containsKey("original." + name)) {
-            if (props.containsKey(name))
-                props.put("original." + name, props.get(name));
-            props.put(name, System.getProperty(name));
+        // If a backup of the property exists, just return the current value. We take it as a sign that we've already
+        // resolved this property fully and don't need to do it again. (I guess this is for efficiency? But take note
+        // that for any property NOT overridden, which is probably most of them, we go through the whole thing every
+        // time anyway! Consider changing this to either: resolve every property every time, or resolve each property
+        // exactly once by keeping track of them for real. Consider: it's highly unlikely that env or system properties
+        // will change after being set in production.)
+        String backupKey = "original." + name;
+        String currentValue = props.getProperty(name);
+        if (props.containsKey(backupKey)) return currentValue;
+        // Otherwise, resolve the property in precedence order: env vars, system properties, config file, defaults
+        String overrideValue = System.getenv(name);
+        if (overrideValue == null) {
+            overrideValue = System.getProperty(name);
+        }
+        if (overrideValue != null) {
+            props.put(name, overrideValue);
+            // When overriding, back up the current value, if any. This also serves as an indicator that we've already
+            // resolved the property and don't need to search for it again.
+            if (currentValue != null) {
+                props.put(backupKey, currentValue);
+            }
         }
         return props.getProperty(name);
     }
