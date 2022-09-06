@@ -37,7 +37,7 @@ jobs:
         uses: repo-sync/pull-request@v2
         with:
           source_branch: "release/${{ github.event.inputs.version }}"
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.RELEASE_PR_WORKFLOW_TOKEN }}
       - name: Create a new github release
         uses: ncipollo/release-action@v1
         with:
