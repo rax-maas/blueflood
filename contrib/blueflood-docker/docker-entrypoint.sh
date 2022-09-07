@@ -70,13 +70,19 @@ if [ "$INIT_ELASTICSEARCH" != false ]; then
   /ES-Setup/init-es.sh -u $ELASTICSEARCH_HOST:9200 -r false
 fi
 
-printenv > blueflood.conf
+if [ -z "$BLUEFLOOD_CONF_LOCATION" ]; then
+  BLUEFLOOD_CONF_LOCATION="./blueflood.conf"
+  printenv > blueflood.conf
+fi
 
-cat > blueflood-log4j.properties << EOL
+if [ -z "$BLUEFLOOD_LOG4J_CONF_LOCATION" ]; then
+  BLUEFLOOD_LOG4J_CONF_LOCATION="./blueflood-log4j.properties"
+  : ${BLUEFLOOD_LOG_LEVEL=INFO}
+  cat > blueflood-log4j.properties << EOL
 log4j.appender.console=org.apache.log4j.ConsoleAppender
 log4j.appender.console.layout=org.apache.log4j.PatternLayout
 log4j.appender.console.layout.ConversionPattern=%d{yyyy-MM-dd HH:mm:ss} %-5p %-20.20c{1}:%-3L - %m%n
-log4j.logger.com.rackspacecloud.blueflood=$LOG_LEVEL # Change to DEBUG for more output from Blueflood
+log4j.logger.com.rackspacecloud.blueflood=$BLUEFLOOD_LOG_LEVEL
 log4j.logger.httpclient.wire.header=WARN
 log4j.logger.httpclient.wire.content=WARN
 log4j.logger.org.apache.http.client.protocol=INFO
@@ -85,16 +91,18 @@ log4j.logger.org.apache.http.impl=INFO
 log4j.logger.org.apache.http.headers=INFO
 log4j.rootLogger=INFO, console
 EOL
+fi
 
 dbg=""
 suspend="n"
 [ "$DEBUG_JAVA_SUSPEND" = true ] && suspend="y"
 [ "$DEBUG_JAVA" = true ] && dbg="-agentlib:jdwp=transport=dt_socket,server=y,suspend=$suspend,address=5005"
 
+echo "Starting Blueflood"
 exec java \
         $dbg \
-        -Dblueflood.config=file:./blueflood.conf \
-        -Dlog4j.configuration=file:./blueflood-log4j.properties \
+        -Dblueflood.config=file://$BLUEFLOOD_CONF_LOCATION \
+        -Dlog4j.configuration=file://$BLUEFLOOD_LOG4J_CONF_LOCATION \
         -Xms$MIN_HEAP_SIZE \
         -Xmx$MAX_HEAP_SIZE \
         -Dcom.sun.management.jmxremote.authenticate=false \
