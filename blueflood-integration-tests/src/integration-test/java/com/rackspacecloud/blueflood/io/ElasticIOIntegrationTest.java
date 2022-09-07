@@ -50,7 +50,6 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.assertEquals;
 
 @RunWith( JUnitParamsRunner.class )
-@Ignore
 public class ElasticIOIntegrationTest extends BaseElasticTest {
 
     protected ElasticIO elasticIO;

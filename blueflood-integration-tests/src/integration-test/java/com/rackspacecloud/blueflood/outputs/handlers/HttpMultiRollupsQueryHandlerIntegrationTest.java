@@ -42,9 +42,6 @@ public class HttpMultiRollupsQueryHandlerIntegrationTest extends HttpIntegration
     private final String tenant_id = "333333";
 
     @Test
-    @Ignore
-    // Ignored this testcase because it is interfering with HttpRollupsQueryHandlerIntegrationTest.testHttpRollupsQueryHandler test which makes both of the testcases run result to fail.
-    // This behavior is intermittent because on newer OS it is failing but on older version these are working fine.
     public void testHttpMultiRollupsQueryHandler() throws Exception {
         // ingest and rollup metrics and verify CF points and elastic search indexes
         String postfix = getPostfix();
@@ -142,11 +139,12 @@ public class HttpMultiRollupsQueryHandlerIntegrationTest extends HttpIntegration
 
             JsonParser jsonParser = new JsonParser();
             JsonObject responseObject = jsonParser.parse( responseContent ).getAsJsonObject();
-
-            if( responseObject.getAsJsonArray( "metrics" ).size() == size )
+            JsonArray jsonArray = responseObject.getAsJsonArray("metrics").get(0).getAsJsonObject().getAsJsonArray("data");
+            if( responseObject.getAsJsonArray( "metrics" ).size() == size && jsonArray.size()!=0)
                 return responseObject;
 
-            Thread.currentThread().sleep( 5000 );
+            Thread.currentThread().sleep( 1000 );
+            System.out.println("Data not found. Will retry again!");
         }
 
         return null;
