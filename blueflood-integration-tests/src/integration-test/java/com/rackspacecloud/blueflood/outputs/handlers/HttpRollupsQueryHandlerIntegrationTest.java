@@ -39,9 +39,6 @@ public class HttpRollupsQueryHandlerIntegrationTest extends HttpIntegrationTestB
     private final String tenant_id = "333333";
 
     @Test
-    @Ignore
-    // Ignored this testcase because it is interfering with HttpMultiRollupsQueryHandlerIntegrationTest.testHttpMultiRollupsQueryHandler test which makes both of the testcases run result to fail.
-    // This behavior is intermittent because on newer OS it is failing but on older version these are working fine.
     public void testHttpRollupsQueryHandler() throws Exception {
 
         String postfix = getPostfix();
@@ -121,8 +118,7 @@ public class HttpRollupsQueryHandlerIntegrationTest extends HttpIntegrationTestB
             }
 
             System.out.println(String.format("Data for metric %s is not found, sleeping and retrying, payload: %s", metric_name, responseContent));
-            Thread.currentThread().sleep( 5000 );
-
+            Thread.currentThread().sleep( 1000 );
         }
         return null;
     }

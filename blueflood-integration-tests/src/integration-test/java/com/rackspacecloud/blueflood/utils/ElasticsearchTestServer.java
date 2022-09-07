@@ -94,6 +94,7 @@ public class ElasticsearchTestServer {
 
     public void startTlrx() {
         esSetup = new EsSetup();
+        esSetup.execute(EsSetup.deleteAll()); //Deletes all the index or documents before creating new ones.
         esSetup.execute(EsSetup.createIndex(ElasticIO.ELASTICSEARCH_INDEX_NAME_WRITE)
                 .withSettings(EsSetup.fromClassPath("index_settings.json"))
                 .withMapping("metrics", EsSetup.fromClassPath("metrics_mapping.json")));
