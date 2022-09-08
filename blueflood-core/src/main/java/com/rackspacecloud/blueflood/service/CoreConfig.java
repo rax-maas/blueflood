@@ -59,6 +59,40 @@ public enum CoreConfig implements ConfigDefaults {
     MAX_ROLLUP_READ_THREADS("20"),
     MAX_ROLLUP_WRITE_THREADS("5"),
 
+    // Discovery refers to indexing the details of locators so that they're easily searchable. Discovery modules
+    // implement specific discovery mechanisms. Elasticsearch is an example of a discovery backend. Locators are indexed
+    // in Elasticsearch and retrieved later to fulfill query requests.
+    //
+    // To avoid overwhelming a backend service like Elasticsearch, in-memory caches keep track of details that have
+    // already been written. For any given time series identified by a unique locator, that time series only needs
+    // discovery data written one time, so after writing a locator, the fact that it's written is cached, and we don't
+    // write the same locator again. See the LOCATOR_CACHE_* and TOKEN_CACHE_* settings for configuring the
+    // discovery-related caches.
+    //
+    // Blueflood startup is a special case that has to be dealt with. At startup, the caches are empty, so Blueflood
+    // treats every locator it sees as new. This can easily lead to an excessive number of calls to a discovery backend
+    // like Elasticsearch. In addition to the caches, Blueflood has discovery throttling to help avoid this case. This
+    // throttling can be used to slow down discovery writes on ingestion. Slowing it down reduces overall impact on
+    // Elasticsearch performance. The tradeoff is that it slows the rate at which new locators are discovered, so they
+    // can't be queried immediately.
+
+    // Sets the maximum number of new locators to write to discovery backends per minute. This is a global limit that
+    // covers all tenants. It's not a fair throttle, meaning that if one tenant floods the system and maxes out the
+    // throttle, all other tenants will be throttled as well. As such, set this as high as you can without causing
+    // instability in your discovery backends. The configured number isn't precise. Ingestion requests are always fully
+    // processed, and throttling happens between requests.
+    //
+    // When setting the global throttle, be sure to take into account how many Blueflood nodes you have, as well as how
+    // many of them typically restart at the same time. This corresponds directly to the load Blueflood will put on
+    // discovery backends while the caches fill at startup. Effectively, this setting should be something like:
+    // (max acceptable backend writes) / (number of Blueflood nodes that can start/restart simultaneously)
+    DISCOVERY_MAX_NEW_LOCATORS_PER_MINUTE("50000"),
+    // Sets the maximum number of new locators to write to discovery backends per tenant per minute. This is a fair
+    // throttle that will throttle each tenant independently. Normally you'll set this significantly lower than
+    // DISCOVERY_MAX_NEW_LOCATORS_PER_MINUTE to give all tenants a fair chance of their metrics being processed for
+    // discovery. The global throttle overrides the per-tenant throttle. Even if a tenant hasn't reached its per-tenant
+    // limit, the global throttle can halt the tenant's discovery writes.
+    DISCOVERY_MAX_NEW_LOCATORS_PER_MINUTE_PER_TENANT("500"),
     DISCOVERY_WRITER_MIN_THREADS("5"),
     DISCOVERY_WRITER_MAX_THREADS("50"),
 

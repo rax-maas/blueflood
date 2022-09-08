@@ -8,6 +8,17 @@
 #    Local ES: ./init-es.sh
 #    ES on OR: ./init-es.sh -u <url for OR:ES> -n <username> -p <password> -r <boolean to reset>
 
+# Main features of this script that'll stop working when we upgrade Elasticsearch:
+#
+# 1) Mapping types are deprecated in version 7 and removed in version 8. They'll still work up to that point but may
+# require you to pass a query parameter with API calls. See
+# https://www.elastic.co/guide/en/elasticsearch/reference/7.17/removal-of-types.html
+#
+# 2) The "string" type is removed in version 5. It's replaced by two types: "text" and "keyword". See
+# https://www.elastic.co/blog/strings-are-dead-long-live-strings
+#
+# These things are in the accompanying JSON files, not in the script itself.
+
 # Set default ES URL
 ELASTICSEARCH_URL=http://localhost:9200
 
@@ -54,67 +65,79 @@ if [ "$ES_RESET" = false ]; then
     fi
 fi
 
-
+echo '# Verify config files are present'
 checkFile index_settings.json
 checkFile metrics_mapping.json
 checkFile events_mapping.json
 checkFile tokens_mapping.json
 
-#delete the old indices
-curl $AUTH -XDELETE $ELASTICSEARCH_URL'/blueflood_initialized_marker/' >& /dev/null
-curl $AUTH -XDELETE $ELASTICSEARCH_URL'/events/' >& /dev/null
-curl $AUTH -XDELETE $ELASTICSEARCH_URL'/metric_metadata/' >& /dev/null
-curl $AUTH -XDELETE $ELASTICSEARCH_URL'/metric_metadata_v2/' >& /dev/null
-curl $AUTH -XDELETE $ELASTICSEARCH_URL'/metric_metadata_write/' >& /dev/null
-curl $AUTH -XDELETE $ELASTICSEARCH_URL'/metric_tokens/' >& /dev/null
+echo '# Wipe existing indexes ("not found" errors are okay)'
+curl $AUTH -XDELETE $ELASTICSEARCH_URL'/blueflood_initialized_marker/'
+echo ''
+curl $AUTH -XDELETE $ELASTICSEARCH_URL'/events/'
+echo ''
+curl $AUTH -XDELETE $ELASTICSEARCH_URL'/metric_metadata/'
+echo ''
+curl $AUTH -XDELETE $ELASTICSEARCH_URL'/metric_metadata_v2/'
+echo ''
+curl $AUTH -XDELETE $ELASTICSEARCH_URL'/metric_tokens/'
+echo ''
 
-#create the new indices
+echo '# Create indexes'
 curl $AUTH -XPUT $ELASTICSEARCH_URL'/metric_metadata'
+echo ''
 curl $AUTH -XPUT $ELASTICSEARCH_URL'/metric_tokens'
+echo ''
 curl $AUTH -XPUT $ELASTICSEARCH_URL'/events'
+echo ''
 
-#create the aliases
-curl $AUTH -XPOST $ELASTICSEARCH_URL'/_aliases' -d '
+JSON=(-H 'Content-Type: application/json')
+echo '# Create aliases'
+curl $AUTH "${JSON[@]}" -XPOST $ELASTICSEARCH_URL'/_aliases' -d '
 {
     "actions" : [
         { "add" : { "alias" : "metric_metadata_write", "index" : "metric_metadata" } }
     ]
 }'
-curl $AUTH -XPOST $ELASTICSEARCH_URL'/_aliases' -d '
+echo ''
+curl $AUTH "${JSON[@]}" -XPOST $ELASTICSEARCH_URL'/_aliases' -d '
 {
     "actions" : [
         { "add" : { "alias" : "metric_metadata_read", "index" : "metric_metadata" } }
     ]
 }'
-curl $AUTH -XPOST $ELASTICSEARCH_URL'/_aliases' -d '
+echo ''
+curl $AUTH "${JSON[@]}" -XPOST $ELASTICSEARCH_URL'/_aliases' -d '
 {
     "actions" : [
         { "add" : { "alias" : "metric_tokens_write", "index" : "metric_tokens" } }
     ]
 }'
-curl $AUTH -XPOST $ELASTICSEARCH_URL'/_aliases' -d '
+echo ''
+curl $AUTH "${JSON[@]}" -XPOST $ELASTICSEARCH_URL'/_aliases' -d '
 {
     "actions" : [
         { "add" : { "alias" : "metric_tokens_read", "index" : "metric_tokens" } }
     ]
 }'
+echo ''
 
-#add index settings to metric_metadata index
+echo '# Add index settings to metric_metadata'
 curl $AUTH -XPOST $ELASTICSEARCH_URL'/metric_metadata/_close'
-curl $AUTH -XPUT $ELASTICSEARCH_URL'/metric_metadata/_settings' -d @$ABSOLUTE_PATH/index_settings.json
+echo ''
+curl $AUTH "${JSON[@]}" -XPUT $ELASTICSEARCH_URL'/metric_metadata/_settings' -d @$ABSOLUTE_PATH/index_settings.json
+echo ''
 curl $AUTH -XPOST $ELASTICSEARCH_URL'/metric_metadata/_open'
+echo ''
 
-#add mappings to metric_metadata index
-curl $AUTH -XDELETE $ELASTICSEARCH_URL'/metric_metadata/_mapping/metrics' >& /dev/null
-curl $AUTH -XPUT $ELASTICSEARCH_URL'/metric_metadata/_mapping/metrics' -d @$ABSOLUTE_PATH/metrics_mapping.json
+echo '# Add mappings to indexes'
+curl $AUTH "${JSON[@]}" -XPUT $ELASTICSEARCH_URL'/metric_metadata/_mapping/metrics' -d @$ABSOLUTE_PATH/metrics_mapping.json
+echo ''
+curl $AUTH "${JSON[@]}" -XPUT $ELASTICSEARCH_URL'/metric_tokens/_mapping/tokens' -d @$ABSOLUTE_PATH/tokens_mapping.json
+echo ''
+curl $AUTH "${JSON[@]}" -XPUT $ELASTICSEARCH_URL'/events/_mapping/graphite_event' -d @$ABSOLUTE_PATH/events_mapping.json
+echo ''
 
-#add mappings to metric_tokens index
-curl $AUTH -XDELETE $ELASTICSEARCH_URL'/metric_tokens/_mapping/tokens' >& /dev/null
-curl $AUTH -XPUT $ELASTICSEARCH_URL'/metric_tokens/_mapping/tokens' -d @$ABSOLUTE_PATH/tokens_mapping.json
-
-#add mappings to graphite_event index
-curl $AUTH -XDELETE $ELASTICSEARCH_URL'/events/_mapping/graphite_event' >& /dev/null
-curl $AUTH -XPUT $ELASTICSEARCH_URL'/events/_mapping/graphite_event' -d @$ABSOLUTE_PATH/events_mapping.json
-
-#mark ES initialized for Blueflood by creating a marker index
+echo '# Create marker index so we know this script has run'
 curl $AUTH -XPUT $ELASTICSEARCH_URL'/blueflood_initialized_marker'
+echo ''

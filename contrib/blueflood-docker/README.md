@@ -10,27 +10,58 @@ In contrast to forebearers such as [CarbonDB](http://carbondb.org/) or [RRDTool]
 
 ## How to run this container?
 
-This image comes with a set of default environment variables, which runs the Blueflood container decently. If you want to run it in production environment or with some other settings, you can always adjust to taste.
+You need a Cassandra and Elasticsearch instance for Blueflood to connect to. I recommend following the [10-Minute Guide
+on the Blueflood wiki](https://github.com/rax-maas/blueflood/wiki/10-Minute-Guide) for a quick startup. After that,
+there are two main ways you can run this image that I'll call quick mode and full mode.
 
-Here's the list of ENV variables and their description.
+Quick mode auto-inits Cassandra and Elasticsearch at startup and lets you configure Blueflood via environment variables.
+
+Full mode lets you specify a custom blueflood config file and log4j config file to use instead of relying on keeping
+everything in the environment. Auto-initializing Cassandra and Elasticsearch can be disabled via environment variables.
+Blueflood properties set in the environment still override what's in the config file.
+
+In either case, here are the primary environment variables to consider when starting a Blueflood container:
+
+| Variable | Description | default |
+| ----- | ------- | --------- |
+| DEBUG_JAVA | Whether to enable remote JVM debugging on port 5005 | false |
+| DEBUG_JAVA_SUSPEND | Whether to suspend JVM startup until a debugger attaches to the debug port | false |
+| INIT_CASSANDRA | Whether to run the init script to create the Cassandra schema at startup | true |
+| INIT_ELASTICSEARCH | Whether to run the init script to create the Elasticsearch indexes at startup | true |
+| BLUEFLOOD_CONF_LOCATION | Path to a Blueflood configuration file inside the container; if not set, all env variables are used as Blueflood properties | - |
+| BLUEFLOOD_LOG4J_CONF_LOCATION | Path to a log4j configuration file inside the container; if not set, a default config file is created to log to stdout | - |
+| BLUEFLOOD_LOG_LEVEL | Only if *not* using BLUEFLOOD_LOG4J_CONF_LOCATION, set the log level for all Blueflood classes | INFO |
+
+To use "full mode", set an environment like
+
+```
+INIT_CASSANDRA=false
+INIT_ELASTICSEARCH=false
+BLUEFLOOD_CONF_LOCATION=<path to mounted conf file>
+```
+
+Blueflood is configured by its configuration file and environment variables. A given config setting in the environment
+overrides the same setting in the config file. Here are some additional settings to help you get started.
 
 | Variable | Description | default |
 | ----- | ------- | --------- |
 | CASSANDRA_HOST | IP address of Cassandra seed. (Required) | null |
 | ELASTICSEARCH_HOST | IP address of Elasticsearch node. (Required) | null |
-| DEBUG_JAVA | Whether to enable remote JVM debugging on port 5005 | false |
-| DEBUG_JAVA_SUSPEND | Whether to suspend JVM startup until a debugger attaches to the debug port | false |
 | MAX_ROLLUP_READ_THREADS | Maximum number of read threads participating in rolling up the metrics | 20 |
 | MAX_ROLLUP_WRITE_THREADS | Maximum number of write threads participating in rolling up the metrics | 5 |
 | MAX_CASSANDRA_CONNECTIONS | Maximum number of connections with each Cassandra node | 70 |
 | INGEST_MODE | Whether to start the Ingest service | true |
 | ROLLUP_MODE | Whether to start the Rollup service | true |
 | QUERY_MODE | Whether to start the Query service | true |
-| LOG_LEVEL | BF services Logging Level. See here for detailed description: https://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/Level.html | INFO |
 | MIN_HEAP_SIZE | Initial size of the heap to be allocated to BF process. | 1G |
 | MAX_HEAP_SIZE | Maximum size of the heap to be allocated to BF process. | 1G |
 | GRAPHITE_HOST | IP address of the Graphite host to monitor your container | " " |
 | GRAPHITE_PORT | Line port of the Graphite host to monitor your container | 2003 |
 | GRAPHITE_PREFIX | Prefix for graphite metrics. | Host name of the container. |
 
-If you want to play with the these variables at PRO level, here's the list of all the properties that you can use as ENV variables: https://github.com/rackerlabs/blueflood/blob/master/blueflood-core/src/main/java/com/rackspacecloud/blueflood/service/CoreConfig.java
+If you want to play with the these variables at PRO level, find all possible settings in the following config classes:
+
+- [CoreConfig](https://github.com/rax-maas/blueflood/blob/master/blueflood-core/src/main/java/com/rackspacecloud/blueflood/service/CoreConfig.java)
+- [ElasticIOConfig](https://github.com/rax-maas/blueflood/blob/master/blueflood-elasticsearch/src/main/java/com/rackspacecloud/blueflood/service/ElasticIOConfig.java)
+- [HttpConfig](https://github.com/rax-maas/blueflood/blob/master/blueflood-http/src/main/java/com/rackspacecloud/blueflood/service/HttpConfig.java)
+- [TtlConfig](https://github.com/rax-maas/blueflood/blob/master/blueflood-core/src/main/java/com/rackspacecloud/blueflood/service/TtlConfig.java)

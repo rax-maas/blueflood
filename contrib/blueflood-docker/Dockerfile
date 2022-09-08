@@ -4,7 +4,6 @@ MAINTAINER gaurav.bajaj@rackspace.com
 MAINTAINER ryan.stewart@rackspace.com
 
 RUN apt-get update && apt-get install -y \
-    git \
     netcat \
     python3 \
     python3-dev \
@@ -54,7 +53,6 @@ ENV EVENTS_MODULES=com.rackspacecloud.blueflood.io.EventElasticSearchIO
 
 ENV ZOOKEEPER_CLUSTER=NONE
 
-ENV LOG_LEVEL=INFO
 ENV MIN_HEAP_SIZE=1G
 ENV MAX_HEAP_SIZE=1G
 

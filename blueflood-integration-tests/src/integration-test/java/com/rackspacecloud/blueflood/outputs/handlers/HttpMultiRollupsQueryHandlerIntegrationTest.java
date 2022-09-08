@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.http.HttpResponse;
 import org.apache.http.util.EntityUtils;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -138,11 +139,12 @@ public class HttpMultiRollupsQueryHandlerIntegrationTest extends HttpIntegration
 
             JsonParser jsonParser = new JsonParser();
             JsonObject responseObject = jsonParser.parse( responseContent ).getAsJsonObject();
-
-            if( responseObject.getAsJsonArray( "metrics" ).size() == size )
+            JsonArray jsonArray = responseObject.getAsJsonArray("metrics").get(0).getAsJsonObject().getAsJsonArray("data");
+            if( responseObject.getAsJsonArray( "metrics" ).size() == size && jsonArray.size()!=0)
                 return responseObject;
 
-            Thread.currentThread().sleep( 5000 );
+            Thread.currentThread().sleep( 1000 );
+            System.out.println("Data not found. Will retry again!");
         }
 
         return null;

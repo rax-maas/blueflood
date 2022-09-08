@@ -24,6 +24,10 @@ public class HttpMetricsIndexHandler implements HttpRequestHandler {
     private static final Logger log = LoggerFactory.getLogger(HttpMetricsIndexHandler.class);
     private DiscoveryIO discoveryHandle;
 
+    public HttpMetricsIndexHandler() {
+        this.discoveryHandle = ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES);
+    }
+
     @Override
     public void handle(ChannelHandlerContext ctx, FullHttpRequest request) {
 
@@ -40,9 +44,6 @@ public class HttpMetricsIndexHandler implements HttpRequestHandler {
                     HttpResponseStatus.BAD_REQUEST);
             return;
         }
-
-        // default discoveryHandle to DISCOVERY_MODULES
-        discoveryHandle = (DiscoveryIO) ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES);
 
         if (discoveryHandle == null) {
             sendResponse(ctx, request, null, HttpResponseStatus.NOT_FOUND);
