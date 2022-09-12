@@ -1,0 +1,28 @@
+name: "Run tests on pull requests"
+
+on:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        java-version: [ 8 ]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-java@v2
+        with:
+          distribution: 'temurin'
+          java-version: ${{ matrix.java-version }}
+          cache: 'maven'
+      - name: Build and test
+        run: |
+          mvn clean install
+          mvn jacoco:report jacoco:report-integration
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: test-reports
+          path: |
+            */target/site
