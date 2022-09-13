@@ -23,13 +23,11 @@ import java.util.HashMap;
 public class CanIUseSpringDataIntegrationTest {
     protected ElasticIO elasticIO;
     protected ElasticTokensIO elasticTokensIO;
-    private static ElasticsearchTestServer elasticsearchTestServer;
     private ElasticsearchOperations elasticsearchOperations;
 
     @BeforeClass
     public static void startElasticsearch() {
-        elasticsearchTestServer = new ElasticsearchTestServer();
-        elasticsearchTestServer.start();
+        ElasticsearchTestServer.getInstance().ensureStarted();
     }
 
     @Test
@@ -37,9 +35,9 @@ public class CanIUseSpringDataIntegrationTest {
         Settings settings = ImmutableSettings.builder()
                 // What kind of settings are there?
                 .build();
-        int port = elasticsearchTestServer.getElasticsearchTransportPort();
+//        int port = ElasticsearchTestServer.getInstance().getElasticsearchTransportPort();
         TransportClient client = new TransportClient(settings)
-                .addTransportAddress(new InetSocketTransportAddress("localhost", port));
+                .addTransportAddress(new InetSocketTransportAddress("localhost", 9300));
         ObjectMapper objectMapper = new ObjectMapper();
         elasticsearchOperations = new ElasticsearchTemplate(client);
         elasticsearchOperations.createIndex("metric-tagged");
@@ -95,10 +93,5 @@ public class CanIUseSpringDataIntegrationTest {
             System.out.println(response);
             return null;
         }));
-    }
-
-    @AfterClass
-    public static void stopElasticsearch() {
-        elasticsearchTestServer.stop();
     }
 }
