@@ -510,6 +510,7 @@ public class ElasticsearchRestHelper {
         callQ.add(tempUrl);
         int callCount = 0;
         int responseCode = 0;
+        String responseBody = null;
         while (!callQ.isEmpty() && callCount < MAX_CALL_COUNT) {
             callCount++;
             String url = callQ.remove();
@@ -525,9 +526,8 @@ public class ElasticsearchRestHelper {
                 response = closeableHttpClient.execute(httpPost);
                 responseCode = response.getStatusLine().getStatusCode();
                 HttpEntity entity = response.getEntity();
-                String str = EntityUtils.toString(entity);
+                responseBody = EntityUtils.toString(entity);
                 EntityUtils.consume(entity);
-                return new ExecuteResponse(str, responseCode);
             } catch (Exception e) {
                 incrementErrorCounter(methodName);
                 if (response == null) {
@@ -544,8 +544,13 @@ public class ElasticsearchRestHelper {
                 }
             }
         }
-
-        return new ExecuteResponse("", responseCode);
+        if (responseBody == null) {
+            throw new IOException("Failed to reach Elasticsearch after " + MAX_CALL_COUNT + " tries");
+        }
+        if (responseCode > 299) {
+            throw new IOException("Elasticsearch request failed with code " + responseCode + ": " + responseBody);
+        }
+        return new ExecuteResponse(responseBody, responseCode);
     }
 
     private void incrementErrorCounter(String methodName) {
