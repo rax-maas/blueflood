@@ -40,6 +40,7 @@ public class ElasticsearchRestHelper {
     private int numberOfElasticsearchEndpoints;
     private int MAX_CALL_COUNT = 10;
     private int MAX_RESULT_LIMIT = Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_DISCOVERY_RESULT_SIZE);
+    private boolean ELASTICSEARCH_IS_TYPELESS = Configuration.getInstance().getBooleanProperty(ElasticIOConfig.ELASTICSEARCH_IS_TYPELESS);
     private static final Header defaultHttpHeaders[] = {
             new BasicHeader("Accept", "application/json"),
             new BasicHeader("Content-Type", "application/json")
@@ -108,11 +109,22 @@ public class ElasticsearchRestHelper {
     }
 
     public String fetchEvents(String tenantId, Map<String, List<String>> query) throws IOException {
-        String url = String.format("%s/%s/_search?routing=%s&size=%d", EventElasticSearchIO.EVENT_INDEX,
-                EventElasticSearchIO.ES_TYPE, tenantId, MAX_RESULT_LIMIT);
+        String url = String.format("%s/_search?routing=%s&size=%d", EventElasticSearchIO.EVENT_INDEX,
+                tenantId, MAX_RESULT_LIMIT);
 
         String queryDslString = getDslString(tenantId, query);
         return executePost("%s/"+url, queryDslString, "fetchEvents").response;
+    }
+
+    /**
+     * Gets correct type to use for API calls, based on the {@link ElasticIOConfig#ELASTICSEARCH_IS_TYPELESS} setting.
+     */
+    private String esTypeFor(String originalType) {
+        if (ELASTICSEARCH_IS_TYPELESS) {
+            return "_doc";
+        } else {
+            return originalType;
+        }
     }
 
     private String getDslString(String tenantId, Map<String, List<String>> query) {
@@ -185,8 +197,8 @@ public class ElasticsearchRestHelper {
 
     public String fetchDocuments(String indexName, String documentType, String tenantId, String queryDslString) throws IOException {
         //Example URL: localhost:9200/metric_metadata/metrics/_search?routing=123456&size=100
-        String temp = String.format("%s/%s/_search?routing=%s&size=%d",
-                indexName, documentType, tenantId, MAX_RESULT_LIMIT);
+        String temp = String.format("%s/_search?routing=%s&size=%d",
+                indexName, tenantId, MAX_RESULT_LIMIT);
         String urlFormat = "%s/" + temp;
 
         return executePost(urlFormat, queryDslString, "fetchDocuments").response;
@@ -353,7 +365,7 @@ public class ElasticsearchRestHelper {
     public void indexEvent(Map<String, Object> event) throws IOException {
         String eventString = stringifyEvent(event);
         String temp = String.format("%s/%s?routing=%s",
-                EventElasticSearchIO.EVENT_INDEX, EventElasticSearchIO.ES_TYPE,
+                EventElasticSearchIO.EVENT_INDEX, esTypeFor(EventElasticSearchIO.ES_TYPE),
                 event.get(Event.FieldLabels.tenantId.toString()));
 
         String urlFormat = "%s/" + temp;
@@ -379,7 +391,7 @@ public class ElasticsearchRestHelper {
         for(Token token : tokens){
             sb.append(String.format(
                     "{ \"index\" : { \"_index\" : \"%s\", \"_type\" : \"%s\", \"_id\" : \"%s\", \"routing\" : \"%s\" } }%n",
-                    ElasticTokensIO.ELASTICSEARCH_TOKEN_INDEX_NAME_WRITE, ElasticTokensIO.ES_DOCUMENT_TYPE,
+                    ElasticTokensIO.ELASTICSEARCH_TOKEN_INDEX_NAME_WRITE, esTypeFor(ElasticTokensIO.ES_DOCUMENT_TYPE),
                     token.getId(), token.getLocator().getTenantId()));
 
             sb.append(String.format(

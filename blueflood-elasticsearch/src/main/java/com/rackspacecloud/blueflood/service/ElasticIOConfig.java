@@ -20,6 +20,11 @@ public enum ElasticIOConfig implements ConfigDefaults {
     ELASTICSEARCH_HOSTS("127.0.0.1:9300"),
     ELASTICSEARCH_HOST_FOR_REST_CLIENT("127.0.0.1:9200,127.0.0.1:8200,127.0.0.1:8700"),
     ELASTICSEARCH_CLUSTERNAME("elasticsearch"),
+    /*
+     * In Elasticsearch 7, "types" are deprecated, and it affects how you query for data. Set this to "true" if using ES
+     * 7 or higher. See https://www.elastic.co/blog/moving-from-types-to-typeless-apis-in-elasticsearch-7-0
+     */
+    ELASTICSEARCH_IS_TYPELESS("false"),
     ELASTICSEARCH_INDEX_NAME_WRITE("metric_metadata"),
     ELASTICSEARCH_INDEX_NAME_READ("metric_metadata"),
     ELASTICSEARCH_TOKEN_INDEX_NAME_READ("metric_tokens"),
