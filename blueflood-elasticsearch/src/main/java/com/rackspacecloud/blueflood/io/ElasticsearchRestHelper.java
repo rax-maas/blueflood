@@ -62,6 +62,15 @@ public class ElasticsearchRestHelper {
         return INSTANCE;
     }
 
+    /**
+     * Gets a fresh instance of this class, rather than the cached singleton. For test purposes only. This should be
+     * a singleton in the runtime application.
+     */
+    @VisibleForTesting
+    public static ElasticsearchRestHelper newInstanceForTests() {
+        return new ElasticsearchRestHelper();
+    }
+
     private ElasticsearchRestHelper(){
         logger.info("Creating a new instance of ElasticsearchRestHelper...");
         Configuration config = Configuration.getInstance();
@@ -498,6 +507,8 @@ public class ElasticsearchRestHelper {
         callQ.add(tempUrl);
         int callCount = 0;
         int responseCode = 0;
+        String responseBody = null;
+        Exception lastException = null;
         while (!callQ.isEmpty() && callCount < MAX_CALL_COUNT) {
             callCount++;
             String url = callQ.remove();
@@ -513,10 +524,10 @@ public class ElasticsearchRestHelper {
                 response = closeableHttpClient.execute(httpPost);
                 responseCode = response.getStatusLine().getStatusCode();
                 HttpEntity entity = response.getEntity();
-                String str = EntityUtils.toString(entity);
+                responseBody = EntityUtils.toString(entity);
                 EntityUtils.consume(entity);
-                return new ExecuteResponse(str, responseCode);
             } catch (Exception e) {
+                lastException = e;
                 incrementErrorCounter(methodName);
                 if (response == null) {
                     logger.error("{} failed with message: {}", methodName, e.getMessage());
@@ -532,8 +543,13 @@ public class ElasticsearchRestHelper {
                 }
             }
         }
-
-        return new ExecuteResponse("", responseCode);
+        if (responseBody == null) {
+            throw new IOException("Unable to reach Elasticsearch", lastException);
+        }
+        if (responseCode > 299) {
+            throw new IOException("Elasticsearch request failed");
+        }
+        return new ExecuteResponse(responseBody, responseCode);
     }
 
     private void incrementErrorCounter(String methodName) {
