@@ -51,3 +51,7 @@ configMapGenerator:
       - elasticsearch-config-6.8/roles.yml
       - elasticsearch-config-6.8/users
       - elasticsearch-config-6.8/users_roles
+  - name: ingest-config
+    files:
+      - ingest-config/blueflood.properties
+      - ingest-config/blueflood-log4j.properties

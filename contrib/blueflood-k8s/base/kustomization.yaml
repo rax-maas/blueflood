@@ -1,3 +1,4 @@
 resources:
   - cassandra.yaml
   - elasticsearch.yaml
+  - ingest.yaml

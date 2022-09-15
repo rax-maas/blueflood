@@ -129,3 +129,55 @@ kubectl exec cass-seed-0 -c cassandra -- cqlsh -f /bf-init.cdl
 
 Finally, bring back the health probes that you commented out previously by uncommenting them and doing a `kubectl apply`
 to update the cluster. Kubernetes will do a rolling restart of the seed nodes for you.
+
+## Everything else
+
+After Cassandra and Elasticsearch have been initialized once, you can bring everything else up.
+
+```bash
+kubectl apply -k contrib/blueflood-k8s/overlays/example/
+```
+
+## Using it
+
+You can use `kubectl port-forward` to make various ports available to your local machine, like
+
+```bash
+kubectl port-forward service/ingest 19000 &
+kubectl port-forward service/query 20000 &
+```
+
+To make ingest and query nodes available. Then you can run the scripts in the [10 Minute
+Guide](https://github.com/rax-maas/blueflood/wiki/10-Minute-Guide) to ingest and query some metrics.
+
+## Organization
+
+There are six main "components" in this project: cassandra, elasticsearch, ingest, query, rollup, and metrics. All
+Kubernetes resources are labelled appropriately. For example, you could completely create only cassandra servers with
+
+```bash
+kubectl apply -k contrib/blueflood-k8s/overlays/example/ -l component=cassandra
+```
+
+To delete a component's resources, it's better to use `kubectl delete`, which works regardless of intervening changes in
+the k8s yaml files. You can also specify to delete persistent volume claims and configmaps, which don't get deleted
+otherwise:
+
+```bash
+kubectl delete all,persistentvolumeclaims,configmaps -l component=cassandra
+```
+
+Hint: You should never, ever do that in production. It's very useful in dev, though.
+
+# Removing everything
+
+To do an absolutely clean build, being sure nothing is left behind, delete the namespace it's deployed in:
+
+```bash
+kubectl delete namespace blueflood-demo
+```
+
+# Random notes
+
+If you change the version of a container, especially a major version, be sure to change the kustomize configMapGenerator
+to point at the correct version of that component's config files.

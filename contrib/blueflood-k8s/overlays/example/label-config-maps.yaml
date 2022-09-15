@@ -14,3 +14,10 @@ metadata:
   name: elasticsearch-config
   labels:
     component: elasticsearch
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ingest-config
+  labels:
+    component: ingest
