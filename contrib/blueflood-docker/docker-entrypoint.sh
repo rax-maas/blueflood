@@ -93,6 +93,8 @@ log4j.rootLogger=INFO, console
 EOL
 fi
 
+: ${MIN_HEAP_SIZE:=1G}
+: ${MAX_HEAP_SIZE:=1G}
 dbg=""
 suspend="n"
 [ "$DEBUG_JAVA_SUSPEND" = true ] && suspend="y"
