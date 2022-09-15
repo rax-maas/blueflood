@@ -6,23 +6,32 @@ import com.rackspacecloud.blueflood.io.ElasticTokensIO;
 import com.rackspacecloud.blueflood.io.EventElasticSearchIO;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.ElasticIOConfig;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOUtils;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.utility.DockerImageName;
+
+import java.io.IOException;
+import java.util.Arrays;
 
 /**
  * Manages embedded Elasticsearch servers for tests. An instance of this class manages its own, separate Elasticsearch.
  * In theory, multiple instances could be active simultaneously, but at the moment, the tlrx implementation always binds
  * to port 9200, and that's where tests know to find it. To run concurrent instances, that would have to be fixed. The
  * server should bind a random, available port, and each test should ask the instance of this class where to find it.
+ *
+ * Complication on that last: Blueflood's use of static initialization for lots of internals means that dynamic ports
+ * don't work. Some test might start a server on a dynamic port, but some other class has already been initialized and
+ * read the original configuration value of the port, so it's looking in the wrong place. It's simpler to just be sure
+ * to bind the port(s) that the existing tests know to look for.
  */
 public class ElasticsearchTestServer {
 
     /**
      * Supported ways of starting an Elasticsearch instance for testing. This exists because it's in flux. The
      * tlrx library is old but original to Blueflood. We should use it until we can start upgrading Elasticsearch.
-     * Testcontainers seems to be the way to go in the future, but it officially supports Elasticsearch no older than
-     * 5.4.0. We may be able to force it to use an older one. For now, we need to get the project running stably and
-     * predictably.
+     * Testcontainers seems to be the way to go in the future, and we need to actively migrate toward it. It officially
+     * supports version 5.4.0 and newer, but it seems to work fine with older versions, too.
      *
      * EXTERNAL means Elasticsearch will be started externally. Using EXTERNAL will turn this class into a no-op. It
      * won't try to start or stop anything, and everything will be left up to you to manage yourself.
@@ -53,6 +62,11 @@ public class ElasticsearchTestServer {
      * against different variants in a dev environment.
      */
     private static final EsInitMethod esInitMethod = EsInitMethod.TLRX;
+    /**
+     * ONLY IF using TEST_CONTAINERS as the init method, sets the version of Elasticsearch to test with. This must be
+     * a valid Elasticsearch Docker image version.
+     */
+    private static final String testContainersEsVersion = "1.7";
 
     private ElasticsearchContainer elasticsearchContainer;
     private EsSetup esSetup;
@@ -75,21 +89,13 @@ public class ElasticsearchTestServer {
     }
 
     public void startTestContainer() {
-        // Try to start an old version. Does this work?
-        DockerImageName myImage = DockerImageName.parse("elasticsearch:1.7")
+        // Starting with "as compatible" seems to generally work. Why/when do we need to switch to "compatible" images?
+        DockerImageName myImage = DockerImageName.parse("elasticsearch:" + testContainersEsVersion)
                 .asCompatibleSubstituteFor("docker.elastic.co/elasticsearch/elasticsearch");
         elasticsearchContainer = new ElasticsearchContainer(myImage);
-
-        // Or, with the officially supported version:
-        // elasticsearchContainer = new ElasticsearchContainer("docker.elastic.co/elasticsearch/elasticsearch:5.4.0");
-
+        elasticsearchContainer.setPortBindings(Arrays.asList("9200:9200", "9300:9300"));
         elasticsearchContainer.start();
-
-        // TODO: Create the indexes and mappings as seen in init-es.sh
-
-        // The container starts on a random, unused port. Configure the rest client to use the correct port.
-        Configuration.getInstance().setProperty(
-                ElasticIOConfig.ELASTICSEARCH_HOST_FOR_REST_CLIENT, elasticsearchContainer.getHttpHostAddress());
+        initIt();
     }
 
     public void startTlrx() {
@@ -103,6 +109,39 @@ public class ElasticsearchTestServer {
         esSetup.execute(EsSetup.createIndex(EventElasticSearchIO.EVENT_INDEX)
                 .withMapping("graphite_event", EsSetup.fromClassPath("events_mapping.json")));
         esSetup.execute(EsSetup.createIndex("blueflood_initialized_marker"));
+    }
+
+    private void initIt() {
+        String initScript;
+        if (testContainersEsVersion.startsWith("1.")) {
+            initScript = "init-es.sh";
+        } else if (testContainersEsVersion.startsWith("6.")) {
+            initScript = "init-es-6/init-es.sh";
+        } else {
+            throw new IllegalStateException("I don't know which ES init script to use for ES version "
+                    + testContainersEsVersion);
+        }
+        try {
+            initIt(initScript);
+        } catch (IOException | InterruptedException e) {
+            throw new IllegalStateException("Failed to run Elasticsearch init script", e);
+        }
+    }
+
+    private void initIt(String whichScript) throws IOException, InterruptedException {
+        // Find the init script, which lives over in the elasticsearch module
+        String resourceInThisModule = getClass().getResource("/blueflood.properties").getFile();
+        String thisModuleResourcesDir = FilenameUtils.getFullPath(resourceInThisModule);
+        String esResourcesDir = thisModuleResourcesDir + "../../../blueflood-elasticsearch/src/main/resources/";
+        String initScript = FilenameUtils.concat(esResourcesDir, whichScript);
+        String command = initScript + " -u localhost:9200";
+        System.out.println("Initialize Elasticsearch for tests with '" + command + "'");
+        Process process = Runtime.getRuntime().exec(command);
+        IOUtils.copy(process.getInputStream(), System.out);
+        int exit = process.waitFor();
+        if (exit != 0) {
+            throw new IllegalStateException("Elasticsearch init script exited with non-zero status");
+        }
     }
 
     /**
