@@ -54,15 +54,13 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
 
     protected ElasticIO elasticIO;
     protected ElasticTokensIO elasticTokensIO;
-    private static ElasticsearchTestServer elasticsearchTestServer;
 
     /**
      * Starts an embedded Elasticsearch that these tests can run against.
      */
     @BeforeClass
     public static void startElasticsearch() {
-        elasticsearchTestServer = new ElasticsearchTestServer();
-        elasticsearchTestServer.start();
+        ElasticsearchTestServer.getInstance().ensureStarted();
     }
 
     @Before
@@ -119,11 +117,6 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
 
         for (String typeToEmpty : typesToEmpty)
             deleteAllDocuments(typeToEmpty);
-    }
-
-    @AfterClass
-    public static void stopElasticsearch() {
-        elasticsearchTestServer.stop();
     }
 
     private void deleteAllDocuments(String typeToEmpty) throws URISyntaxException, IOException {
