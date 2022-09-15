@@ -1,0 +1,163 @@
+---
+# A headless service that just returns the IPs of the master Elasticsearch pods. This is for the master nodes to
+# discover each other at bootstrap time.
+apiVersion: v1
+kind: Service
+metadata:
+  name: es-seed-discovery
+  labels:
+    component: elasticsearch
+    role: master
+spec:
+  selector:
+    component: elasticsearch
+    role: master
+  ports:
+    - name: es-transport
+      port: 9300
+      protocol: TCP
+  clusterIP: None
+---
+# The StatefulSet of Elasticsearch master nodes. These are the nodes eligible to be master at any time and also the seed
+# nodes for other nodes to use when joining the cluster. For the moment, this cluster is just this set of nodes, any of
+# which can be elected master. We don't differentiate other node types:
+# https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-node.html
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: es-master
+  labels:
+    component: elasticsearch
+    role: master
+spec:
+  selector:
+    matchLabels:
+      component: elasticsearch
+      role: master
+  serviceName: es-seed-discovery
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        component: elasticsearch
+        role: master
+    spec:
+      initContainers:
+        # Set kernel param required by ES
+        - name: set-max-map-count
+          image: busybox:1.27.2
+          command: ['sysctl', '-w', 'vm.max_map_count=262144']
+          securityContext:
+            privileged: true
+        # Prep data and config volumes. ES runs as user 1000, and it needs to write to its config directory, so the
+        # ConfigMap has to be copied into a volume.
+        - name: prep-volumes
+          image: busybox:1.27.2
+          command:
+            - sh
+            - -c
+            - |
+              cp -rL /elasticsearch-config-source/* /elasticsearch-config-final 
+              chown -R 1000:1000 /elasticsearch-config-final
+              chown -R 1000:1000 /elasticsearch-data-pv
+              # ES 1.7 seems to require wide-open permissions on this dir; not sure why. Do away with this once we're
+              # sure we don't need 1.7 anymore.
+              chmod -R 777 /elasticsearch-data-pv
+          volumeMounts:
+            - name: elasticsearch-data
+              mountPath: /elasticsearch-data-pv
+            - name: config-source
+              mountPath: /elasticsearch-config-source
+            - name: elasticsearch-config
+              mountPath: /elasticsearch-config-final
+      containers:
+        - name: elasticsearch
+          # Requires mode 777 on data mount, and keeps spitting out errors about disk high watermark and moving shards.
+          # Mainly, can't get the initial cluster to form correctly because each pod only waits 30 seconds for
+          # discovery, then never tries again.
+          #image: elasticsearch:1.7
+          # Seems to be the right balance between upgrading and keeping things working with minimal code change.
+          image: elasticsearch:6.8.23
+          # Works for ingest, but querying doesn't work because of types; might be able to work around this in code with
+          # a config setting?
+          #image: elasticsearch:7.17.5
+          # Works great, but removed index types, so current Blueflood code doesn't work with it.
+          #image: elasticsearch:8.3.3
+          env:
+            # Tells Elasticsearch the directory to look for config files in. This path already exists in the image, so
+            # it's convenient to use.
+            - name: ES_PATH_CONF
+              value: "/usr/share/elasticsearch/config"
+          ports:
+            - containerPort: 9200
+              name: http
+            - containerPort: 9300
+              name: es-transport
+          startupProbe:
+            tcpSocket:
+              port: http
+            # ES seems to take well over a minute to start up. I'm not sure if there's something we can do to make that
+            # faster. This will wait 10 seconds * 18 attempts.
+            periodSeconds: 10
+            failureThreshold: 18
+          livenessProbe:
+            tcpSocket:
+              port: http
+          readinessProbe:
+            tcpSocket:
+              port: http
+          resources:
+            limits:
+              cpu: "1"
+              memory: 4Gi
+            requests:
+              cpu: "0.5"
+              memory: 2Gi
+          volumeMounts:
+            # Persistent volume for long-term data storage
+            - name: elasticsearch-data
+              mountPath: /elasticsearch-data-pv
+            # Elasticsearch config files should be in a config map, which we mount here.
+            - name: elasticsearch-config
+              mountPath: /usr/share/elasticsearch/config
+      volumes:
+        - name: config-source
+          configMap:
+            name: elasticsearch-config
+  volumeClaimTemplates:
+    - metadata:
+        name: elasticsearch-data
+        labels:
+          component: elasticsearch
+      spec:
+        accessModes: [ ReadWriteOnce ]
+        resources:
+          requests:
+            storage: 1Gi
+    - metadata:
+        name: elasticsearch-config
+        labels:
+          component: elasticsearch
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 10Mi
+---
+# And finally, the main service that makes Elasticsearch visible to other parts of the application.
+apiVersion: v1
+kind: Service
+metadata:
+  name: elasticsearch
+  labels:
+    component: elasticsearch
+spec:
+  selector:
+    component: elasticsearch
+  ports:
+    - name: http
+      port: 9200
+      protocol: TCP
+    - name: es-transport
+      port: 9300
+      protocol: TCP
