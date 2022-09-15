@@ -1,0 +1,290 @@
+---
+# A headless service that holds the IPs of the Cassandra seeds. It would be nice if Cassandra could resolve this service
+# to get the seed IPs, but the SimpleSeedProvider doesn't support that. We'd need a custom SeedProvider implementation.
+# As it is, we use the hostnames of the seed nodes, resolved through this service, as the seeds.
+apiVersion: v1
+kind: Service
+metadata:
+  name: cass-seed-discovery
+  labels:
+    component: cassandra
+    role: seed
+spec:
+  selector:
+    component: cassandra
+    role: seed
+  ports:
+    - name: intra-node
+      port: 7000
+      protocol: TCP
+  clusterIP: None
+---
+# A set of Cassandra seed nodes. Docs recommend having at least two seeds per DC:
+# https://docs.datastax.com/en/cassandra-oss/3.0/cassandra/initialize/initSingleDS.html
+# The seeds come up first and establish the cluster, and then other nodes can join in.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: cass-seed
+  labels:
+    component: cassandra
+    role: seed
+spec:
+  serviceName: cass-seed-discovery
+  selector:
+    matchLabels:
+      component: cassandra
+      role: seed
+  # If you want to change the number of seed nodes, make sure to also update the CASSANDRA_SEEDS property on all seed
+  # and non-seed pods!
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        component: cassandra
+        role: seed
+    spec:
+      # Long termination to allow for draining the node (I think). See lifecycle/preStop later.
+      terminationGracePeriodSeconds: 1800
+      initContainers:
+        # Prep data and config volumes with config files and correct ownership.
+        - name: prep-volumes
+          image: busybox:1.27.2
+          command:
+          - 'sh'
+          - '-c'
+          - |
+            cp -rL /cassandra-config-source/* /cassandra-config-final
+            chown -R 999:999 /cassandra-config-final
+            chown -R 999:999 /cassandra-data-pv
+          volumeMounts:
+            - name: cassandra-data
+              mountPath: /cassandra-data-pv
+            - name: config-source
+              mountPath: /cassandra-config-source
+            - name: cassandra-config
+              mountPath: /cassandra-config-final
+      containers:
+        - name: cassandra
+          image: cassandra:2.1
+          ports:
+            - containerPort: 7000
+              name: intra-node
+            - containerPort: 7001
+              name: tls-intra-node
+            - containerPort: 7199
+              name: jmx
+            - containerPort: 9042
+              name: cql
+            - containerPort: 9160
+              name: thrift
+          resources:
+            limits:
+              cpu: "1"
+              memory: 4Gi
+            requests:
+              cpu: "0.5"
+              memory: 2Gi
+          securityContext:
+            capabilities:
+              add:
+                - IPC_LOCK
+                - SYS_RESOURCE
+          env:
+            # The cassandra image has an entrypoint script to copy some env var values into its config files. Some of
+            # them are ignored if empty. These aren't!
+            - name: CASSANDRA_SEEDS
+              value: "cass-seed-0.cass-seed-discovery,cass-seed-1.cass-seed-discovery"
+            - name: CASSANDRA_DC
+              value: "BF_DC1"
+            - name: CASSANDRA_RACK
+              value: "BF_RACK1"
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - nodetool drain
+          # DON'T PROBE HERE! <- search text referred to by the readme. Don't change!
+          # These probes *must* be disabled when initially deploying a cluster. The probes disrupt initial cluster
+          # startup by preventing the pods from being added to the discovery service. A node won't start if it can't
+          # find any seed nodes, and since these are the seed nodes, at least one has to be discoverable immediately, or
+          # the cluster will never form. Once a cluster is up and running, these probes can be enabled as long as
+          # there's always at least one seed node running, which there always should be in any healthy cluster.
+          startupProbe:
+            tcpSocket:
+              port: cql
+            # Allow 180 seconds to start listening on CQL port. It can take a while when the cluster is first forming.
+            periodSeconds: 10
+            failureThreshold: 18
+          livenessProbe:
+            tcpSocket:
+              port: cql
+          readinessProbe:
+            tcpSocket:
+              port: cql
+          volumeMounts:
+            - name: cassandra-data
+              mountPath: /cassandra-data-pv
+            - name: cassandra-config
+              mountPath: /etc/cassandra
+      volumes:
+        - name: config-source
+          configMap:
+            name: cassandra-config
+  volumeClaimTemplates:
+    - metadata:
+        name: cassandra-data
+        labels:
+          component: cassandra
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 1Gi
+    - metadata:
+        name: cassandra-config
+        labels:
+          component: cassandra
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 10Mi
+---
+# Non-seed Cassandra nodes. This is what you scale up. It's nearly an exact copy of the seed StatefulSet.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: cass-non-seed
+  labels:
+    component: cassandra
+    role: worker
+spec:
+  serviceName: cass-seed-discovery
+  selector:
+    matchLabels:
+      component: cassandra
+      role: worker
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        component: cassandra
+        role: worker
+    spec:
+      # Long termination to allow for draining the node. See lifecycle/preStop later.
+      terminationGracePeriodSeconds: 1800
+      initContainers:
+        # Prep data and config volumes with config files and correct ownership.
+        - name: prep-volumes
+          image: busybox:1.27.2
+          command:
+          - 'sh'
+          - '-c'
+          - |
+            cp -rL /cassandra-config-source/* /cassandra-config-final
+            chown -R 999:999 /cassandra-config-final
+            chown -R 999:999 /cassandra-data-pv
+          volumeMounts:
+            - name: cassandra-data
+              mountPath: /cassandra-data-pv
+            - name: config-source
+              mountPath: /cassandra-config-source
+            - name: cassandra-config
+              mountPath: /cassandra-config-final
+      containers:
+        - name: cassandra
+          image: cassandra:2.1
+          ports:
+            - containerPort: 7000
+              name: intra-node
+            - containerPort: 7001
+              name: tls-intra-node
+            - containerPort: 7199
+              name: jmx
+            - containerPort: 9042
+              name: cql
+            - containerPort: 9160
+              name: thrift
+          securityContext:
+            capabilities:
+              add:
+                - IPC_LOCK
+                - SYS_RESOURCE
+          env:
+            # The cassandra image has an entrypoint script to copy some env var values into its config files. Some of
+            # them are ignored if empty. These aren't!
+            - name: CASSANDRA_SEEDS
+              value: "cass-seed-0.cass-seed-discovery,cass-seed-1.cass-seed-discovery"
+            - name: CASSANDRA_DC
+              value: "BF_DC1"
+            - name: CASSANDRA_RACK
+              value: "BF_RACK1"
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - nodetool drain
+          # Unlike the seed nodes, probes work fine here because these aren't key to establishing the initial cluster.
+          startupProbe:
+            tcpSocket:
+              port: cql
+            # Allow 180 seconds to start listening on CQL port. It can take a while when the cluster is first forming.
+            periodSeconds: 10
+            failureThreshold: 18
+          livenessProbe:
+            tcpSocket:
+              port: cql
+          readinessProbe:
+            tcpSocket:
+              port: cql
+          volumeMounts:
+            - name: cassandra-data
+              mountPath: /cassandra-data-pv
+            - name: cassandra-config
+              mountPath: /etc/cassandra
+      volumes:
+        - name: config-source
+          configMap:
+            name: cassandra-config
+  volumeClaimTemplates:
+    - metadata:
+        name: cassandra-data
+        labels:
+          component: cassandra
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 1Gi
+    - metadata:
+        name: cassandra-config
+        labels:
+          component: cassandra
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 10Mi
+---
+# And finally, the main service that makes Cassandra visible to other parts of the application.
+apiVersion: v1
+kind: Service
+metadata:
+  name: cassandra
+  labels:
+    component: cassandra
+spec:
+  selector:
+    component: cassandra
+  ports:
+    - name: cqlsh
+      port: 9042
+      protocol: TCP
+    - name: thrift
+      port: 9160
+      protocol: TCP
