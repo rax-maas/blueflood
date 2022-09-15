@@ -1,0 +1,25 @@
+{
+  "graphite_event": {
+    "_routing": {
+      "required": true
+    },
+    "dynamic": false,
+    "properties": {
+      "tenantId": {
+        "type": "keyword"
+      },
+      "what": {
+        "type": "keyword"
+      },
+      "data": {
+        "type": "keyword"
+      },
+      "tags": {
+        "type": "keyword"
+      },
+      "when": {
+        "type": "long"
+      }
+    }
+  }
+}

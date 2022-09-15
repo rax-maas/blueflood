@@ -1,0 +1,19 @@
+{
+    "metrics": {
+        "_routing": {
+            "required": true
+        },
+        "dynamic": false,
+        "properties": {
+            "tenantId": {
+                "type": "keyword"
+            },
+            "unit": {
+                "type": "keyword"
+            },
+            "metric_name": {
+                "type": "keyword"
+            }
+        }
+    }
+}
