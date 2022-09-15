@@ -56,16 +56,25 @@ public class ElasticsearchTestServer {
 
     private ElasticsearchContainer elasticsearchContainer;
     private EsSetup esSetup;
+    private static final ElasticsearchTestServer INSTANCE = new ElasticsearchTestServer();
+
+    public static final ElasticsearchTestServer getInstance() {
+        return INSTANCE;
+    }
 
     /**
-     * Starts an in-memory Elasticsearch that's configured for Blueflood. The configuration mimics that found in
-     * init-es.sh as closely as I can figure out how to.
+     * Starts an in-memory Elasticsearch that's configured for Blueflood. If such a server is already running, this is a
+     * no-op. The configuration mimics that found in init-es.sh as closely as I can figure out how to.
      */
-    public void start() {
+    public void ensureStarted() {
         if (esInitMethod.equals(EsInitMethod.TEST_CONTAINERS)) {
-            startTestContainer();
+            if (elasticsearchContainer == null || !elasticsearchContainer.isRunning()) {
+                startTestContainer();
+            }
         } else if (esInitMethod.equals(EsInitMethod.TLRX)) {
-            startTlrx();
+            if (esSetup == null) {
+                startTlrx();
+            }
         } else if (esInitMethod.equals(EsInitMethod.EXTERNAL)) {
             // Do nothing! You have to manage Elasticsearch your own self!
             System.out.println("Using external Elasticsearch");
@@ -112,8 +121,10 @@ public class ElasticsearchTestServer {
     public void stop() {
         if (esInitMethod.equals(EsInitMethod.TEST_CONTAINERS)) {
             elasticsearchContainer.stop();
+            elasticsearchContainer = null;
         } else if (esInitMethod.equals(EsInitMethod.TLRX)) {
             esSetup.terminate();
+            esSetup = null;
         } else if (esInitMethod.equals(EsInitMethod.EXTERNAL)) {
             // Do nothing! You have to manage Elasticsearch your own self!
             System.out.println("Done with external Elasticsearch");
