@@ -1,0 +1,53 @@
+resources:
+  - ../../base
+namespace: blueflood-demo
+patchesStrategicMerge:
+  - label-config-maps.yaml
+
+# This is a central place to tune the sizes of the persistent volumes. I'd like to do strategic merge patching like
+# above, but it looks like volumeClaimTemplates get replaced instead of merged, so I'd have to completely specify all
+# the volumes again in the patch file. That's no good. Just use this more complex approach unless someone has a better
+# idea. IMPORTANT: For claim templates, this assumes the data volume is the first one listed. There's no better way to
+# select a specific volume.
+patchesJson6902:
+  - target:
+      group: apps
+      version: v1
+      kind: StatefulSet
+      name: cass-seed
+    patch: |
+      [{"op": "replace", "value": "10Gi", "path": "/spec/volumeClaimTemplates/0/spec/resources/requests/storage"}]
+  - target:
+      group: apps
+      version: v1
+      kind: StatefulSet
+      name: cass-non-seed
+    patch: |
+      [{"op": "replace", "value": "10Gi", "path": "/spec/volumeClaimTemplates/0/spec/resources/requests/storage"}]
+  - target:
+      group: apps
+      version: v1
+      kind: StatefulSet
+      name: es-master
+    patch: |
+      [{"op": "replace", "value": "10Gi", "path": "/spec/volumeClaimTemplates/0/spec/resources/requests/storage"}]
+
+configMapGenerator:
+  - name: cassandra-config
+    files:
+      - cassandra-config-2.1/cassandra-env.sh
+      - cassandra-config-2.1/cassandra-rackdc.properties
+      - cassandra-config-2.1/cassandra.yaml
+      - cassandra-config-2.1/commitlog_archiving.properties
+      - cassandra-config-2.1/hotspot_compiler
+      - cassandra-config-2.1/logback-tools.xml
+      - cassandra-config-2.1/logback.xml
+  - name: elasticsearch-config
+    files:
+      - elasticsearch-config-6.8/elasticsearch.yml
+      - elasticsearch-config-6.8/jvm.options
+      - elasticsearch-config-6.8/log4j2.properties
+      - elasticsearch-config-6.8/role_mapping.yml
+      - elasticsearch-config-6.8/roles.yml
+      - elasticsearch-config-6.8/users
+      - elasticsearch-config-6.8/users_roles

@@ -1,0 +1,10 @@
+---
+cluster.name: "blueflood-es"
+# Use seed discovery service to discovery other master nodes
+discovery.zen.ping.unicast.hosts: [es-seed-discovery]
+# This should be something like a quorum of the total number of master nodes
+discovery.zen.minimum_master_nodes: 2
+# Store data on the persistent volume.
+path.data: "/elasticsearch-data-pv/data"
+# Disable security for ease of access. Obviously don't do this in production.
+xpack.security.enabled: "false"
