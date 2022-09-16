@@ -32,12 +32,13 @@ public class DMetadataIO implements MetadataIO {
 
     private final StringMetadataSerDes serDes = new StringMetadataSerDes();
 
-    private PreparedStatement getValue;
-    private PreparedStatement putValue;
+    private static PreparedStatement getValue;
+    private static PreparedStatement putValue;
 
     public DMetadataIO() {
-
-        createPreparedStatements();
+        if (getValue == null) {
+            createPreparedStatements();
+        }
     }
 
     private void createPreparedStatements() {

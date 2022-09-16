@@ -48,12 +48,13 @@ public class DShardStateIO implements ShardStateIO {
 
     private final SlotStateSerDes serDes = new SlotStateSerDes();
 
-    private PreparedStatement getShardState;
-    private PreparedStatement putShardState;
+    private static PreparedStatement getShardState;
+    private static PreparedStatement putShardState;
 
     public DShardStateIO() {
-
-        createPreparedStatements();
+        if (getShardState == null) {
+            createPreparedStatements();
+        }
     }
 
     private void createPreparedStatements() {

@@ -56,41 +56,47 @@ public class DMetricsCFPreparedStatements {
 
     private static final DMetricsCFPreparedStatements INSTANCE = new DMetricsCFPreparedStatements();
 
-    protected final PreparedStatement insertToMetricsPreaggrFullStatement;
-    protected final PreparedStatement insertToMetricsPreaggr5MStatement;
-    protected final PreparedStatement insertToMetricsPreaggr20MStatement;
-    protected final PreparedStatement insertToMetricsPreaggr60MStatement;
-    protected final PreparedStatement insertToMetricsPreaggr240MStatement;
-    protected final PreparedStatement insertToMetricsPreaggr1440MStatement;
+    protected static PreparedStatement insertToMetricsPreaggrFullStatement;
+    protected static PreparedStatement insertToMetricsPreaggr5MStatement;
+    protected static PreparedStatement insertToMetricsPreaggr20MStatement;
+    protected static PreparedStatement insertToMetricsPreaggr60MStatement;
+    protected static PreparedStatement insertToMetricsPreaggr240MStatement;
+    protected static PreparedStatement insertToMetricsPreaggr1440MStatement;
 
-    protected final PreparedStatement selectFromMetricsPreaggrFullForRangeStatement;
-    protected final PreparedStatement selectFromMetricsPreaggr5MForRangeStatement;
-    protected final PreparedStatement selectFromMetricsPreaggr20MForRangeStatement;
-    protected final PreparedStatement selectFromMetricsPreaggr60MForRangeStatement;
-    protected final PreparedStatement selectFromMetricsPreaggr240MForRangeStatement;
-    protected final PreparedStatement selectFromMetricsPreaggr1440MForRangeStatement;
+    protected static PreparedStatement selectFromMetricsPreaggrFullForRangeStatement;
+    protected static PreparedStatement selectFromMetricsPreaggr5MForRangeStatement;
+    protected static PreparedStatement selectFromMetricsPreaggr20MForRangeStatement;
+    protected static PreparedStatement selectFromMetricsPreaggr60MForRangeStatement;
+    protected static PreparedStatement selectFromMetricsPreaggr240MForRangeStatement;
+    protected static PreparedStatement selectFromMetricsPreaggr1440MForRangeStatement;
 
-    protected final PreparedStatement insertToMetricsBasicFullStatement;
-    protected final PreparedStatement insertToMetricsBasic5MStatement;
-    protected final PreparedStatement insertToMetricsBasic20MStatement;
-    protected final PreparedStatement insertToMetricsBasic60MStatement;
-    protected final PreparedStatement insertToMetricsBasic240MStatement;
-    protected final PreparedStatement insertToMetricsBasic1440MStatement;
+    protected static PreparedStatement insertToMetricsBasicFullStatement;
+    protected static PreparedStatement insertToMetricsBasic5MStatement;
+    protected static PreparedStatement insertToMetricsBasic20MStatement;
+    protected static PreparedStatement insertToMetricsBasic60MStatement;
+    protected static PreparedStatement insertToMetricsBasic240MStatement;
+    protected static PreparedStatement insertToMetricsBasic1440MStatement;
 
-    protected final PreparedStatement selectFromMetricsBasicFullForRangeStatement;
-    protected final PreparedStatement selectFromMetricsBasic5MForRangeStatement;
-    protected final PreparedStatement selectFromMetricsBasic20MForRangeStatement;
-    protected final PreparedStatement selectFromMetricsBasic60MForRangeStatement;
-    protected final PreparedStatement selectFromMetricsBasic240MForRangeStatement;
-    protected final PreparedStatement selectFromMetricsBasic1440MForRangeStatement;
+    protected static PreparedStatement selectFromMetricsBasicFullForRangeStatement;
+    protected static PreparedStatement selectFromMetricsBasic5MForRangeStatement;
+    protected static PreparedStatement selectFromMetricsBasic20MForRangeStatement;
+    protected static PreparedStatement selectFromMetricsBasic60MForRangeStatement;
+    protected static PreparedStatement selectFromMetricsBasic240MForRangeStatement;
+    protected static PreparedStatement selectFromMetricsBasic1440MForRangeStatement;
 
-    protected Map<String, PreparedStatement> cfNameToSelectStatement;
-    protected Map<Granularity, PreparedStatement> preaggrGranToInsertStatement;
-    protected Map<Granularity, PreparedStatement> basicGranToInsertStatement;
+    protected static Map<String, PreparedStatement> cfNameToSelectStatement;
+    protected static Map<Granularity, PreparedStatement> preaggrGranToInsertStatement;
+    protected static Map<Granularity, PreparedStatement> basicGranToInsertStatement;
 
     private DMetricsCFPreparedStatements() {
         Session session = DatastaxIO.getSession();
+        // Only prepare statements once! The driver logs lots of complaints if you re-prepare statements.
+        if (insertToMetricsPreaggrFullStatement == null) {
+            prepareStatements(session);
+        }
+    }
 
+    private static void prepareStatements(Session session) {
         //
         // Preaggr insert statements
         //
