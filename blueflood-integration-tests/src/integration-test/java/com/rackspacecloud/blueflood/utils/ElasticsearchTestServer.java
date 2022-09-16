@@ -1,6 +1,8 @@
 package com.rackspacecloud.blueflood.utils;
 
 import com.github.tlrx.elasticsearch.test.EsSetup;
+import com.rackspacecloud.blueflood.IntegrationTestConfig;
+import com.rackspacecloud.blueflood.service.Configuration;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -32,46 +34,10 @@ public class ElasticsearchTestServer {
 
     private static final Logger log = LoggerFactory.getLogger(ElasticsearchTestServer.class);
 
-    /**
-     * Supported ways of starting an Elasticsearch instance for testing. This exists because it's in flux. The
-     * tlrx library is old but original to Blueflood. We should use it until we can start upgrading Elasticsearch.
-     * Testcontainers seems to be the way to go in the future, and we need to actively migrate toward it. It officially
-     * supports version 5.4.0 and newer, but it seems to work fine with older versions, too.
-     *
-     * EXTERNAL means Elasticsearch will be started externally. Using EXTERNAL will turn this class into a no-op. It
-     * won't try to start or stop anything, and everything will be left up to you to manage yourself.
-     */
-    private enum EsInitMethod {
-        // Probably the best way to test against Elasticsearch for the foreseeable future. Testcontainers is a library
-        // that provides many on-demand services for testing purposes via Docker. The oldest Elasticsearch that it
-        // officially supports is 5.4.0. We may be able to use an older image with it, too, but we'll need to verify.
-        //
-        // Note: This method will definitely not work with the testcontainers 5.4.0 image until ElasticsearchRestHelper
-        // is updated to support authentication!
-        TEST_CONTAINERS,
-
-        // The old way of testing against Elasticsearch used elsewhere in the project. It seems to start an in-memory
-        // instance. This library hasn't been maintained in years, so we need to stop using it for testing new versions
-        // of Elasticsearch.
-        TLRX,
-
-        // Indicates that you'll start Elasticsearch externally, like with Docker. See the 10-minute guide on the wiki
-        // for a quick startup. This test class will do nothing in terms of starting or initializing Elasticsearch when
-        // you use this option.
-        EXTERNAL
-    }
-
-    /**
-     * The selected way to start Elasticsearch for this test class. This will change over time as we update
-     * Elasticsearch and change to new testing mechanisms. It's useful to declare here so that you can easily test
-     * against different variants in a dev environment.
-     */
-    private static final EsInitMethod esInitMethod = EsInitMethod.TLRX;
-    /**
-     * ONLY IF using TEST_CONTAINERS as the init method, sets the version of Elasticsearch to test with. This must be
-     * a valid Elasticsearch Docker image version.
-     */
-    private static final String testContainersEsVersion = "1.7";
+    private final String esInitMethod =
+            Configuration.getInstance().getStringProperty(IntegrationTestConfig.IT_ELASTICSEARCH_TEST_METHOD);
+    private final String testContainersEsVersion =
+            Configuration.getInstance().getStringProperty(IntegrationTestConfig.IT_ELASTICSEARCH_CONTAINER_VERSION);
 
     private ElasticsearchContainer elasticsearchContainer;
     private EsSetup esSetup;
@@ -91,15 +57,15 @@ public class ElasticsearchTestServer {
      * no-op. The configuration mimics that found in init-es.sh as closely as I can figure out how to.
      */
     public void ensureStarted() {
-        if (esInitMethod.equals(EsInitMethod.TEST_CONTAINERS)) {
+        if (esInitMethod.equals("TEST_CONTAINERS")) {
             if (elasticsearchContainer == null || !elasticsearchContainer.isRunning()) {
                 startTestContainer();
             }
-        } else if (esInitMethod.equals(EsInitMethod.TLRX)) {
+        } else if (esInitMethod.equals("TLRX")) {
             if (esSetup == null) {
                 startTlrx();
             }
-        } else if (esInitMethod.equals(EsInitMethod.EXTERNAL)) {
+        } else if (esInitMethod.equals("EXTERNAL")) {
             // Do nothing! You have to manage Elasticsearch your own self!
             log.info("Using external Elasticsearch");
         } else {
@@ -195,13 +161,13 @@ public class ElasticsearchTestServer {
         } catch (IOException e) {
             log.warn("Failed to close the HttpClient", e);
         }
-        if (esInitMethod.equals(EsInitMethod.TEST_CONTAINERS)) {
+        if (esInitMethod.equals("TEST_CONTAINERS")) {
             elasticsearchContainer.stop();
             elasticsearchContainer = null;
-        } else if (esInitMethod.equals(EsInitMethod.TLRX)) {
+        } else if (esInitMethod.equals("TLRX")) {
             esSetup.terminate();
             esSetup = null;
-        } else if (esInitMethod.equals(EsInitMethod.EXTERNAL)) {
+        } else if (esInitMethod.equals("EXTERNAL")) {
             // Do nothing! You have to manage Elasticsearch your own self!
             log.info("Done with external Elasticsearch");
         } else {
