@@ -35,21 +35,21 @@ import java.util.Collections;
  */
 public abstract class ShardStateWorker implements Runnable, ShardStateWorkerMBean {
     private static final Logger log = LoggerFactory.getLogger(ShardStateWorker.class);
-    
+
     protected final Collection<Integer> allShards;
     protected final ShardStateManager shardStateManager;
     protected final Timer timer = Metrics.timer(getClass(), "Stats");
-    
+
     private long lastOp = 0L;
     private boolean active = true;
     private Object activePollBarrier = new Object();
 
     private long periodMs = 1000L;
-    
+
     private final Counter errors;
     private Gauge activeGauge;
     private Gauge periodGauge;
-    
+
     private final ShardStateIO io;
 
     ShardStateWorker(Collection<Integer> allShards, ShardStateManager shardStateManager, TimeValue period, ShardStateIO io) {
@@ -57,27 +57,27 @@ public abstract class ShardStateWorker implements Runnable, ShardStateWorkerMBea
         this.allShards = Collections.unmodifiableCollection(allShards);
         this.periodMs = period.toMillis();
         this.io = io;
-        
+
         try {
             final MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
             String name = String.format("com.rackspacecloud.blueflood.service:type=%s", getClass().getSimpleName());
             final ObjectName nameObj = new ObjectName(name);
-            mbs.registerMBean(this, nameObj);
-            activeGauge = Metrics.getRegistry().register(MetricRegistry.name(getClass(), "Active"),
-                    new JmxBooleanGauge(nameObj, "Active"));
-
-            periodGauge = Metrics.getRegistry().register(MetricRegistry.name(getClass(), "Period"),
-                    new JmxAttributeGauge(nameObj, "Period"));
-
+            if (!mbs.isRegistered(nameObj)) {
+                mbs.registerMBean(this, nameObj);
+                activeGauge = Metrics.getRegistry().register(MetricRegistry.name(getClass(), "Active"),
+                        new JmxBooleanGauge(nameObj, "Active"));
+                periodGauge = Metrics.getRegistry().register(MetricRegistry.name(getClass(), "Period"),
+                        new JmxAttributeGauge(nameObj, "Period"));
+            }
         } catch (Exception exc) {
             // not critical (as in tests), but we want it logged.
             log.error("Unable to register mbean for " + getClass().getSimpleName());
             log.debug(exc.getMessage(), exc);
         }
-        
+
         errors = Metrics.counter(getClass(), "Poll Errors");
-    }    
-    
+    }
+
     final public void run() {
         while (true) {
             try {
@@ -105,11 +105,11 @@ public abstract class ShardStateWorker implements Runnable, ShardStateWorkerMBea
             }
         }
     }
-    
+
     public ShardStateIO getIO() { return io; }
-    
+
     public abstract void performOperation();
-   
+
     //
     // JMX methods
     //
@@ -123,7 +123,7 @@ public abstract class ShardStateWorker implements Runnable, ShardStateWorkerMBea
         }
     }
 
-    public synchronized void setActive(boolean b) { 
+    public synchronized void setActive(boolean b) {
         active = b;
         if (active) {
             synchronized (activePollBarrier) {
