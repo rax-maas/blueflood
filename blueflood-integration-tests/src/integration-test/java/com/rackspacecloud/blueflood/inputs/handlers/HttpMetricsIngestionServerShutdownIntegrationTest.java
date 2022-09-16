@@ -20,7 +20,7 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 import static com.rackspacecloud.blueflood.utils.TestUtils.*;
 import static org.mockito.Mockito.spy;
 
-import com.github.tlrx.elasticsearch.test.EsSetup;
+import com.rackspacecloud.blueflood.utils.ElasticsearchTestServer;
 import com.rackspacecloud.blueflood.http.HttpClientVendor;
 import com.rackspacecloud.blueflood.io.EventElasticSearchIO;
 import com.rackspacecloud.blueflood.io.EventsIO;
@@ -55,7 +55,6 @@ public class HttpMetricsIngestionServerShutdownIntegrationTest {
     private static int httpPort;
     private static ScheduleContext context;
     private static EventsIO eventsSearchIO;
-    private static EsSetup esSetup;
     //A time stamp 2 days ago
     private final long baseMillis = Calendar.getInstance().getTimeInMillis() - 172800000;
 
@@ -68,11 +67,8 @@ public class HttpMetricsIngestionServerShutdownIntegrationTest {
         manageShards.add(1); manageShards.add(5); manageShards.add(6);
         context = spy(new ScheduleContext(System.currentTimeMillis(), manageShards));
 
-        esSetup = new EsSetup();
-        esSetup.execute(EsSetup.deleteAll());
-        esSetup.execute(EsSetup.createIndex(EventElasticSearchIO.EVENT_INDEX)
-                .withSettings(EsSetup.fromClassPath("index_settings.json"))
-                .withMapping("graphite_event", EsSetup.fromClassPath("events_mapping.json")));
+        ElasticsearchTestServer.getInstance().ensureStarted();
+        ElasticsearchTestServer.getInstance().reset();
         eventsSearchIO = new EventElasticSearchIO();
         server = new HttpMetricsIngestionServer(context);
         server.setHttpEventsIngestionHandler(new HttpEventsIngestionHandler(eventsSearchIO));
@@ -132,9 +128,6 @@ public class HttpMetricsIngestionServerShutdownIntegrationTest {
     public static void shutdown() {
         Configuration.getInstance().setProperty(CoreConfig.EVENTS_MODULES.name(), "");
         System.clearProperty(CoreConfig.EVENTS_MODULES.name());
-        if (esSetup != null) {
-            esSetup.terminate();
-        }
 
         if (vendor != null) {
             vendor.shutdown();

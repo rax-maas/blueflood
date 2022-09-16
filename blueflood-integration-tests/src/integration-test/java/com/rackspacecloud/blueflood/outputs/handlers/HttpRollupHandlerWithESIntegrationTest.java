@@ -16,7 +16,7 @@
 
 package com.rackspacecloud.blueflood.outputs.handlers;
 
-import com.github.tlrx.elasticsearch.test.EsSetup;
+import com.rackspacecloud.blueflood.utils.ElasticsearchTestServer;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
 import com.rackspacecloud.blueflood.http.HttpClientVendor;
@@ -65,7 +65,6 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
     private Map<Granularity, Integer> granToPoints = new HashMap<Granularity,Integer>();
     private HttpRollupsQueryHandler httpHandler;
     private static ElasticIO elasticIO;
-    private static EsSetup esSetup;
     private static HttpQueryService httpQueryService;
     private static HttpClientVendor vendor;
     private static DefaultHttpClient client;
@@ -81,12 +80,8 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
         httpQueryService.startService();
         vendor = new HttpClientVendor();
         client = vendor.getClient();
-
-        esSetup = new EsSetup();
-        esSetup.execute(EsSetup.deleteAll());
-        esSetup.execute(EsSetup.createIndex(ElasticIO.ELASTICSEARCH_INDEX_NAME_WRITE)
-                .withSettings(EsSetup.fromClassPath("index_settings.json"))
-                .withMapping("metrics", EsSetup.fromClassPath("metrics_mapping.json")));
+        ElasticsearchTestServer.getInstance().ensureStarted();
+        ElasticsearchTestServer.getInstance().reset();
         elasticIO = new ElasticIO();
     }
 
@@ -104,7 +99,6 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
         }
 
         elasticIO.insertDiscovery(new ArrayList<IMetric>(metrics));
-        esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
 
         analyzer.scanMetrics(new ArrayList<IMetric>(metrics));
         metricsRW.insertMetrics(metrics);
@@ -237,10 +231,6 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
     public static void tearDownClass() throws Exception{
         Configuration.getInstance().setProperty(CoreConfig.DISCOVERY_MODULES.name(), "");
         Configuration.getInstance().setProperty(CoreConfig.USE_ES_FOR_UNITS.name(), "false");
-
-        if (esSetup != null) {
-            esSetup.terminate();
-        }
 
         if (vendor != null) {
             vendor.shutdown();

@@ -19,7 +19,7 @@ package com.rackspacecloud.blueflood.http;
 import static com.rackspacecloud.blueflood.utils.TestUtils.*;
 import static org.mockito.Mockito.spy;
 
-import com.github.tlrx.elasticsearch.test.EsSetup;
+import com.rackspacecloud.blueflood.utils.ElasticsearchTestServer;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
 import com.rackspacecloud.blueflood.inputs.handlers.HttpEventsIngestionHandler;
 import com.rackspacecloud.blueflood.inputs.handlers.HttpMetricsIngestionServer;
@@ -79,7 +79,6 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
     protected static  Map <String, String> parameterMap;
     protected static ElasticIO elasticIO;
     protected static EventsIO eventsSearchIO;
-    protected static EsSetup esSetup;
 
     protected static String configAllowedOrigins = "test.domain1.com, test.domain2.com, test.domain3.com";
     protected static String configAllowedHeaders = "XYZ, ABC";
@@ -135,10 +134,6 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
         if (httpIngestionService != null) {
             httpIngestionService.shutdownService();
         }
-
-        if (esSetup != null) {
-            esSetup.terminate();
-        }
     }
 
     private static void setupElasticSearch() {
@@ -147,17 +142,9 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
         // setup config
         System.setProperty(CoreConfig.DISCOVERY_MODULES.name(), "com.rackspacecloud.blueflood.io.ElasticIO");
         System.setProperty(CoreConfig.EVENTS_MODULES.name(), "com.rackspacecloud.blueflood.io.EventElasticSearchIO");
-
         // setup elasticsearch test clusters with blueflood mappings
-        esSetup = new EsSetup();
-        esSetup.execute(EsSetup.deleteAll());
-        esSetup.execute(EsSetup.createIndex(ElasticIO.ELASTICSEARCH_INDEX_NAME_WRITE)
-                .withSettings(EsSetup.fromClassPath("index_settings.json"))
-                .withMapping("metrics", EsSetup.fromClassPath("metrics_mapping.json")));
-        esSetup.execute(EsSetup.createIndex(EventElasticSearchIO.EVENT_INDEX)
-                .withSettings(EsSetup.fromClassPath("index_settings.json"))
-                .withMapping("graphite_event", EsSetup.fromClassPath("events_mapping.json")));
-
+        ElasticsearchTestServer.getInstance().ensureStarted();
+        ElasticsearchTestServer.getInstance().reset();
         // create elaticsearch client and link it to ModuleLoader
         elasticIO = new ElasticIO();
         eventsSearchIO = new EventElasticSearchIO();

@@ -66,7 +66,6 @@ public class HttpMetricsIndexHandlerIntegrationTest extends HttpIntegrationTestB
         }
 
         elasticIO.insertDiscovery(new ArrayList<IMetric>(metrics));
-        esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
 
         metricsRW.insertMetrics(metrics);
     }
