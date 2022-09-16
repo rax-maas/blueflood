@@ -34,7 +34,7 @@ import org.junit.Test;
 
 import java.util.*;
 
-public class EventElasticSearchIOTest {
+public class EventElasticSearchIOIntegrationTest {
     private static EventElasticSearchIO searchIO;
     private static EsSetup esSetup;
 

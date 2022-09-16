@@ -55,7 +55,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class HttpAnnotationsEndToEndTest {
+public class HttpAnnotationsEndToEndIntegrationTest {
     private static HttpIngestionService httpIngestionService;
     private static HttpClientVendor vendor;
     private static DefaultHttpClient client;
