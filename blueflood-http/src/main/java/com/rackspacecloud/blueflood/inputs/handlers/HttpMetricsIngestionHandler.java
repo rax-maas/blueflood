@@ -158,24 +158,24 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
                 forceTTLsIfConfigured(validMetrics);
 
             } catch (JsonParseException e) {
-                log.warn("Exception parsing content", e);
+                log.info("Exception parsing content", e);
                 DefaultHandler.sendErrorResponse(ctx, request, "Cannot parse content",
                         HttpResponseStatus.BAD_REQUEST);
                 return;
             } catch (JsonMappingException e) {
-                log.warn("Exception parsing content", e);
+                log.info("Exception parsing content", e);
                 DefaultHandler.sendErrorResponse(ctx, request, "Cannot parse content",
                         HttpResponseStatus.BAD_REQUEST);
                 return;
             } catch (InvalidDataException ex) {
                 // todo: we should measure these. if they spike, we track down the bad client.
                 // this is strictly a client problem. Something wasn't right (data out of range, etc.)
-                log.warn(ctx.channel().remoteAddress() + " " + ex.getMessage());
+                log.info(ctx.channel().remoteAddress() + " " + ex.getMessage());
                 DefaultHandler.sendErrorResponse(ctx, request, "Invalid data " + ex.getMessage(),
                         HttpResponseStatus.BAD_REQUEST);
                 return;
             } catch (IOException e) {
-                log.warn("IO Exception parsing content", e);
+                log.info("IO Exception parsing content", e);
                 DefaultHandler.sendErrorResponse(ctx, request, "Cannot parse content",
                         HttpResponseStatus.BAD_REQUEST);
                 return;
@@ -192,7 +192,7 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
 
             // If no valid metrics are present, return error response
             if (validMetrics.isEmpty()) {
-                log.warn(ctx.channel().remoteAddress() + " No valid metrics");
+                log.info(ctx.channel().remoteAddress() + " No valid metrics");
 
                 if (validationErrors.isEmpty()) {
                     DefaultHandler.sendErrorResponse(ctx, request, "No valid metrics",
