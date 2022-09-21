@@ -1,0 +1,22 @@
+{
+    "tokens": {
+        "_routing": {
+            "required": true
+        },
+        "dynamic": false,
+        "properties": {
+            "tenantId": {
+                "type": "keyword"
+            },
+            "token": {
+                "type": "keyword"
+            },
+            "parent": {
+                "type": "keyword"
+            },
+            "isLeaf": {
+                "type": "boolean"
+            }
+        }
+    }
+}
