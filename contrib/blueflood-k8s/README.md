@@ -51,3 +51,76 @@ The general setup of a yaml file is as follows.
 - For groups of pods that form a cluster (Cassandra and Elasticsearch), there's a headless Service. This doesn't provide
   a ClusterIP. Instead, it resolves in DNS to the IPs of all the cluster members, making it easier to do cluster
   discovery.
+
+> **NOTE:** Each yaml file is fully self-contained except for the required ConfigMap. After creating an appropriate
+ConfigMap, you should be able to `kubectl apply` any single yaml file and get a complete set of running resources! Any
+changes needed for deployment in different environments should be made via a Kustomize overlay.
+
+## First time startup
+
+First, create a namespace for everything to live in. The name of the namespace should match that set by the
+kustomization.yaml in your selected overlay. For example, using the "example" overlay provided here:
+
+```bash
+kubectl create ns blueflood-demo
+```
+
+You can't bring all pods up at the same time. There are two stages to a first-time startup. You have to do some initial
+setup for Cassandra and Elasticsearch first.
+
+First, if using Elasticsearch 7+, uncomment the `cluster.initial_master_nodes` property from the elasticsearch.yml
+you're using. It's required for first time cluster start. It's unclear if anything like this applies to versions <7.
+
+Likewise, comment out the health probes on the Cassandra seed nodes. They'll hinder initial cluster formation. Look for
+"DON'T PROBE HERE!" in `cassandra.yaml`.
+
+Then start Cassandra and Elasticsearch with
+
+```bash
+kubectl apply -k contrib/blueflood-k8s/overlays/example/ -l 'component in (cassandra, elasticsearch)'
+```
+
+It'll take some time for the respective clusters to stabilize and become responsive. Expect some pod restarts as this
+happens. Cassandra is especially sensitive to starting multiple nodes at the same time. Some nodes will fail because
+others are initializing. Within a handful of restarts, both clusters should become responsive.
+
+### Elasticsearch
+
+The Elasticsearch cluster will likely be the first to fully start up. Check its health by looking for `number_of_nodes`
+== 3 (or how many replicas you've set it to) and `status` == "green" in the output of
+
+```bash
+kubectl exec es-master-0 -c elasticsearch -- curl 'localhost:9200/_cluster/health?pretty'
+```
+
+For Elasticsearch 7+, as soon as all Elasticsearch master nodes have started and joined the cluster, comment out the
+`cluster.initial_master_nodes` property in the elasticsearch.yaml. You only use this property when creating a completely
+new cluster. Use `kubectl apply` to apply the new configuration. Kubernetes will do a rolling restart of the pods for
+you with the new configuration.
+
+Finally, initialize the Elasticsearch indexes and mappings by running an appropriate init script from the [elasticsearch
+module's resources](../../blueflood-elasticsearch/src/main/resources), like
+
+```bash
+kubectl port-forward service/elasticsearch 9200
+blueflood-elasticsearch/src/main/resources/init-es-6/init-es.sh
+```
+
+### Cassandra
+
+Then check the Cassandra cluster health. There should be four nodes (or however many replicas you've configured) with a
+status of `UN` (Up Normal).
+
+```bash
+kubectl exec cass-seed-0 -c cassandra -- nodetool status
+```
+
+Once the cluster is up and running, bring back the health probes that you commented out previously by uncommenting them
+and doing a `kubectl apply` to update the cluster. Kubernetes will do a rolling restart of the seed nodes for you.
+
+Set up the Cassandra schema by running the [cqlsh script](../../src/cassandra/cli/load.cdl) on one of the nodes, such as
+
+```bash
+kubectl cp src/cassandra/cli/load.cdl cass-seed-0:/bf-init.cdl -c cassandra
+kubectl exec cass-seed-0 -c cassandra -- cqlsh -f /bf-init.cdl
+```
