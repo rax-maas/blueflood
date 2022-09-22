@@ -1,0 +1,23 @@
+{
+    "_routing": {
+        "required": true
+    },
+    "properties": {
+        "tenantId": {
+            "type": "keyword",
+            "index": true
+        },
+        "token": {
+            "type": "keyword",
+            "index": true
+        },
+        "parent": {
+            "type": "keyword",
+            "index": true
+        },
+        "isLeaf": {
+            "type": "boolean",
+            "index": true
+        }
+    }
+}

@@ -1,0 +1,24 @@
+{
+    "_routing": {
+        "required": true
+    },
+    "properties": {
+        "tenantId": {
+            "type": "keyword",
+            "index": true
+        },
+        "unit": {
+            "type": "keyword",
+            "index": true
+        },
+        "metric_name": {
+            "type": "keyword",
+            "fields": {
+                "tokens": {
+                    "type": "text",
+                    "analyzer": "prefix-test-analyzer"
+                }
+            }
+        }
+    }
+}

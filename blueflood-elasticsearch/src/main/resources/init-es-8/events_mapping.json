@@ -1,0 +1,25 @@
+{
+  "_routing": {
+    "required": true
+  },
+  "properties": {
+    "tenantId": {
+      "type": "keyword",
+      "index": true
+    },
+    "what": {
+      "type": "keyword",
+      "index": true
+    },
+    "data": {
+      "type": "keyword",
+      "index": true
+    },
+    "tags": {
+      "type": "keyword"
+    },
+    "when": {
+      "type": "long"
+    }
+  }
+}

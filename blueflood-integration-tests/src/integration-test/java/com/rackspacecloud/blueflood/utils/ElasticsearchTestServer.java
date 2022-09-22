@@ -214,6 +214,8 @@ public class ElasticsearchTestServer {
             versionFolder = "";
         } else if (testContainersEsVersion.startsWith("6.")) {
             versionFolder = "init-es-6";
+        } else if (testContainersEsVersion.startsWith("8.")) {
+            versionFolder = "init-es-8";
         } else {
             throw new IllegalStateException("I don't know which ES init resource to use for ES version "
                     + testContainersEsVersion);
