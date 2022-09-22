@@ -112,7 +112,7 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
 
     private final ShardStateManager shardStateManager;
     private transient long scheduleTime = 0L;
-    
+
     /** these shards have been scheduled in the last 10 minutes. */
     private final Cache<Integer, Long> recentlyScheduledShards = CacheBuilder.newBuilder()
             .maximumSize(Constants.NUMBER_OF_SHARDS)
@@ -136,7 +136,7 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
      * When you update one, you must update the other.
      */
     private final List<SlotKey> orderedScheduledSlots = new ArrayList<SlotKey>();
-    
+
     /** slots that are running are not scheduled. */
     private final Map<SlotKey, Long> runningSlots = new HashMap<SlotKey, Long>();
 
@@ -437,9 +437,9 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
     // precondition: shard is unmanaged.
     public void addShard(int shard) {
         shardStateManager.add(shard);
-        lockManager.addShard(shard);    
+        lockManager.addShard(shard);
     }
-    
+
     // precondition: shard is managed.
     public void removeShard(int shard) {
         shardStateManager.remove(shard);
@@ -490,17 +490,14 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
         return results;
     }
 
-    private boolean isMbeanRegistered = false;
     private synchronized void registerMBean() {
-
-        if (isMbeanRegistered) return;
-        isMbeanRegistered = true;
-
         try {
             final MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
             final String name = String.format("com.rackspacecloud.blueflood.io:type=%s", ScheduleContext.class.getSimpleName());
             final ObjectName nameObj = new ObjectName(name);
-            mbs.registerMBean(this, nameObj);
+            if (!mbs.isRegistered(nameObj)) {
+                mbs.registerMBean(this, nameObj);
+            }
         } catch (Exception exc) {
             log.error("Unable to register mbean for " + ScheduleContext.class.getSimpleName(), exc);
         }
