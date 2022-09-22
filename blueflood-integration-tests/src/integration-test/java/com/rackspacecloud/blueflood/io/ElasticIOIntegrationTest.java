@@ -57,7 +57,12 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
     @Before
     public void setup() throws Exception {
         helper = ElasticsearchRestHelper.getInstance();
-        tearDown();
+        // We have to reset Elasticsearch for every test because some tests create new metrics, and every test assumes
+        // that it's working from a clean slate. So, a test will fail if it happens to run a query that overlaps with
+        // something another test has added. We can fix some of this by adding some random element to the test data.
+        // Maybe each test gets new, random tenants, instead of using the static TENANT_A, TENANT_B, and TENANT_C? That
+        // would probably fix everything.
+        ElasticsearchTestServer.getInstance().reset();
 
         elasticIO = new ElasticIO(helper);
 
@@ -99,11 +104,6 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
 
         helper.refreshIndex("metric_metadata");
         helper.refreshIndex("metric_tokens");
-    }
-
-    @After
-    public void tearDown() throws Exception {
-        ElasticsearchTestServer.getInstance().reset();
     }
 
     private List<Token> createTestTokens(String tenantId) {
