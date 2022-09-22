@@ -4,7 +4,11 @@ import com.rackspacecloud.blueflood.service.ConfigDefaults;
 import com.rackspacecloud.blueflood.service.Configuration;
 
 public enum IntegrationTestConfig implements ConfigDefaults {
-
+    /**
+     * Sets the version of Cassandra started by {@link com.rackspacecloud.blueflood.utils.CassandraTestServer}. Must be
+     * the version of an available Docker image from DockerHub.
+     */
+    IT_CASSANDRA_CONTAINER_VERSION("2.1"),
     /**
      * Sets the method of starting Elasticsearch for integration tests. This will change over time as we update
      * Elasticsearch and change to new testing mechanisms (i.e. we drop TLRX and adopt TEST_CONTAINERS). Valid values:
