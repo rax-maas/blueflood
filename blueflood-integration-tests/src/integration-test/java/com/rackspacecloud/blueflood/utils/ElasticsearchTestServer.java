@@ -130,19 +130,16 @@ public class ElasticsearchTestServer {
      * weren't written that way, though.
      */
     public void reset() {
-        long start = System.currentTimeMillis();
-        try {
-            HttpDelete delete = new HttpDelete("http://localhost:9200/_all");
-            CloseableHttpResponse deleteResponse = client.execute(delete);
-            expect200orFail(deleteResponse, "Couldn't delete indexes from test Elasticsearch");
-        } catch (IOException e) {
-            throw new IllegalStateException("Couldn't delete indexes from test Elasticsearch", e);
-        }
-        initIt();
-        long elapsed = System.currentTimeMillis() - start;
-        StackTraceElement callerElement = Thread.currentThread().getStackTrace()[2];
-        log.info("Elasticsearch reset took {} ms; called by {}.{}:{}", new Object[] {
-                elapsed, callerElement.getClassName(), callerElement.getMethodName(), callerElement.getLineNumber()});
+        TestUtils.logTimeWaster("Elasticsearch reset", () -> {
+            try {
+                HttpDelete delete = new HttpDelete("http://localhost:9200/_all");
+                CloseableHttpResponse deleteResponse = client.execute(delete);
+                expect200orFail(deleteResponse, "Couldn't delete indexes from test Elasticsearch");
+            } catch (IOException e) {
+                throw new IllegalStateException("Couldn't delete indexes from test Elasticsearch", e);
+            }
+            initIt();
+        });
     }
 
     private void expect200orFail(CloseableHttpResponse deleteResponse, String message) throws IOException {

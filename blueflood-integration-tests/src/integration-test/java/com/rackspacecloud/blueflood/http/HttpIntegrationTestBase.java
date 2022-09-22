@@ -53,6 +53,7 @@ import java.util.Random;
 import java.util.Set;
 
 import com.rackspacecloud.blueflood.utils.TestServers;
+import com.rackspacecloud.blueflood.utils.TestUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -119,10 +120,12 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
         elasticIO = new ElasticIO();
         eventsSearchIO = new EventElasticSearchIO();
 
-        setupIngestionServer();
-        setupQueryServer();
-        vendor = new HttpClientVendor();
-        client = vendor.getClient();
+        TestUtils.logTimeWaster("Restarting reusable BF resources", () -> {
+            setupIngestionServer();
+            setupQueryServer();
+            vendor = new HttpClientVendor();
+            client = vendor.getClient();
+        });
     }
 
     @AfterClass
@@ -130,17 +133,19 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
 
         Configuration.getInstance().init();
 
-        if (vendor != null) {
-            vendor.shutdown();
-        }
+        TestUtils.logTimeWaster("Tearing down reusable BF resources", () -> {
+            if (vendor != null) {
+                vendor.shutdown();
+            }
 
-        if (httpQueryService != null) {
-            httpQueryService.stopService();
-        }
+            if (httpQueryService != null) {
+                httpQueryService.stopService();
+            }
 
-        if (httpIngestionService != null) {
-            httpIngestionService.shutdownService();
-        }
+            if (httpIngestionService != null) {
+                httpIngestionService.shutdownService();
+            }
+        });
     }
 
     private static void setupIngestionServer() throws Exception {

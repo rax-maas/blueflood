@@ -4,6 +4,8 @@ import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import org.apache.commons.io.IOUtils;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -21,6 +23,8 @@ import java.util.TreeMap;
  */
 public class TestUtils {
 
+    private static final Logger log = LoggerFactory.getLogger(TestUtils.class);
+
     public static final String ERROR_TITLE = "The following errors have been encountered:";
     public static final String PAST_COLLECTION_TIME_REGEX = ".* is more than '" + Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS ) + "' milliseconds into the past\\.$";
     public static final String FUTURE_COLLECTION_TIME_REGEX = ".* is more than '" + Configuration.getInstance().getLongProperty( CoreConfig.AFTER_CURRENT_COLLECTIONTIME_MS ) + "' milliseconds into the future\\.$";
@@ -33,6 +37,31 @@ public class TestUtils {
 
     // making this just a static class, no instantiations
     private TestUtils() {}
+
+    public interface ThrowingRunnable {
+        void run() throws Exception;
+    }
+
+    /**
+     * Logs information about wasteful test activities so that we can see where time is spent and optimize as necessary.
+     * The caller and time taken will be logged in a consistent way so that logs can be parsed with cli tools to find
+     * serious offenders.
+     *
+     * @param label a meaningful name/label for what's happening, like "Elasticsearch reset" or "Initting database"
+     * @param runnable the wasteful code to be measured
+     */
+    public static void logTimeWaster(String label, ThrowingRunnable runnable) {
+        StackTraceElement callerElement = Thread.currentThread().getStackTrace()[3];
+        long start = System.currentTimeMillis();
+        try {
+            runnable.run();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        long elapsed = System.currentTimeMillis() - start;
+        log.info("TIME WASTED - " + label + " - took {} ms; called by {}.{}:{}",
+                elapsed, callerElement.getClassName(), callerElement.getMethodName(), callerElement.getLineNumber());
+    }
 
     /**
      * Generate multi-tenant metrics data using:
