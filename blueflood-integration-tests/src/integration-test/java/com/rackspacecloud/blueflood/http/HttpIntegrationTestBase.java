@@ -51,6 +51,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+
+import com.rackspacecloud.blueflood.utils.TestServers;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -107,13 +109,18 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
 
     @BeforeClass
     public static void setUpHttp() throws Exception {
-        setupElasticSearch();
+        // Start dependency test servers
+        TestServers.ensureStarted();
+        // Tests generally expect Elasticsearch to be empty, so reset it. I wish we could get away from this because it
+        // costs extra time for every test.
+        ElasticsearchTestServer.getInstance().reset();
+
+        // Just a couple of things rely on these. They should move out of here.
+        elasticIO = new ElasticIO();
+        eventsSearchIO = new EventElasticSearchIO();
 
         setupIngestionServer();
-
         setupQueryServer();
-
-        // setup vendor and client
         vendor = new HttpClientVendor();
         client = vendor.getClient();
     }
@@ -134,20 +141,6 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
         if (httpIngestionService != null) {
             httpIngestionService.shutdownService();
         }
-    }
-
-    private static void setupElasticSearch() {
-        // setup elasticsearch
-
-        // setup config
-        System.setProperty(CoreConfig.DISCOVERY_MODULES.name(), "com.rackspacecloud.blueflood.io.ElasticIO");
-        System.setProperty(CoreConfig.EVENTS_MODULES.name(), "com.rackspacecloud.blueflood.io.EventElasticSearchIO");
-        // setup elasticsearch test clusters with blueflood mappings
-        ElasticsearchTestServer.getInstance().ensureStarted();
-        ElasticsearchTestServer.getInstance().reset();
-        // create elaticsearch client and link it to ModuleLoader
-        elasticIO = new ElasticIO();
-        eventsSearchIO = new EventElasticSearchIO();
     }
 
     private static void setupIngestionServer() throws Exception {

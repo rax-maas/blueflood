@@ -65,6 +65,19 @@ public class ElasticsearchTestServer {
     }
 
     /**
+     * Like {@link #ensureStarted()} but runs the startup in a separate thread so that you can go on to set up other
+     * test resources at the same time. Be sure to invoke the Future to await startup before going ahead with tests.
+     */
+    public Future<Boolean> asyncEnsureStarted() {
+        final ExecutorService service = Executors.newSingleThreadExecutor();
+        return service.submit(() -> {
+            ensureStarted();
+            service.shutdown();
+            return true;
+        });
+    }
+
+    /**
      * Starts an in-memory Elasticsearch that's configured for Blueflood. If such a server is already running, this is a
      * no-op. The configuration mimics that found in init-es.sh as closely as I can figure out how to.
      */

@@ -43,6 +43,19 @@ public class CassandraTestServer {
     }
 
     /**
+     * Like {@link #ensureStarted()} but runs the startup in a separate thread so that you can go on to set up other
+     * test resources at the same time. Be sure to invoke the Future to await startup before going ahead with tests.
+     */
+    public Future<Boolean> asyncEnsureStarted() {
+        final ExecutorService service = Executors.newSingleThreadExecutor();
+        return service.submit(() -> {
+            ensureStarted();
+            service.shutdown();
+            return true;
+        });
+    }
+
+    /**
      * Starts a Cassandra database that's initialized to work with Blueflood. If such a server is already running, this
      * is a no-op. Current integration tests (as of 16 Sep 2022) rely on Maven to start Cassandra for them, and we don't
      * want to interfere with that, so this will also not start a database if it can detect that another database is
