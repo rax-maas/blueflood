@@ -30,6 +30,16 @@ public enum ElasticIOConfig implements ConfigDefaults {
         Configuration.getInstance().loadDefaults(ElasticIOConfig.values());
     }
 
+
+
+//    next: this last commit on es test server mixes too many concerns. split it up:
+//    - DONE adding test containers init
+//    - DONE making test server global
+//    - creating formal IT configuration - have to build this on top of those other two, if there's not already a merge conflict...
+//    after that, there's still stash waiting
+    // next up: cassandra test server! maybe this can be sensitive to the env. if port 9042 is already bound, be a no-op. then it can co-exist with the mvn server!
+
+
     private String defaultValue;
     private ElasticIOConfig(String value) {
         this.defaultValue = value;

@@ -11,6 +11,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringWriter;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -430,5 +432,23 @@ public class TestUtils {
         return metricsList;
     }
 
+    public static void pause(String message) {
+        System.out.println(message);
+        System.out.println("Open local port 1234 to continue (nc -lp 1234)");
+        boolean wait = true;
+        while (wait) {
+            try (Socket s = new Socket()) {
+                s.connect(new InetSocketAddress("localhost", 1234), 500);
+                wait = false;
+            } catch (IOException e) {
+                wait = true;
+            }
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                throw new IllegalStateException("Unexpected interrupt", e);
+            }
+        }
+    }
 
 }

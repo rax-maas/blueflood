@@ -45,6 +45,7 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
 
     protected ElasticIO elasticIO;
     protected ElasticTokensIO elasticTokensIO;
+    private final Random random = new Random();
 
     /**
      * Starts an embedded Elasticsearch that these tests can run against.
@@ -292,12 +293,7 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
         elasticIO.insertDiscovery(metric);
 
         helper.refreshIndex(ES_DUP);
-        // Historically, this line was here, but I don't know why. In init-es.sh, "metric_metadata_read" is an alias for
-        // "metric_metadata". Why? I have no clue. Maybe something related to Elasticsearch clustering and creating read
-        // slaves?. This is the only place that seems to use that name. The ElasticsearchTestServer doesn't create this
-        // alias, so it fails here. I'm not sure how to create the alias in that class.
-        //
-        // elasticIO.setINDEX_NAME_READ("metric_metadata_read");
+        elasticIO.setINDEX_NAME_READ("metric_metadata_read");
         results = elasticIO.search(TENANT_A, testLocator.getMetricName());
         // Should just be one result
         assertEquals(results.size(), 1);

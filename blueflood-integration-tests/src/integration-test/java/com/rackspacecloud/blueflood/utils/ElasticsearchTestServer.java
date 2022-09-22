@@ -41,6 +41,10 @@ import java.util.concurrent.Future;
  * don't work. Some test might start a server on a dynamic port, but some other class has already been initialized and
  * read the original configuration value of the port, so it's looking in the wrong place. It's simpler to just be sure
  * to bind the port(s) that the existing tests know to look for.
+ *
+ * ES rollover solution: rollover monthly e.g., plan to keep 12 and delete 13th month; then set guard caches to have
+ * creation TTL of 12 months - 1 day (or so) so that we guarantee every time series is always represented in the most
+ * recent 12 months of indexes, letting the 13th be safely deleted.
  */
 public class ElasticsearchTestServer {
 
