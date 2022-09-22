@@ -1,16 +1,19 @@
 package com.rackspacecloud.blueflood.utils;
 
 import com.github.tlrx.elasticsearch.test.EsSetup;
-import com.rackspacecloud.blueflood.io.ElasticIO;
-import com.rackspacecloud.blueflood.io.ElasticTokensIO;
-import com.rackspacecloud.blueflood.io.EventElasticSearchIO;
-import com.rackspacecloud.blueflood.service.Configuration;
-import com.rackspacecloud.blueflood.service.ElasticIOConfig;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpDelete;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.util.EntityUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.utility.DockerImageName;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -26,6 +29,8 @@ import java.util.Arrays;
  * to bind the port(s) that the existing tests know to look for.
  */
 public class ElasticsearchTestServer {
+
+    private static final Logger log = LoggerFactory.getLogger(ElasticsearchTestServer.class);
 
     /**
      * Supported ways of starting an Elasticsearch instance for testing. This exists because it's in flux. The
@@ -70,6 +75,11 @@ public class ElasticsearchTestServer {
 
     private ElasticsearchContainer elasticsearchContainer;
     private EsSetup esSetup;
+    /**
+     * An http client, handy for talking to Elasticsearch. Keeping one on hand is more efficient than creating one every
+     * time you need it.
+     */
+    private final CloseableHttpClient client = HttpClientBuilder.create().build();
     private static final ElasticsearchTestServer INSTANCE = new ElasticsearchTestServer();
 
     public static final ElasticsearchTestServer getInstance() {
@@ -91,10 +101,35 @@ public class ElasticsearchTestServer {
             }
         } else if (esInitMethod.equals(EsInitMethod.EXTERNAL)) {
             // Do nothing! You have to manage Elasticsearch your own self!
-            System.out.println("Using external Elasticsearch");
+            log.info("Using external Elasticsearch");
         } else {
             throw new IllegalStateException("Illegal value set for Elasticsearch init in tests: " + esInitMethod);
         }
+    }
+
+    /**
+     * Resets the test Elasticsearch instance by deleting all indexes and re-initializing it. This is a somewhat
+     * expensive process in terms of time, so it's better that tests use random data and avoid conflicts. Older tests
+     * weren't written that way, though.
+     */
+    public void reset() {
+        long start = System.currentTimeMillis();
+        try {
+            HttpDelete delete = new HttpDelete("http://localhost:9200/_all");
+            CloseableHttpResponse deleteResponse = client.execute(delete);
+            String body = EntityUtils.toString(deleteResponse.getEntity());
+            EntityUtils.consume(deleteResponse.getEntity());
+            if (deleteResponse.getStatusLine().getStatusCode() != 200) {
+                throw new IllegalStateException("Couldn't delete indexes from test Elasticsearch: " + body);
+            }
+        } catch (IOException e) {
+            throw new IllegalStateException("Couldn't delete indexes from test Elasticsearch", e);
+        }
+        initIt();
+        long elapsed = System.currentTimeMillis() - start;
+        StackTraceElement callerElement = Thread.currentThread().getStackTrace()[2];
+        log.info("Elasticsearch reset took {} ms; called by {}.{}:{}", new Object[] {
+                elapsed, callerElement.getClassName(), callerElement.getMethodName(), callerElement.getLineNumber()});
     }
 
     public void startTestContainer() {
@@ -109,15 +144,10 @@ public class ElasticsearchTestServer {
 
     public void startTlrx() {
         esSetup = new EsSetup();
-        esSetup.execute(EsSetup.deleteAll()); //Deletes all the index or documents before creating new ones.
-        esSetup.execute(EsSetup.createIndex(ElasticIO.ELASTICSEARCH_INDEX_NAME_WRITE)
-                .withSettings(EsSetup.fromClassPath("index_settings.json"))
-                .withMapping("metrics", EsSetup.fromClassPath("metrics_mapping.json")));
-        esSetup.execute(EsSetup.createIndex(ElasticTokensIO.ELASTICSEARCH_TOKEN_INDEX_NAME_WRITE)
-                .withMapping("tokens", EsSetup.fromClassPath("tokens_mapping.json")));
-        esSetup.execute(EsSetup.createIndex(EventElasticSearchIO.EVENT_INDEX)
-                .withMapping("graphite_event", EsSetup.fromClassPath("events_mapping.json")));
-        esSetup.execute(EsSetup.createIndex("blueflood_initialized_marker"));
+        // It seems that this library doesn't actually start Elasticsearch until you do something with it, so...
+        esSetup.execute(EsSetup.createIndex("init_me"));
+        // While this was built for test containers, we can init the tlrx instance the same way.
+        initIt();
     }
 
     private void initIt() {
@@ -144,12 +174,14 @@ public class ElasticsearchTestServer {
         String esResourcesDir = thisModuleResourcesDir + "../../../blueflood-elasticsearch/src/main/resources/";
         String initScript = FilenameUtils.concat(esResourcesDir, whichScript);
         String command = initScript + " -u localhost:9200";
-        System.out.println("Initialize Elasticsearch for tests with '" + command + "'");
+        log.info("Initialize Elasticsearch for tests with '" + command + "'");
         Process process = Runtime.getRuntime().exec(command);
-        IOUtils.copy(process.getInputStream(), System.out);
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        IOUtils.copy(process.getInputStream(), output);
         int exit = process.waitFor();
         if (exit != 0) {
-            throw new IllegalStateException("Elasticsearch init script exited with non-zero status");
+            throw new IllegalStateException("Elasticsearch init script exited with non-zero status; exit=" + exit +
+                    "; stdout:\n" + output);
         }
     }
 
@@ -158,6 +190,11 @@ public class ElasticsearchTestServer {
      * all resources in use by that Elasticsearch.
      */
     public void stop() {
+        try {
+            client.close();
+        } catch (IOException e) {
+            log.warn("Failed to close the HttpClient", e);
+        }
         if (esInitMethod.equals(EsInitMethod.TEST_CONTAINERS)) {
             elasticsearchContainer.stop();
             elasticsearchContainer = null;
@@ -166,7 +203,7 @@ public class ElasticsearchTestServer {
             esSetup = null;
         } else if (esInitMethod.equals(EsInitMethod.EXTERNAL)) {
             // Do nothing! You have to manage Elasticsearch your own self!
-            System.out.println("Done with external Elasticsearch");
+            log.info("Done with external Elasticsearch");
         } else {
             throw new IllegalStateException("Illegal value set for Elasticsearch init in tests: " + esInitMethod);
         }
