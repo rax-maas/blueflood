@@ -31,9 +31,44 @@
     <cassandra.listenAddress>127.0.0.1</cassandra.listenAddress>
     <cassandra.plugin.version>2.1.7-1</cassandra.plugin.version>
     <skip.integration.tests>false</skip.integration.tests>
+    <!-- Spock and groovy versions have to be kept aligned. Spock pulls in the core groovy jar, which isn't managed by
+      the groovy.version property. -->
+    <groovy.version>4.0.4</groovy.version>
+    <spock.version>2.2-groovy-4.0</spock.version>
   </properties>
 
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.spockframework</groupId>
+        <artifactId>spock-bom</artifactId>
+        <version>${spock.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <dependencies>
+    <!-- Required for Spock -->
+    <dependency>
+      <groupId>org.spockframework</groupId>
+      <artifactId>spock-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- Required for Spock -->
+    <dependency>
+      <groupId>org.spockframework</groupId>
+      <artifactId>spock-junit4</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- For easy JSON manipulation in tests -->
+    <dependency>
+      <groupId>org.apache.groovy</groupId>
+      <artifactId>groovy-json</artifactId>
+      <version>${groovy.version}</version>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <artifactId>blueflood-core</artifactId>
       <groupId>com.rackspacecloud</groupId>
@@ -172,7 +207,8 @@
               <!-- Skips integration tests if the value of skip.integration.tests property is true -->
               <skipTests>${skip.integration.tests}</skipTests>
               <includes>
-                <include>**/*Integration*.java</include>
+                <include>**/*Test</include>
+                <include>**/*Spec</include>
               </includes>
               <excludes>
                 <!-- This test uses guava 12.0.1 version while others integration tests uses 19.0 -->
