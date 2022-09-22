@@ -53,20 +53,22 @@ public class DLocatorIO implements LocatorIO {
     private static final String COLUMN1 = "column1";
     private static final String VALUE = "value";
 
-    private PreparedStatement getValue;
-    private PreparedStatement putValue;
+    private static PreparedStatement getValue;
+    private static PreparedStatement putValue;
 
     /**
      * Constructor
      */
     public DLocatorIO() {
-        createPreparedStatements();
+        if (getValue == null) {
+            createPreparedStatements();
+        }
     }
 
     /**
      * Create all prepared statements use in this class for metrics_locator
      */
-    private void createPreparedStatements()  {
+    private static void createPreparedStatements()  {
 
         // create a generic select statement for retrieving from metrics_locator
         Select.Where select = QueryBuilder

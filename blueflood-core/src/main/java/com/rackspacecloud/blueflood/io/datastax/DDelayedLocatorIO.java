@@ -32,11 +32,16 @@ public class DDelayedLocatorIO implements DelayedLocatorIO {
     private static final String COLUMN1 = "column1";
     private static final String VALUE = "value";
 
-    private final PreparedStatement getValue;
-    private final PreparedStatement putValue;
+    private static PreparedStatement getValue;
+    private static PreparedStatement putValue;
 
     public DDelayedLocatorIO() {
+        if (getValue == null) {
+            prepareStatements();
+        }
+    }
 
+    private static void prepareStatements() {
         // create a generic select statement for retrieving from metrics_delayed_locator
         Select.Where select = QueryBuilder
                 .select()
