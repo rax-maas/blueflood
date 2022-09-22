@@ -25,19 +25,10 @@ import com.rackspacecloud.blueflood.utils.ElasticsearchTestServer;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
-import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.entity.ContentType;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.nio.entity.NStringEntity;
 import org.junit.*;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -110,41 +101,7 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
 
     @After
     public void tearDown() throws Exception {
-        List<String> typesToEmpty = new ArrayList<>();
-        typesToEmpty.add("/metric_metadata/metrics/_query");
-        typesToEmpty.add("/metric_tokens/tokens/_query");
-        typesToEmpty.add("/metric_tokens_v1/tokens/_query");
-
-        for (String typeToEmpty : typesToEmpty)
-            deleteAllDocuments(typeToEmpty);
-    }
-
-    private void deleteAllDocuments(String typeToEmpty) throws URISyntaxException, IOException {
-        URIBuilder builder = new URIBuilder().setScheme("http")
-                .setHost("127.0.0.1").setPort(9200)
-                .setPath(typeToEmpty);
-
-        HttpEntityEnclosingRequestBase delete = new HttpEntityEnclosingRequestBase() {
-            @Override
-            public String getMethod() {
-                return "DELETE";
-            }
-        };
-        delete.setURI(builder.build());
-
-        String deletePayload = "{\"query\":{\"match_all\":{}}}";
-        HttpEntity entity = new NStringEntity(deletePayload, ContentType.APPLICATION_JSON);
-        delete.setEntity(entity);
-
-        HttpClient client = HttpClientBuilder.create().build();
-        HttpResponse response = client.execute(delete);
-        if(response.getStatusLine().getStatusCode() != 200)
-        {
-            System.out.println(String.format("Couldn't delete index [%s] after running tests.", typeToEmpty));
-        }
-        else {
-            System.out.println(String.format("Successfully deleted [%s] index after running tests.", typeToEmpty));
-        }
+        ElasticsearchTestServer.getInstance().reset();
     }
 
     private List<Token> createTestTokens(String tenantId) {
