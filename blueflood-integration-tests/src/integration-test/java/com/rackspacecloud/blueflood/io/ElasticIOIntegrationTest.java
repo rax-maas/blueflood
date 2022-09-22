@@ -67,6 +67,8 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
 
 
         String TOKEN_INDEX_NAME_OLD = ElasticTokensIO.ELASTICSEARCH_TOKEN_INDEX_NAME_WRITE + "_v1";
+        ElasticsearchTestServer.getInstance().createIndex(TOKEN_INDEX_NAME_OLD, ElasticTokensIO.ES_DOCUMENT_TYPE,
+                "tokens_mapping.json");
 
         elasticTokensIO = new ElasticTokensIO() {
             @Override
@@ -368,7 +370,6 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
 
         List<MetricName> results = getDiscoveryIO(type).getMetricNames(tenantId, query);
 
-        // On failure, see note in testGetMetricNamesWithWildCardPrefixAtTheEnd()
         assertEquals("Invalid total number of results", 2, results.size());
         assertThat(results, hasItem(new MetricName("one.two", false)));
         assertThat(results, hasItem(new MetricName("foo.bar", false)));
@@ -424,26 +425,6 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
 
         List<MetricName> results = getDiscoveryIO(type).getMetricNames(tenantId, query);
 
-        // Note: 1 Jul 2022 - While adding this test class back into the integration test suite by adding embedded
-        // Elasticsearch back to it, I observed this and some other test cases here failing to retrieve the correct
-        // number of items using "elasticTokensIO". On inspection, it was returning *all* metrics matching the query,
-        // rather than only the next level down. In other words, where it was supposed to return only
-        // "one.two.three15.fourA", it actually returned:
-        //
-        // - "one.two.three15.fourA"
-        // - "one.two.three15.fourA.five0"
-        // - "one.two.three15.fourA.five1"
-        // - "one.two.three15.fourA.five2"
-        //
-        // Given that I only ever see it on the "elasticTokensIO" and not on the "elasticIO", it could be a bug in the
-        // former. They have separate implementations of the method under test.
-        //
-        // It's also possible that it's somehow related to some Elasticsearch behavior I don't know about, like indexing
-        // delays or something. This possibility may be strengthened by the fact that the actual "number of results"
-        // returned here isn't always the same. If this particular test case were to return all results, as I mentioned
-        // above, the total count should be 360. Sometimes it returns less.
-        //
-        // The same behavior occurs using the tlrx test library and when running Elasticsearch externally with Docker.
         assertEquals("Invalid total number of results", NUM_PARENT_ELEMENTS * CHILD_ELEMENTS.size(), results.size());
         for (MetricName metricName : results) {
             Assert.assertFalse("isCompleteName value", metricName.isCompleteName());;
@@ -462,7 +443,6 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
 
         List<MetricName> results = getDiscoveryIO(type).getMetricNames(tenantId, query);
 
-        // On failure, see note in testGetMetricNamesWithWildCardPrefixAtTheEnd()
         assertEquals("Invalid total number of results", CHILD_ELEMENTS.size() + 1, results.size());
         assertThat(results, hasItem(new MetricName("one.two.three00.fourA", false)));
         assertThat(results, hasItem(new MetricName("one.two.three00.fourB", false)));
