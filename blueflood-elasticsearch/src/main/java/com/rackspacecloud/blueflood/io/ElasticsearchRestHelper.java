@@ -547,7 +547,7 @@ public class ElasticsearchRestHelper {
             throw new IOException("Unable to reach Elasticsearch", lastException);
         }
         if (responseCode > 299) {
-            throw new IOException("Elasticsearch request failed");
+            throw new IOException("Elasticsearch request failed: " + responseBody);
         }
         return new ExecuteResponse(responseBody, responseCode);
     }
