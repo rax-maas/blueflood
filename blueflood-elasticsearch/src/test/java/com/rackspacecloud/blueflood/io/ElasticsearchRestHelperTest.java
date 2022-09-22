@@ -85,7 +85,7 @@ public class ElasticsearchRestHelperTest {
       fail("Should have raised exception");
     } catch (Exception e) {
       assertThat(e, instanceOf(IOException.class));
-      assertThat(e.getMessage(), equalTo("Elasticsearch request failed"));
+      assertThat(e.getMessage(), equalTo("Elasticsearch request failed: default test response: foo bar baz"));
     }
   }
 
