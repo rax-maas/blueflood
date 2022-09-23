@@ -16,18 +16,9 @@
 
 package com.rackspacecloud.blueflood.io;
 
-import com.github.tlrx.elasticsearch.test.EsSetup;
+import com.rackspacecloud.blueflood.utils.ElasticsearchTestServer;
 import com.rackspacecloud.blueflood.types.Event;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
-import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.entity.ContentType;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.nio.entity.NStringEntity;
 import org.joda.time.DateTime;
-import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -36,7 +27,6 @@ import java.util.*;
 
 public class EventElasticSearchIOIntegrationTest {
     private static EventElasticSearchIO searchIO;
-    private static EsSetup esSetup;
 
     private static final String TENANT_1 = "tenant1";
     private static final String TENANT_2 = "otheruser2";
@@ -126,11 +116,8 @@ public class EventElasticSearchIOIntegrationTest {
 
     @BeforeClass
     public static void setup() throws Exception {
-        esSetup = new EsSetup();
-        esSetup.execute(EsSetup.deleteAll());
-        esSetup.execute(EsSetup
-                .createIndex(EventElasticSearchIO.EVENT_INDEX)
-                .withMapping(EventElasticSearchIO.ES_TYPE, EsSetup.fromClassPath("events_mapping.json")));
+        ElasticsearchTestServer.getInstance().ensureStarted();
+        ElasticsearchTestServer.getInstance().reset();
         searchIO = new EventElasticSearchIO();
 
         createTestEvents(TENANT_1, TENANT_1_EVENTS_NUM);
@@ -173,39 +160,6 @@ public class EventElasticSearchIOIntegrationTest {
 
             date = date.minusSeconds(stepInSeconds);
             searchIO.insert(tenant, eventMap);
-        }
-    }
-
-    /*
-    Once done testing, delete all of the records of the given type and index.
-    NOTE: Don't delete the index or the type, because that messes up the ES settings.
-     */
-    @AfterClass
-    public static void tearDownClass() throws Exception {
-        URIBuilder builder = new URIBuilder().setScheme("http")
-                .setHost("127.0.0.1").setPort(9200)
-                .setPath("/events/graphite_event/_query");
-
-        HttpEntityEnclosingRequestBase delete = new HttpEntityEnclosingRequestBase() {
-            @Override
-            public String getMethod() {
-                return "DELETE";
-            }
-        };
-        delete.setURI(builder.build());
-
-        String deletePayload = "{\"query\":{\"match_all\":{}}}";
-        HttpEntity entity = new NStringEntity(deletePayload, ContentType.APPLICATION_JSON);
-        delete.setEntity(entity);
-
-        HttpClient client = HttpClientBuilder.create().build();
-        HttpResponse response = client.execute(delete);
-        if(response.getStatusLine().getStatusCode() != 200)
-        {
-            System.out.println("Couldn't delete index after running tests.");
-        }
-        else {
-            System.out.println("Successfully deleted index after running tests.");
         }
     }
 }

@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.outputs.handlers;
 
 import static junit.framework.Assert.assertEquals;
+import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
 import com.rackspacecloud.blueflood.http.HttpIntegrationTestBase;
 import com.rackspacecloud.blueflood.io.IOContainer;
@@ -66,7 +67,6 @@ public class HttpMetricsIndexHandlerIntegrationTest extends HttpIntegrationTestB
         }
 
         elasticIO.insertDiscovery(new ArrayList<IMetric>(metrics));
-        esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
 
         metricsRW.insertMetrics(metrics);
     }
@@ -76,14 +76,16 @@ public class HttpMetricsIndexHandlerIntegrationTest extends HttpIntegrationTestB
         parameterMap = new HashMap<String, String>();
         parameterMap.put("query", metricPrefix + ".*");
         HttpGet get = new HttpGet(getQuerySearchURI(tenantId));
-        HttpResponse response = client.execute(get);
+        await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> {
+            HttpResponse response = client.execute(get);
 
-        String responseString = EntityUtils.toString(response.getEntity());
-        Assert.assertEquals(200, response.getStatusLine().getStatusCode());
-        for (int i = 0; i < numMetrics; i++){
-            Assert.assertTrue(responseString.contains(String.format("{\"metric\":\"%s.%d\"}", metricPrefix, i)));
-        }
-        assertResponseHeaderAllowOrigin(response);
+            String responseString = EntityUtils.toString(response.getEntity());
+            Assert.assertEquals(200, response.getStatusLine().getStatusCode());
+            for (int i = 0; i < numMetrics; i++){
+                Assert.assertTrue(responseString.contains(String.format("{\"metric\":\"%s.%d\"}", metricPrefix, i)));
+            }
+            assertResponseHeaderAllowOrigin(response);
+        });
     }
 
     @Test

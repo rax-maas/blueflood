@@ -17,7 +17,7 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 
 import static org.mockito.Mockito.spy;
 
-import com.github.tlrx.elasticsearch.test.EsSetup;
+import com.rackspacecloud.blueflood.utils.ElasticsearchTestServer;
 import com.rackspacecloud.blueflood.http.HttpClientVendor;
 import com.rackspacecloud.blueflood.io.EventElasticSearchIO;
 import com.rackspacecloud.blueflood.io.EventsIO;
@@ -41,7 +41,6 @@ import java.util.Set;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
@@ -66,7 +65,6 @@ public class HttpAnnotationsEndToEndIntegrationTest {
     private static EventsIO eventsSearchIO;
     private static HttpQueryService httpQueryService;
     private final String tenant_id = "333333";
-    private static EsSetup esSetup;
     //A time stamp 2 days ago
     private final long baseMillis = Calendar.getInstance().getTimeInMillis() - 172800000;
 
@@ -79,11 +77,8 @@ public class HttpAnnotationsEndToEndIntegrationTest {
         manageShards.add(1); manageShards.add(5); manageShards.add(6);
         context = spy(new ScheduleContext(System.currentTimeMillis(), manageShards));
 
-        esSetup = new EsSetup();
-        esSetup.execute(EsSetup.deleteAll());
-        esSetup.execute(EsSetup.createIndex(EventElasticSearchIO.EVENT_INDEX)
-                .withSettings(EsSetup.fromClassPath("index_settings.json"))
-                .withMapping("graphite_event", EsSetup.fromClassPath("events_mapping.json")));
+        ElasticsearchTestServer.getInstance().ensureStarted();
+        ElasticsearchTestServer.getInstance().reset();
         eventsSearchIO = new EventElasticSearchIO();
         HttpMetricsIngestionServer server = new HttpMetricsIngestionServer(context);
         server.setHttpEventsIngestionHandler(new HttpEventsIngestionHandler(eventsSearchIO));
@@ -165,17 +160,6 @@ public class HttpAnnotationsEndToEndIntegrationTest {
     public static void tearDownClass() throws Exception{
         Configuration.getInstance().setProperty(CoreConfig.EVENTS_MODULES.name(), "");
         System.clearProperty(CoreConfig.EVENTS_MODULES.name());
-
-        URIBuilder builder = new URIBuilder().setScheme("http").setHost("127.0.0.1").setPort(9200).setPath("/events");
-        HttpDelete delete = new HttpDelete(builder.build());
-        HttpResponse response = client.execute(delete);
-        if(response.getStatusLine().getStatusCode() != 200)
-        {
-            System.out.println("Couldn't delete 'events' index after running tests.");
-        }
-        else {
-            System.out.println("Successfully deleted 'events' index after running tests.");
-        }
 
         if (vendor != null) {
             vendor.shutdown();
