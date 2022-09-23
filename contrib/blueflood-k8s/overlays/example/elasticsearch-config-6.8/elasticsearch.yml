@@ -4,6 +4,8 @@ cluster.name: "blueflood-es"
 discovery.zen.ping.unicast.hosts: [es-seed-discovery]
 # This should be something like a quorum of the total number of master nodes
 discovery.zen.minimum_master_nodes: 2
+# Bind all interfaces so the nodes can find each other.
+network.host: 0.0.0.0
 # Store data on the persistent volume.
 path.data: "/elasticsearch-data-pv/data"
 # Disable security for ease of access. Obviously don't do this in production.

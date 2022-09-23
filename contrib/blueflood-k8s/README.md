@@ -71,8 +71,9 @@ setup for Cassandra and Elasticsearch first.
 First, if using Elasticsearch 7+, uncomment the `cluster.initial_master_nodes` property from the elasticsearch.yml
 you're using. It's required for first time cluster start. It's unclear if anything like this applies to versions <7.
 
-Likewise, comment out the health probes on the Cassandra seed nodes. They'll hinder initial cluster formation. Look for
-"DON'T PROBE HERE!" in `cassandra.yaml`.
+Next, the Kubernetes health probes hinder initial cluster formation for both Elasticsearch and Cassandra. You have to
+comment out all the probes for the Cassandra seed nodes and the Elasticsearch nodes. Look for "DON'T PROBE HERE!" in
+`cassandra.yaml` and `elasticsearch.yaml`.
 
 Then start Cassandra and Elasticsearch with
 
@@ -93,18 +94,21 @@ The Elasticsearch cluster will likely be the first to fully start up. Check its 
 kubectl exec es-master-0 -c elasticsearch -- curl 'localhost:9200/_cluster/health?pretty'
 ```
 
-For Elasticsearch 7+, as soon as all Elasticsearch master nodes have started and joined the cluster, comment out the
-`cluster.initial_master_nodes` property in the elasticsearch.yaml. You only use this property when creating a completely
-new cluster. Use `kubectl apply` to apply the new configuration. Kubernetes will do a rolling restart of the pods for
-you with the new configuration.
-
-Finally, initialize the Elasticsearch indexes and mappings by running an appropriate init script from the [elasticsearch
-module's resources](../../blueflood-elasticsearch/src/main/resources), like
+Once the cluster is up and running, initialize the Elasticsearch indexes and mappings by running an appropriate init
+script from the [elasticsearch module's resources](../../blueflood-elasticsearch/src/main/resources), like
 
 ```bash
 kubectl port-forward service/elasticsearch 9200
 blueflood-elasticsearch/src/main/resources/init-es-6/init-es.sh
 ```
+
+Finally, revert the config changes you made:
+
+- Uncomment the health probes that you commented out previously in `elasticsearch.yaml`.
+
+- For Elasticsearch 7+, comment out the `cluster.initial_master_nodes` property in the `elasticsearch.yml`.
+
+Then do a `kubectl apply` to update the cluster. Kubernetes will do a rolling restart of the pods for you.
 
 ### Cassandra
 
@@ -115,12 +119,13 @@ status of `UN` (Up Normal).
 kubectl exec cass-seed-0 -c cassandra -- nodetool status
 ```
 
-Once the cluster is up and running, bring back the health probes that you commented out previously by uncommenting them
-and doing a `kubectl apply` to update the cluster. Kubernetes will do a rolling restart of the seed nodes for you.
-
-Set up the Cassandra schema by running the [cqlsh script](../../src/cassandra/cli/load.cdl) on one of the nodes, such as
+Once the cluster is up and running, set up the Cassandra schema by running the [cqlsh
+script](../../src/cassandra/cli/load.cdl) on one of the nodes, such as
 
 ```bash
 kubectl cp src/cassandra/cli/load.cdl cass-seed-0:/bf-init.cdl -c cassandra
 kubectl exec cass-seed-0 -c cassandra -- cqlsh -f /bf-init.cdl
 ```
+
+Finally, bring back the health probes that you commented out previously by uncommenting them and doing a `kubectl apply`
+to update the cluster. Kubernetes will do a rolling restart of the seed nodes for you.

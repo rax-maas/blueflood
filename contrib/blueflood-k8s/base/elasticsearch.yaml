@@ -93,6 +93,8 @@ spec:
               name: http
             - containerPort: 9300
               name: es-transport
+          # DON'T PROBE HERE! <- search text referred to by the readme. Don't change!
+          # See note in README.md and cassandra.yml for details.
           startupProbe:
             tcpSocket:
               port: http
