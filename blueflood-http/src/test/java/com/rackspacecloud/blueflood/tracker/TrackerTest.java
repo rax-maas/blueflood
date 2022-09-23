@@ -22,6 +22,7 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.matchers.JUnitMatchers.containsString;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
@@ -53,7 +54,7 @@ public class TrackerTest {
     private long collectionTime;
 
     @Captor
-    ArgumentCaptor argCaptor;
+    ArgumentCaptor<String> argCaptor;
 
     @BeforeClass
     public static void setupClass() {
@@ -268,9 +269,17 @@ public class TrackerTest {
         tracker.track(httpRequestMock);
 
         // verify
-        verify(loggerMock, atLeastOnce()).info("[TRACKER] tenantId " + tenantId + " added.");
-        verify(loggerMock, atLeastOnce()).info((String)argCaptor.capture());
-        assertThat(argCaptor.getValue().toString(), containsString("[TRACKER] POST request for tenantId " + tenantId + ": /v2.0/" + tenantId + "/ingest?param1=value1&param1=value2\n" +
+        verify(loggerMock, atLeastOnce()).info(argCaptor.capture());
+        List<String> allValues = argCaptor.getAllValues();
+        for (int i = 0; i < allValues.size(); i++) {
+            System.out.println("logged " + i + ": " + allValues.get(i));
+        }
+        assertThat(allValues.size(), equalTo(3));
+        // Where does "all tenants removed" come from? I don't know. I don't grok this thing yet, but this is what
+        // happens when you run the test.
+        assertThat(allValues.get(0), equalTo("[TRACKER] all tenants removed."));
+        assertThat(allValues.get(1), equalTo("[TRACKER] tenantId " + tenantId + " added."));
+        assertThat(allValues.get(2), equalTo("[TRACKER] POST request for tenantId " + tenantId + ": /v2.0/" + tenantId + "/ingest?param1=value1&param1=value2\n" +
                 "HEADERS: \n" +
                 "X-Auth-Token\tAUTHTOKEN\n" +
                 "REQUEST_CONTENT:\n" +
