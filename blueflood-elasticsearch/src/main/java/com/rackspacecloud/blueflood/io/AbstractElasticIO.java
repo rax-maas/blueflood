@@ -44,7 +44,6 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
     protected static final String REGEX_TO_GRAB_SINGLE_TOKEN = "[^.]*";
 
     private String queryToFetchMetricNamesFromElasticsearchFormat = "{\n" +
-            "  \"size\": 0,\n" +
             "  \"query\": {\n" +
             "    \"bool\": {\n" +
             "      \"must\": [\n" +
@@ -68,8 +67,7 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
             "      \"terms\": {\n" +
             "        \"field\": \"metric_name\",\n" +
             "        \"include\": \"%s\",\n" +
-            "        \"execution_hint\": \"map\",\n" +
-            "        \"size\": 0\n" +
+            "        \"execution_hint\": \"map\"\n" +
             "      }\n" +
             "    }\n" +
             "  }\n" +

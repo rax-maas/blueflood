@@ -12,7 +12,8 @@
                 "type": "keyword"
             },
             "metric_name": {
-                "type": "keyword"
+                "type": "text",
+                "fielddata": true
             }
         }
     }

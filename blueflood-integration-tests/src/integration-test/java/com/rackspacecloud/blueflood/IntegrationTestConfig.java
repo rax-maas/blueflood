@@ -21,12 +21,12 @@ public enum IntegrationTestConfig implements ConfigDefaults {
      * wiki for a quick startup. The test framework will do nothing in terms of starting or initializing Elasticsearch
      * when you use this option.
      */
-    IT_ELASTICSEARCH_TEST_METHOD("TLRX"),
+    IT_ELASTICSEARCH_TEST_METHOD("TEST_CONTAINERS"),
     /**
      * Only when IT_ELASTICSEARCH_TEST_METHOD == 'TEST_CONTAINERS', this sets the Elasticsearch version to run
      * integration tests with. This should be the version of an available Docker image from DockerHub.
      */
-    IT_ELASTICSEARCH_CONTAINER_VERSION("1.7");
+    IT_ELASTICSEARCH_CONTAINER_VERSION("6.8.23");
 
     static {
         Configuration.getInstance().loadDefaults(IntegrationTestConfig.values());
