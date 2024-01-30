@@ -72,6 +72,10 @@
           <groupId>org.jboss.netty</groupId>
           <artifactId>netty</artifactId>
         </exclusion>
+        <exclusion>
+          <groupId>log4j</groupId>
+          <artifactId>log4j</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
 
@@ -102,6 +106,10 @@
         <exclusion>
           <groupId>org.jboss.netty</groupId>
           <artifactId>netty</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>log4j</groupId>
+          <artifactId>log4j</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -136,9 +144,15 @@
     </dependency>
 
     <dependency>
-      <groupId>log4j</groupId>
-      <artifactId>log4j</artifactId>
-      <version>1.2.16</version>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>${slf4j.api.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-slf4j2-impl</artifactId>
+      <version>${slf4j.version}</version>
     </dependency>
 
     <dependency>
@@ -155,7 +169,7 @@
 
     <dependency>
       <groupId>io.dropwizard.metrics</groupId>
-      <artifactId>metrics-log4j</artifactId>
+      <artifactId>metrics-log4j2</artifactId>
       <version>3.1.2</version>
     </dependency>
 
@@ -189,8 +203,8 @@
     </dependency>
 
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-log4j12</artifactId>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-slf4j2-impl</artifactId>
       <version>${slf4j.version}</version>
     </dependency>
 

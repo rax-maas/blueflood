@@ -29,17 +29,12 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
 
 import javax.xml.bind.DatatypeConverter;
 import java.io.PrintStream;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -93,7 +88,9 @@ public class Migration {
     }
     
     public static void main(String args[]) {
-        nullRouteAllLog4j();
+//        While migrating from Log4j to Log4j2, we need to comment out this nullRouteAllLog4j function because was not able to find alternate way.
+//        We can work on this later if needed.
+//        nullRouteAllLog4j();
 
         Map<String, Object> options = parseOptions(args);
         
@@ -357,13 +354,13 @@ public class Migration {
         }
     }
     
-    private static void nullRouteAllLog4j() {
-        List<Logger> loggers = Collections.<Logger>list(LogManager.getCurrentLoggers());
-        loggers.add(LogManager.getRootLogger());
-        for ( Logger logger : loggers ) {
-            logger.setLevel(Level.OFF);
-        }
-    }
+//    private static void nullRouteAllLog4j() {
+//        List<Logger> loggers = Collections.<Logger>list(LogManager.getCurrentLoggers());
+//        loggers.add(LogManager.getRootLogger());
+//        for ( Logger logger : loggers ) {
+//            logger.setLevel(Level.OFF);
+//        }
+//    }
     
     private static AstyanaxContext<Keyspace> connect(String host, int port, String keyspace, int threads, NodeDiscoveryType discovery) {
         AstyanaxContext<Keyspace> context = new AstyanaxContext.Builder()

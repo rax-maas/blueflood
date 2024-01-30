@@ -47,7 +47,8 @@
     <build.profile.id>dev</build.profile.id>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <skip.unit.tests>false</skip.unit.tests>
-    <slf4j.version>1.7.6</slf4j.version>
+    <slf4j.api.version>2.0.11</slf4j.api.version>
+    <slf4j.version>2.22.0</slf4j.version>
     <jodatime.version>2.9</jodatime.version>
     <maven.build.timestamp.format>yyyyMMdd-HHmmss</maven.build.timestamp.format>
   </properties>
