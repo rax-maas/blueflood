@@ -23,7 +23,6 @@ import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.RestartGauge;
 import com.rackspacecloud.blueflood.utils.Util;
-import org.apache.log4j.PropertyConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -249,12 +248,6 @@ public class BluefloodServiceStarter {
     public static void run() {
         // load configuration.
         Configuration config = Configuration.getInstance();
-
-        // if log4j configuration references an actual file, periodically reload it to catch changes.
-        String log4jConfig = System.getProperty("log4j.configuration");
-        if (log4jConfig != null && log4jConfig.startsWith("file:")) {
-            PropertyConfigurator.configureAndWatch(log4jConfig.substring("file:".length()), 5000);
-        }
 
         // check that we have cassandra hosts
         validateCassandraHosts();

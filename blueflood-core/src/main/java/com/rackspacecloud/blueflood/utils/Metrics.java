@@ -26,10 +26,9 @@ import com.codahale.metrics.jvm.BufferPoolMetricSet;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
-import com.codahale.metrics.log4j.InstrumentedAppender;
+import com.codahale.metrics.log4j2.InstrumentedAppender;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
-import org.apache.log4j.LogManager;
 
 import javax.management.MBeanServer;
 import java.io.IOException;
@@ -39,6 +38,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.slf4j.Logger;
 
 public class Metrics {
     private static final MetricRegistry registry = new MetricRegistry();
@@ -61,9 +64,15 @@ public class Metrics {
         registry.registerAll(new PrefixedMetricSet(new ThreadStatesGaugeSet(), JVM_PREFIX, "thread-states"));
 
         // instrument log4j
-        InstrumentedAppender appender = new InstrumentedAppender(registry);
-        appender.activateOptions();
-        LogManager.getRootLogger().addAppender(appender);
+        // That's fine if we don't use filters; https://logging.apache.org/log4j/2.x/manual/filters.html
+        // The layout isn't used in InstrumentedAppender
+        InstrumentedAppender appender = new InstrumentedAppender(registry, null, null, false);
+        appender.start();
+
+        LoggerContext context = (LoggerContext) LogManager.getContext(false);
+        org.apache.logging.log4j.core.config.Configuration contextConfiguration = context.getConfiguration();
+        contextConfiguration.getLoggerConfig(Logger.ROOT_LOGGER_NAME).addAppender(appender, Level.INFO, null);
+        context.updateLoggers(contextConfiguration);
 
         if (!config.getStringProperty(CoreConfig.RIEMANN_HOST).equals("")) {
             RiemannReporter tmpreporter;
