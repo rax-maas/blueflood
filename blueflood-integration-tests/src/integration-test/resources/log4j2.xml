@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="info" monitorInterval="5000">
+
+  <Appenders>
+    <MetricsAppender name="metrics" registryName="shared-metrics-registry"/>
+    <Console name="Console" target="SYSTEM_OUT" follow="true">
+      <PatternLayout pattern="%d{yyyy-MM-dd'T'HH:mm:ss.SSSZ} %p %m%n"/>
+    </Console>
+
+    <RollingFile name="fileApp" fileName="test.log"
+      filePattern="test-%d{yyyy-MM-dd}-%i.log">
+      <PatternLayout pattern="%d{yyyy-MM-dd'T'HH:mm:ss.SSSZ} %p %m%n"/>
+      <Policies>
+        <SizeBasedTriggeringPolicy size="8048KB" />
+      </Policies>
+      <DefaultRolloverStrategy max="2"/>
+    </RollingFile>
+
+  </Appenders>
+
+  <Loggers>
+    <Logger name="org.apache.http.client.protocol" level="info" />
+    <Logger name="org.apache.http.wire" level="info" />
+    <Logger name="org.apache.http.impl" level="info" />
+    <Logger name="org.apache.http.headers" level="info" />
+
+    <Logger name="httpclient.wire.header" level="warn" />
+    <Logger name="httpclient.wire.content" level="warn" />
+
+    <Root level="info">
+      <AppenderRef ref="fileApp" />
+      <AppenderRef ref="Console" level="warn" />
+      <AppenderRef ref="metrics" />
+    </Root>
+  </Loggers>
+
+</Configuration>
