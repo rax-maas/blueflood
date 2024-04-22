@@ -32,6 +32,7 @@
     <module>blueflood-cloudfiles</module>
     <module>blueflood-rollupTools</module>
     <module>blueflood-integration-tests</module>
+    <module>blueflood-repose-spock-tests</module>
     <module>blueflood-all</module>
   </modules>
 
@@ -101,6 +102,30 @@
         <artifactId>netty-all</artifactId>
         <version>4.0.44.Final</version>
       </dependency>
+
+      <!-- Spock Framework -->
+      <dependency>
+        <groupId>org.spockframework</groupId>
+        <artifactId>spock-core</artifactId>
+        <version>2.4-M4-groovy-4.0</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.spockframework</groupId>
+        <artifactId>spock-junit4</artifactId>
+        <version>2.4-M4-groovy-4.0</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.groovy</groupId>
+        <artifactId>groovy-all</artifactId>
+        <version>4.0.16</version>
+        <type>pom</type>
+        <scope>test</scope>
+      </dependency>
+
     </dependencies>
   </dependencyManagement>
 
@@ -130,6 +155,22 @@
     <dependency>
       <groupId>org.powermock</groupId>
       <artifactId>powermock-api-mockito</artifactId>
+    </dependency>
+    <!-- Spock Framework -->
+    <dependency>
+      <groupId>org.spockframework</groupId>
+      <artifactId>spock-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.spockframework</groupId>
+      <artifactId>spock-junit4</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.groovy</groupId>
+      <artifactId>groovy-all</artifactId>
+      <type>pom</type>
     </dependency>
   </dependencies>
 
@@ -207,13 +248,20 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>2.19.1</version>
+        <version>3.2.5</version>
         <configuration>
           <!-- Skips unit tests if the value of skip.unit.tests property is true -->
           <skipTests>${skip.unit.tests}</skipTests>
+          <includes>
+            <include>**/*Test</include>
+            <!--  Run all spock test -->
+            <include>**/*Spec</include>
+          </includes>
+          <!-- Excludes repose spock tests when unit tests are run. -->
           <!-- Excludes integration tests when unit tests are run. -->
           <!-- This is only necessary because the failsafe plugin's test naming conventions are overridden. -->
           <excludes>
+            <exclude>**/*Repose*Spec</exclude>
             <exclude>**/*Integration*.java</exclude>
           </excludes>
         </configuration>
@@ -242,6 +290,21 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-release-plugin</artifactId>
         <version>3.0.0-M6</version>
+      </plugin>
+
+      <plugin>
+        <!-- The gmavenplus plugin is used to compile Groovy code. To learn more about this plugin,
+        visit https://github.com/groovy/GMavenPlus/wiki -->
+        <groupId>org.codehaus.gmavenplus</groupId>
+        <artifactId>gmavenplus-plugin</artifactId>
+        <version>3.0.2</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>compileTests</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

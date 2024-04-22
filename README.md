@@ -36,6 +36,7 @@ Important build profiles to know about:
 
 - `skip-unit-tests` skips unit tests in all modules.
 - `skip-integration-tests` skips the integration tests.
+- `repose-tests` to run the Repose tests. To learn more about this follow [this](blueflood-repose-spock-tests/README.md).
 
 Blueflood's main artifact is an ['uber jar'](http://stackoverflow.com/questions/11947037/what-is-an-uber-jar), produced
 by the [`blueflood-all` module](blueflood-all/pom.xml).
