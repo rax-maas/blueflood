@@ -1,0 +1,26 @@
+---
+
+## Cluster settings for version 7+
+# Uncomment this when you first create the Elasticsearch cluster ONLY. As soon as the cluster is up, remove this line
+# from the config again for all future new nodes or node restarts. See
+# https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-discovery-bootstrap-cluster.html
+#cluster.initial_master_nodes: es-master-0,es-master-1,es-master-2
+discovery.seed_hosts: es-seed-discovery
+
+## Other settings
+cluster.name: "blueflood-es"
+xpack.security.enabled: "false"
+#node.name: ${HOSTNAME}
+network.host: 0.0.0.0
+#node.max_local_storage_nodes: 3
+#processors: ${PROCESSORS}
+#network.host: "_site_"
+path.data: "/elasticsearch-data-pv/data"
+path.logs: "/elasticsearch-data-pv/log"
+#path.repo: "/elasticsearch-data-pv/repo"
+#http.cors.enabled: "true"
+#cluster.routing.allocation.awareness.attributes: zone
+#xpack.license.self_generated.type: "trial"
+#xpack.security.http.ssl.enabled: "false"
+#xpack.monitoring.collection.enabled: "true"
+#xpack.security.transport.ssl.enabled: false

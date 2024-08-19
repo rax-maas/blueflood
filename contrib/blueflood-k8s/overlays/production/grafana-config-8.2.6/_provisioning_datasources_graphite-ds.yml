@@ -1,0 +1,15 @@
+# Basic graphite datasource, taken from example at
+# https://grafana.com/docs/grafana/latest/administration/provisioning/#datasources
+
+apiVersion: 1
+
+deleteDatasources:
+  - name: Graphite
+    orgId: 1
+
+datasources:
+  - name: Graphite
+    type: graphite
+    isDefault: true
+    access: proxy
+    url: http://graphite

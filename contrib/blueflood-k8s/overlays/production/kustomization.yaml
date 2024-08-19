@@ -1,0 +1,97 @@
+resources:
+  - ../../base
+namespace: blueflood-prod
+patchesStrategicMerge:
+  - set-replicas.yaml
+  - set-compute-resources.yaml
+  - label-config-maps.yaml
+
+# This tunes the sizes of the persistent volumes. I'd like to do strategic merge patching like above, but it looks like
+# volumeClaimTemplates get replaced instead of merged, so I'd have to completely specify all the volumes again in the
+# patch file. That's no good. Just use this more complex approach unless someone has a better idea.
+# IMPORTANT: For the claim templates, this assumes the data volume is the first one listed. There's no better way to
+# select a specific volume.
+patchesJson6902:
+- target:
+    group: apps
+    version: v1
+    kind: StatefulSet
+    name: cass-seed
+  patch: |
+    [{"op": "replace", "value": "10Gi", "path": "/spec/volumeClaimTemplates/0/spec/resources/requests/storage"}]
+- target:
+    group: apps
+    version: v1
+    kind: StatefulSet
+    name: cass-non-seed
+  patch: |
+    [{"op": "replace", "value": "10Gi", "path": "/spec/volumeClaimTemplates/0/spec/resources/requests/storage"}]
+- target:
+    group: apps
+    version: v1
+    kind: StatefulSet
+    name: es-master
+  patch: |
+    [{"op": "replace", "value": "10Gi", "path": "/spec/volumeClaimTemplates/0/spec/resources/requests/storage"}]
+- target:
+    version: v1
+    kind: PersistentVolumeClaim
+    name: graphite-data
+  patch: |
+    # Current prod Graphite has a 4TB data volume, which is 3/4 full, so...
+    [{"op": "replace", "value": "4Ti", "path": "/spec/resources/requests/storage"}]
+
+configMapGenerator:
+  - name: cassandra-config
+    files:
+      - cassandra-config-2.1/cassandra-env.sh
+      - cassandra-config-2.1/cassandra-rackdc.properties
+      - cassandra-config-2.1/cassandra.yaml
+      - cassandra-config-2.1/commitlog_archiving.properties
+      - cassandra-config-2.1/hotspot_compiler
+      - cassandra-config-2.1/logback-tools.xml
+      - cassandra-config-2.1/logback.xml
+  - name: elasticsearch-config
+    files:
+      - elasticsearch-config-6/elasticsearch.yml
+      - elasticsearch-config-6/jvm.options
+      - elasticsearch-config-6/log4j2.properties
+      - elasticsearch-config-6/role_mapping.yml
+      - elasticsearch-config-6/roles.yml
+      - elasticsearch-config-6/users
+      - elasticsearch-config-6/users_roles
+  - name: graphite-config
+    files:
+      - graphite-config-1.1.7-11/aggregation-rules.conf
+      - graphite-config-1.1.7-11/blacklist.conf
+      - graphite-config-1.1.7-11/brubeck.json
+      - graphite-config-1.1.7-11/carbon.amqp.conf
+      - graphite-config-1.1.7-11/carbon.conf
+      - graphite-config-1.1.7-11/dashboard.conf
+      - graphite-config-1.1.7-11/go-carbon.conf
+      - graphite-config-1.1.7-11/graphTemplates.conf
+      - graphite-config-1.1.7-11/relay-rules.conf
+      - graphite-config-1.1.7-11/rewrite-rules.conf
+      - graphite-config-1.1.7-11/storage-aggregation.conf
+      - graphite-config-1.1.7-11/storage-schemas.conf
+      - graphite-config-1.1.7-11/whitelist.conf
+  - name: grafana-config
+    files:
+      - grafana-config-8.2.6/_dashboards_kpi.json
+      - grafana-config-8.2.6/_dashboards_ops.json
+      - grafana-config-8.2.6/_grafana.ini
+      - grafana-config-8.2.6/_provisioning_dashboards_default.yml
+      - grafana-config-8.2.6/_provisioning_datasources_graphite-ds.yml
+  - name: ingest-config
+    files:
+      - ingest-config/blueflood.properties
+      - ingest-config/blueflood-log4j.properties
+  - name: query-config
+    files:
+      - query-config/blueflood.properties
+      - query-config/blueflood-log4j.properties
+  - name: rollup-config
+    files:
+      - rollup-config/get-shard-range.sh
+      - rollup-config/blueflood.properties
+      - rollup-config/blueflood-log4j.properties

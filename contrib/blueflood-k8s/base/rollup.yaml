@@ -1,0 +1,101 @@
+---
+# A service because rollup has to be a StatefulSet. We need the numbered nodes in order to assign shards.
+apiVersion: v1
+kind: Service
+metadata:
+  name: rollup
+  labels:
+    component: rollup
+spec:
+  selector:
+    component: rollup
+  clusterIP: None
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rollup
+  labels:
+    component: rollup
+spec:
+  serviceName: rollup
+  selector:
+    matchLabels:
+      component: rollup
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        component: rollup
+    spec:
+      volumes:
+        - name: config-source
+          configMap:
+            name: rollup-config
+      initContainers:
+        - name: rollup-configuration
+          image: bash:5.1.16
+          command:
+            - bash
+            - -c
+            - |
+              # WARNING: Keep this in sync with the rollup replica count!
+              export ROLLUP_NODE_COUNT=6
+              shard_range=$(bash /rollup-config-source/get-shard-range.sh)
+              echo "Assigning shards: $shard_range"
+              for f in /rollup-config-source/*; do
+                dest=${f/rollup-config-source/rollup-config-final}
+                sed "s/^SHARDS=.*/SHARDS=$shard_range/" < $f > $dest
+              done
+          volumeMounts:
+            - name: config-source
+              mountPath: /rollup-config-source
+            - name: rollup-config
+              mountPath: /rollup-config-final
+      containers:
+        - name: blueflood
+          image: rackerlabs/blueflood:latest
+          imagePullPolicy: Always
+          resources:
+            limits:
+              cpu: "1"
+              memory: 4Gi
+            requests:
+              cpu: "0.5"
+              memory: 2Gi
+          volumeMounts:
+            - name: rollup-config
+              mountPath: /etc/blueflood
+          env:
+            - name: INIT_CASSANDRA
+              value: 'false'
+            - name: INIT_ELASTICSEARCH
+              value: 'false'
+            - name: BLUEFLOOD_CONF_LOCATION
+              value: /etc/blueflood/blueflood.properties
+            - name: BLUEFLOOD_LOG4J_CONF_LOCATION
+              value: /etc/blueflood/blueflood-log4j.properties
+            # Set to 'true' to enable remote debugging of the Blueflood process.
+            - name: DEBUG_JAVA
+              value: 'false'
+            # Set to 'true' to have the Blueflood JVM wait for a debugger to attach before starting.
+            - name: DEBUG_JAVA_SUSPEND
+              value: 'false'
+            # The default port value should work, but something's setting it to "tcp://<ip>:80"
+            - name: GRAPHITE_PORT
+              value: '2003'
+            - name: GRAPHITE_PREFIX
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+  volumeClaimTemplates:
+    # A volume that stores the final config, calculated by the init container.
+    - metadata:
+        name: rollup-config
+        labels:
+          component: rollup
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 10Mi

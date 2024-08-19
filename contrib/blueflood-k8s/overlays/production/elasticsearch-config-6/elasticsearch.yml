@@ -1,0 +1,14 @@
+---
+## Cluster settings for version <7
+discovery.zen.ping.unicast.hosts: [es-seed-discovery]
+# This should be something like a quorum of the total number of master nodes
+discovery.zen.minimum_master_nodes: 2
+
+## Other settings
+cluster.name: "blueflood-es"
+xpack.security.enabled: "false"
+network.host: 0.0.0.0
+path.data: "/elasticsearch-data-pv/data"
+path.logs: "/elasticsearch-data-pv/log"
+#path.repo: "/elasticsearch-data-pv/repo"
+#http.cors.enabled: "true"

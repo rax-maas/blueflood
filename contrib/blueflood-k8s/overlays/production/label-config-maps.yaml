@@ -1,0 +1,53 @@
+# This is necessary if you want the ConfigMaps to be labelled consistently with the other resources. If not, you can
+# leave this out.
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cassandra-config
+  labels:
+    component: cassandra
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: elasticsearch-config
+  labels:
+    component: elasticsearch
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: graphite-config
+  labels:
+    component: metrics
+    part: graphite
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-config
+  labels:
+    component: metrics
+    part: grafana
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ingest-config
+  labels:
+    component: ingest
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: query-config
+  labels:
+    component: query
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rollup-config
+  labels:
+    component: rollup

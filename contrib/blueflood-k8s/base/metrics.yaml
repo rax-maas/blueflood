@@ -1,0 +1,134 @@
+ ---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: graphite-data
+  labels:
+    component: metrics
+    part: graphite
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: graphite
+  labels:
+    component: metrics
+    part: graphite
+spec:
+  containers:
+    - name: graphite
+      image: graphiteapp/graphite-statsd:1.1.7-11
+      env:
+        - name: GRAPHITE_STORAGE_DIR
+          value: /graphite-data-pv
+      volumeMounts:
+        - name: config
+          mountPath: /opt/graphite/conf
+        - name: data
+          mountPath: /graphite-data-pv
+  volumes:
+    - name: config
+      configMap:
+        name: graphite-config
+    - name: data
+      persistentVolumeClaim:
+        claimName: graphite-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: graphite
+  labels:
+    component: metrics
+    part: graphite
+spec:
+  ports:
+    - name: http
+      port: 80
+      protocol: TCP
+    - name: plaintext
+      port: 2003
+      protocol: TCP
+    - name: pickle
+      port: 2004
+      protocol: TCP
+  selector:
+    component: metrics
+    part: graphite
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: grafana
+  labels:
+    component: metrics
+    part: graphite
+spec:
+  containers:
+    - name: grafana
+      image: grafana/grafana:8.2.6
+      volumeMounts:
+        # You can't do nested directories in ConfigMaps, so I flattened out Grafana's directory structure using
+        # underscores to represent directory names. That means each one has to be mounted individually.
+        - name: config
+          mountPath: /etc/grafana/grafana.ini
+          subPath: _grafana.ini
+        - name: config
+          mountPath: /etc/grafana/dashboards/kpi.json
+          subPath: _dashboards_kpi.json
+        - name: config
+          mountPath: /etc/grafana/dashboards/ops.json
+          subPath: _dashboards_ops.json
+        - name: config
+          mountPath: /etc/grafana/provisioning/dashboards/default.yml
+          subPath: _provisioning_dashboards_default.yml
+        - name: config
+          mountPath: /etc/grafana/provisioning/datasources/graphite-ds.yml
+          subPath: _provisioning_datasources_graphite-ds.yml
+  volumes:
+    - name: config
+      configMap:
+        name: grafana-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+spec:
+  ports:
+    - name: http
+      port: 3000
+      protocol: TCP
+  selector:
+    component: metrics
+    part: grafana
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: util
+  labels:
+    component: util
+spec:
+  containers:
+    - name: util
+      image: eclipse-temurin:8
+      command:
+        - bash
+        - -c
+        - |
+          apt update && apt install -y unzip vim less
+          tail -f /dev/null
+      resources:
+        limits:
+          cpu: "4"
+          memory: 8Gi
+        requests:
+          cpu: "2"
+          memory: 2Gi

@@ -1,0 +1,133 @@
+# Here you can tune the CPU and RAM resources for all the pods.
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: cass-seed
+spec:
+  template:
+    spec:
+      containers:
+        - name: cassandra
+          resources:
+            limits:
+              cpu: "1"
+              memory: 4Gi
+            requests:
+              cpu: "0.5"
+              memory: 2Gi
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: cass-non-seed
+spec:
+  template:
+    spec:
+      containers:
+        - name: cassandra
+          resources:
+            limits:
+              cpu: "1"
+              memory: 4Gi
+            requests:
+              cpu: "0.5"
+              memory: 2Gi
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: es-master
+spec:
+  template:
+    spec:
+      containers:
+        - name: elasticsearch
+          resources:
+            limits:
+              cpu: "1"
+              memory: 4Gi
+            requests:
+              cpu: "0.5"
+              memory: 2Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ingest
+spec:
+  template:
+    spec:
+      containers:
+        - name: blueflood
+          resources:
+            limits:
+              cpu: "1"
+              memory: 4Gi
+            requests:
+              cpu: "0.5"
+              memory: 2Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: query
+spec:
+  template:
+    spec:
+      containers:
+        - name: blueflood
+          resources:
+            limits:
+              cpu: "1"
+              memory: 4Gi
+            requests:
+              cpu: "0.5"
+              memory: 2Gi
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rollup
+spec:
+  template:
+    spec:
+      containers:
+        - name: blueflood
+          resources:
+            limits:
+              cpu: "1"
+              memory: 4Gi
+            requests:
+              cpu: "0.5"
+              memory: 2Gi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: graphite
+spec:
+  containers:
+    - name: graphite
+      resources:
+        limits:
+          cpu: "1"
+          memory: 4Gi
+        requests:
+          cpu: "0.5"
+          memory: 2Gi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: grafana
+spec:
+  containers:
+    - name: grafana
+      resources:
+        limits:
+          cpu: "1"
+          memory: 4Gi
+        requests:
+          cpu: "0.5"
+          memory: 2Gi

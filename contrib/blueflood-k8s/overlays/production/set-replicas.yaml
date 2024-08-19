@@ -1,0 +1,42 @@
+# Here you can tune the number of replicas of each StatefulSet and Deployment. Keep in mind that adding and removing
+# replicas of something might need to be accounted for in configuration.
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: cass-non-seed
+spec:
+  replicas: 4
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: es-master
+spec:
+  # IMPORTANT! For initial cluster setup, the number of replicas has to match the nodes specified in
+  # cluster.initial_master_nodes for the cluster to form. Only change the number of replicas after initial cluster
+  # creation!
+  replicas: 3
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ingest
+spec:
+  replicas: 4
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: query
+spec:
+  replicas: 2
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rollup
+spec:
+  # WARNING: If you change the number of rollup replicas, you also have to update the number in the rollup init
+  # container that handles calculating shard assignments!
+  replicas: 6
